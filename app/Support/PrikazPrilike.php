@@ -9,6 +9,10 @@ final class PrikazPrilike
 {
     public const NEMA_PRILIKA = 'Trenutno nema otvorenih prilika.';
 
+    public const ZVANICNI_IZVOR = 'Zvanični izvor: ';
+
+    public const PROVERI_IZVOR = 'Pre prijave proveri podatke na zvaničnom izvoru.';
+
     public static function rok(Prilika $prilika): string
     {
         if ($prilika->rok_stalno_otvoren) {
@@ -26,5 +30,24 @@ final class PrikazPrilike
         }
 
         return filled($prilika->mesto) ? $prilika->mesto : null;
+    }
+
+    // Link se piše samo ako je veb adresa: izvor u bazi može da stigne i mimo pravila objave (masovni upit).
+    public static function linkIzvora(Prilika $prilika): ?string
+    {
+        $link = trim((string) $prilika->link_izvora);
+
+        return str_starts_with($link, 'http://') || str_starts_with($link, 'https://') ? $link : null;
+    }
+
+    public static function nazivIzvora(Prilika $prilika): ?string
+    {
+        if (filled($prilika->naziv_izvora)) {
+            return $prilika->naziv_izvora;
+        }
+
+        $adresa = self::linkIzvora($prilika);
+
+        return $adresa === null ? null : (parse_url($adresa, PHP_URL_HOST) ?: $adresa);
     }
 }
