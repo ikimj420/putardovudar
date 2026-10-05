@@ -59,26 +59,24 @@ return [
     | Application Timezone
     |--------------------------------------------------------------------------
     |
-    | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | Zona je Europe/Belgrade (odluka u CLAUDE.md): sa UTC bi se datum oko
+    | ponoći pokazivao za dan ranije nego što ga čitalac vidi.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Europe/Belgrade',
 
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
-    | The application locale determines the default locale that will be used
-    | by Laravel's translation / localization methods. This option can be
-    | set to any locale for which you plan to have translation strings.
+    | Podrazumevani jezik je srpski, da aplikacija bez .env fajla ne pređe tiho
+    | na engleski.
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    'locale' => env('APP_LOCALE', 'sr'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
