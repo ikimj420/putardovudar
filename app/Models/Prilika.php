@@ -52,6 +52,11 @@ class Prilika extends Model
             if ($prilika->status->zahtevaIzvor() && ! self::jeLink($prilika->link_izvora)) {
                 throw ValidationException::withMessages(['link_izvora' => self::PORUKA_BEZ_IZVORA]);
             }
+
+            // Objava koja nije prošla kroz objavi() je ručna: čovek je promenio status u admin.
+            if ($prilika->isDirty('status') && $prilika->status === StatusPrilike::Objavljeno && ! $prilika->isDirty('objavio')) {
+                $prilika->objavio = KoJeObjavio::Covek;
+            }
         });
     }
 
