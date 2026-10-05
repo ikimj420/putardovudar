@@ -71,12 +71,12 @@ return [
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
-    | Podrazumevani jezik je srpski, da aplikacija bez .env fajla ne pređe tiho
-    | na engleski.
+    | Podrazumevani jezik je srpski latinicom (sr_Latn): samo taj naziv Filament
+    | ima kao prevod, a bez .env fajla aplikacija ne sme tiho da pređe na engleski.
     |
     */
 
-    'locale' => env('APP_LOCALE', 'sr'),
+    'locale' => env('APP_LOCALE', 'sr_Latn'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 

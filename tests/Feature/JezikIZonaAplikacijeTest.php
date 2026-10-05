@@ -19,19 +19,19 @@ class JezikIZonaAplikacijeTest extends TestCase
     }
 
     #[Test]
-    public function jezik_aplikacije_je_srpski_i_bez_env_fajla(): void
+    public function jezik_aplikacije_je_srpski_latinicom_i_bez_env_fajla(): void
     {
-        $this->assertSame('sr', app()->getLocale());
+        $this->assertSame('sr_Latn', app()->getLocale());
     }
 
     // Ogledalo: nov .env se pravi kopiranjem primera, pa primer mora da nosi isti jezik.
     #[Test]
-    public function env_primer_nosi_srpski_jezik_a_ne_engleski(): void
+    public function env_primer_nosi_srpski_latinicom_a_ne_engleski_ni_cirilicu(): void
     {
         $primer = file_get_contents(base_path('.env.example'));
 
-        $this->assertMatchesRegularExpression('/^APP_LOCALE=sr$/m', $primer);
-        $this->assertDoesNotMatchRegularExpression('/^APP_LOCALE=en$/m', $primer);
+        $this->assertMatchesRegularExpression('/^APP_LOCALE=sr_Latn$/m', $primer);
+        $this->assertDoesNotMatchRegularExpression('/^APP_LOCALE=(en|sr|sr_Cyrl)$/m', $primer);
     }
 
     #[Test]
