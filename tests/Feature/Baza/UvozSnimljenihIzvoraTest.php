@@ -70,6 +70,7 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
             $this->assertNotSame('', $prilika->kratak_opis);
             $this->assertLessThanOrEqual(300, mb_strlen($prilika->kratak_opis));
             $this->assertSame(0, preg_match('/[<>]/', $prilika->naslov.$prilika->kratak_opis), 'HTML u: '.$prilika->naslov);
+            $this->assertSame(0, preg_match('/\p{Cyrillic}/u', $prilika->naslov.$prilika->kratak_opis), 'Ćirilica u: '.$prilika->naslov);
             $this->assertNull($prilika->rok);
             $this->assertSame('2026-10-05 12:00:00', $prilika->created_at->toDateTimeString());
         }
@@ -99,5 +100,21 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
         foreach (self::SNIMCI as $snimak) {
             $this->assertFileExists(base_path('tests/Fixtures/rss/'.$snimak.'.xml'));
         }
+    }
+
+    // Ogledalo: snimak Fonda je ćirilicom (neprazan skup za merilo), a nacrti iz njega su latinicom.
+    #[Test]
+    public function fond_pise_cirilicom_a_nacrti_iz_njega_latinicom(): void
+    {
+        $snimak = (string) file_get_contents(base_path('tests/Fixtures/rss/fond-za-mlade-talente.xml'));
+
+        $this->assertSame(1, preg_match('/\p{Cyrillic}/u', $snimak));
+
+        $this->artisan('uvoz:rss');
+
+        $naslovi = Prilika::query()->where('naziv_izvora', 'Fond za mlade talente')->orderBy('id')->pluck('naslov')->all();
+
+        $this->assertCount(3, $naslovi);
+        $this->assertSame('Lista preliminarnih rezultata za nagrađivanje učenika srednjih škola', $naslovi[0]);
     }
 }

@@ -251,4 +251,39 @@ class UvozRssNacrtiTest extends BazaTestCase
 
         $this->artisan('uvoz:rss')->expectsOutputToContain('Nelažiran: novih 0, preskočeno 0, greška: neočekivana greška:')->assertExitCode(1);
     }
+
+    #[Test]
+    public function cirilica_u_naslovu_i_opisu_postaje_latinica_a_link_ostaje_isti(): void
+    {
+        $link = 'https://a.test/%D0%BA%D0%BE%D0%BD%D0%BA%D1%83%D1%80%D1%81?x=1&y=2';
+        Http::fake([self::A => Http::response($this->feed([['Конкурс за стипендије', str_replace('&', '&amp;', $link), '<p>Љубав и ЊИХОВА вољена Џак</p>']]))]);
+
+        $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 1, preskočeno 0, greška: nema');
+
+        $prilika = Prilika::query()->sole();
+
+        $this->assertSame('Konkurs za stipendije', $prilika->naslov);
+        $this->assertSame('Ljubav i NJIHOVA voljena Džak', $prilika->kratak_opis);
+        $this->assertSame($link, $prilika->link_izvora);
+        $this->assertSame('Izvor A', $prilika->naziv_izvora);
+
+        // Ćirilica ne remeti ni poređenje linkova: drugo pokretanje ne pravi drugi nacrt.
+        $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 0, preskočeno 1, greška: nema');
+        $this->assertSame(1, Prilika::query()->count());
+    }
+
+    // Dvoslovi su duži od slova iz kojih nastaju, pa se seče posle pretvaranja, ne pre.
+    #[Test]
+    public function cirilica_se_pretvara_pre_secenja_na_duzinu_polja(): void
+    {
+        Http::fake([self::A => Http::response($this->feed([[str_repeat('љ', 200), 'https://a.test/1', str_repeat('њ', 400)]]))]);
+
+        $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 1, preskočeno 0, greška: nema');
+
+        $prilika = Prilika::query()->sole();
+
+        $this->assertSame(255, mb_strlen($prilika->naslov));
+        $this->assertSame(300, mb_strlen($prilika->kratak_opis));
+        $this->assertSame(0, preg_match('/\p{Cyrillic}/u', $prilika->naslov.$prilika->kratak_opis));
+    }
 }
