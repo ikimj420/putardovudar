@@ -10,10 +10,9 @@ use PDOException;
 // Grupa se piše na svakoj potklasi: PHPUnit je ne nasleđuje, a bez nje `--group baza` ne vidi test.
 abstract class BazaTestCase extends TestCase
 {
-    protected function setUp(): void
+    // Pre osobina kao RefreshDatabase: one se pokreću u setUp i same bi pale na vezi pre nego što stignemo da preskočimo.
+    protected function setUpTraits()
     {
-        parent::setUp();
-
         $veza = config('database.connections.'.config('database.default'));
 
         try {
@@ -26,5 +25,7 @@ abstract class BazaTestCase extends TestCase
         } catch (PDOException $izuzetak) {
             $this->markTestSkipped('MariaDB nije dostupna na '.$veza['host'].':'.$veza['port'].' ('.$izuzetak->getMessage().'), pa se testovi grupe baza preskaču.');
         }
+
+        return parent::setUpTraits();
     }
 }
