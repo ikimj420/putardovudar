@@ -1,0 +1,195 @@
+/* Javne strane. Boje, font i oblik kartica su iz prototipa u nasleđu; običan CSS, bez build koraka. */
+:root {
+  --strana: #eef5f1;
+  --kartica: #f4f6f3;
+  --tekst: #071012;
+  --prigusen: #59635f;
+  --granica: rgba(7, 16, 18, 0.12);
+  --plava: #347ed3;
+  --zelena: rgba(85, 216, 178, 0.28);
+  --senka: 0 12px 28px rgba(7, 16, 18, 0.08);
+  --polumer: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--strana);
+  color: var(--tekst);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: inherit;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--plava);
+  outline-offset: 2px;
+}
+
+.sirina {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* Zaglavlje */
+.zaglavlje {
+  background: rgba(238, 245, 241, 0.94);
+  border-bottom: 1px solid var(--granica);
+}
+
+.zaglavlje .sirina {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.meni a {
+  font-weight: 700;
+  text-decoration: none;
+  padding: 8px 0;
+}
+
+.meni a:hover {
+  text-decoration: underline;
+}
+
+/* Sadržaj */
+.sadrzaj {
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+.sadrzaj h1 {
+  font-size: 30px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+
+.prazno {
+  color: var(--prigusen);
+  font-weight: 700;
+}
+
+/* Spisak: jedna kolona na telefonu, pa dve i tri */
+.spisak {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.kartica,
+.prilika {
+  background: var(--kartica);
+  border: 1px solid var(--granica);
+  border-radius: var(--polumer);
+  padding: 20px;
+}
+
+.kartica {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kartica:hover {
+  box-shadow: var(--senka);
+}
+
+.kartica h2 {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.kartica h2 a {
+  text-decoration: none;
+}
+
+.kartica h2 a:hover {
+  text-decoration: underline;
+}
+
+.red {
+  color: var(--prigusen);
+  font-weight: 700;
+}
+
+.oznaka {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--zelena);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.kratko {
+  line-height: 1.5;
+}
+
+/* Strana jedne prilike */
+.prilika {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prilika .sadrzaj-opis {
+  line-height: 1.6;
+}
+
+.izvor {
+  border-left: 4px solid var(--plava);
+  padding-left: 12px;
+  margin-top: 8px;
+}
+
+.izvor a {
+  color: var(--plava);
+  font-weight: 700;
+}
+
+.izvor-upozorenje {
+  color: var(--prigusen);
+  margin-top: 4px;
+}
+
+@media (min-width: 720px) {
+  .spisak {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sadrzaj h1 {
+    font-size: 40px;
+  }
+
+  .prilika {
+    max-width: 760px;
+    padding: 28px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .spisak {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
