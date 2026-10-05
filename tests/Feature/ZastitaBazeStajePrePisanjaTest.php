@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
-use Symfony\Component\Process\Process;
+use Tests\Concerns\PokreceDeteProces;
 use Tests\TestCase;
 use Tests\ZastitaBaze;
 
@@ -12,6 +12,8 @@ use Tests\ZastitaBaze;
 #[Group('podproces')]
 class ZastitaBazeStajePrePisanjaTest extends TestCase
 {
+    use PokreceDeteProces;
+
     #[Test]
     public function testovi_nad_radnom_bazom_staju_pre_nego_sto_dodirnu_vezu(): void
     {
@@ -39,20 +41,6 @@ class ZastitaBazeStajePrePisanjaTest extends TestCase
     /** @return array{0: int, 1: string} */
     private function pokreniSondu(string $baza): array
     {
-        $dnevnik = sys_get_temp_dir().'/sonda-'.bin2hex(random_bytes(4)).'.log';
-
-        $proces = new Process(
-            [PHP_BINARY, 'vendor/bin/phpunit', 'tests/Podrska/SondaZaZastitu.php', '--log-events-text', $dnevnik],
-            base_path(),
-            ['DB_DATABASE' => $baza, 'DB_PORT' => '1'],
-        );
-        $proces->setTimeout(60)->run();
-
-        $tekst = is_file($dnevnik) ? file_get_contents($dnevnik) : '';
-        @unlink($dnevnik);
-
-        $this->assertNotSame('', $tekst, 'Sonda nije ostavila dnevnik: '.$proces->getErrorOutput());
-
-        return [$proces->getExitCode(), $tekst];
+        return $this->pokreniPhpunit(['tests/Podrska/SondaZaZastitu.php'], ['DB_DATABASE' => $baza, 'DB_PORT' => '1']);
     }
 }

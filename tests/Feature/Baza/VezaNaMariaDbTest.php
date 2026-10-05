@@ -6,10 +6,10 @@ use Dotenv\Dotenv;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use Tests\BazaTestCase;
 
 #[Group('baza')]
-class VezaNaMariaDbTest extends TestCase
+class VezaNaMariaDbTest extends BazaTestCase
 {
     #[Test]
     public function testovi_su_vezani_na_mariadb(): void
