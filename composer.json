@@ -49,6 +49,12 @@
             "@php artisan config:clear --ansi @no_additional_args",
             "@php artisan test"
         ],
+        "analiza": "phpstan analyse --no-progress --memory-limit=1G",
+        "provera": [
+            "pint --test",
+            "@analiza",
+            "@test"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",
