@@ -2,9 +2,10 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum StatusPrilike: string implements HasLabel
+enum StatusPrilike: string implements HasColor, HasLabel
 {
     case Nacrt = 'nacrt';
     case Objavljeno = 'objavljeno';
@@ -14,6 +15,15 @@ enum StatusPrilike: string implements HasLabel
     public function zahtevaIzvor(): bool
     {
         return $this === self::Objavljeno;
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Nacrt => 'gray',
+            self::Objavljeno => 'success',
+            self::Arhivirano => 'info',
+        };
     }
 
     public function getLabel(): string
