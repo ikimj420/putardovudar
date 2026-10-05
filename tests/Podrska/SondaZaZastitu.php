@@ -14,6 +14,6 @@ class SondaZaZastitu extends TestCase
     #[Test]
     public function sonda_stize_do_tela_testa(): void
     {
-        $this->assertTrue(true);
+        $this->addToAssertionCount(1);
     }
 }
