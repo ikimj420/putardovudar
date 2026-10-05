@@ -50,10 +50,15 @@ class JavnaStranaPrilikeTest extends BazaTestCase
         $javna = Prilika::factory()->objavljena()->create();
 
         foreach ([$nacrt->slug, $arhivirana->slug, $istekla->slug, 'nema-takve-prilike'] as $slug) {
-            $this->get(route('prilike.show', $slug))->assertStatus(404);
+            $this->get(route('prilike.show', $slug))
+                ->assertStatus(404)
+                ->assertSee('Ta strana ne postoji ili prilika više nije otvorena.')
+                ->assertDontSee('Not Found');
         }
 
-        $this->get(route('prilike.show', $javna->slug))->assertStatus(200);
+        $this->get(route('prilike.show', $javna->slug))
+            ->assertStatus(200)
+            ->assertDontSee('Ta strana ne postoji ili prilika više nije otvorena.');
     }
 
     #[Test]

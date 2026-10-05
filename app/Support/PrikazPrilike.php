@@ -9,6 +9,8 @@ final class PrikazPrilike
 {
     public const NEMA_PRILIKA = 'Trenutno nema otvorenih prilika.';
 
+    public const NEMA_STRANE = 'Ta strana ne postoji ili prilika više nije otvorena.';
+
     public const ZVANICNI_IZVOR = 'Zvanični izvor: ';
 
     public const PROVERI_IZVOR = 'Pre prijave proveri podatke na zvaničnom izvoru.';
