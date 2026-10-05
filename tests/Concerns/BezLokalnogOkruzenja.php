@@ -10,11 +10,12 @@ trait BezLokalnogOkruzenja
     /** @var array<string, array{0: string|false, 1: mixed, 2: mixed}> */
     private array $okruzenjePre = [];
 
-    // Lokalni .env se ne učitava: test meri kod, ne podešavanje ove mašine. Zato ključ aplikacije stiže odavde.
+    // Umesto lokalnog .env učitava se prazan fajl: test meri kod, ne podešavanje ove mašine. Zato ključ aplikacije stiže odavde.
     public function createApplication()
     {
         $app = require Application::inferBasePath().'/bootstrap/app.php';
-        $app->loadEnvironmentFrom('.env.ne-postoji');
+        $app->useEnvironmentPath(__DIR__);
+        $app->loadEnvironmentFrom('prazno.env');
         $app->make(Kernel::class)->bootstrap();
         $app['config']->set('app.key', 'base64:'.base64_encode(str_repeat('t', 32)));
 
