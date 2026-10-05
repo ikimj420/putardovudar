@@ -18,7 +18,7 @@ class AdminJeNaSrpskomLatinicomTest extends AdminBazaTestCase
 
     private const ENGLESKI = [
         'Dashboard', 'Welcome', 'Sign out', 'Search', 'Create', 'Save changes', 'Cancel', 'Edit', 'New prilika',
-        'Sign in', 'Email address', 'Password', 'Remember me', 'Documentation',
+        'Sign in', 'Email address', 'Password', 'Remember me', 'Documentation', 'Skip to content', '1 result',
     ];
 
     // Jezik se zadaje ovde, da test ne zavisi od jezika u lokalnom .env.
@@ -72,14 +72,26 @@ class AdminJeNaSrpskomLatinicomTest extends AdminBazaTestCase
         }
     }
 
-    // Rupa: Filament nema srpski prevod za ova dva natpisa. Kad se zatvori, test pada i prepisuje se u suprotan smer.
+    // Filament nema srpski prevod za ova dva natpisa; nadjačani su u lang/vendor/.
     #[Test]
-    public function na_engleskom_ostaju_samo_dva_filamentova_natpisa_bez_prevoda(): void
+    public function dva_filamentova_natpisa_bez_prevoda_pisu_se_na_srpskom(): void
     {
-        $strane = $this->strane();
+        $tekst = $this->vidljivTekst($this->strane()['spisak']);
 
-        $this->assertStringContainsString('Skip to content', $this->vidljivTekst($strane['spisak']));
-        $this->assertStringContainsString('1 result', $this->vidljivTekst($strane['spisak']));
+        $this->assertStringContainsString('Preskoči na sadržaj', $tekst);
+        $this->assertStringContainsString('Pretraga 1 rezultat', $tekst);
+        $this->assertStringNotContainsString('Skip to content', $tekst);
+        $this->assertStringNotContainsString('1 result', $tekst);
+    }
+
+    // Ogledalo: broj rezultata se sklanja za nulu, jedan, dva i pet.
+    #[Test]
+    public function broj_rezultata_se_pise_za_nula_jedan_dva_i_pet(): void
+    {
+        $this->assertSame('Nema rezultata', trans_choice('filament-tables::table.result_count', 0, ['count' => 0]));
+        $this->assertSame('1 rezultat', trans_choice('filament-tables::table.result_count', 1, ['count' => 1]));
+        $this->assertSame('2 rezultata', trans_choice('filament-tables::table.result_count', 2, ['count' => 2]));
+        $this->assertSame('5 rezultata', trans_choice('filament-tables::table.result_count', 5, ['count' => 5]));
     }
 
     /** @return array<string, string> */
