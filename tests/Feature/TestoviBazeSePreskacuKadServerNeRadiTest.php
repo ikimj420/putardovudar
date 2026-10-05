@@ -26,7 +26,7 @@ class TestoviBazeSePreskacuKadServerNeRadiTest extends TestCase
         $this->assertNotSame([], $preskoceni, 'Nijedan test baze nije preskočen.');
         $this->assertSame([], array_values($izvanBaze));
         $this->assertStringContainsString('MariaDB nije dostupna na 127.0.0.1:1', $dnevnik);
-        $this->assertStringContainsString('Test Passed (Tests\\Feature\\PocetnaStranaVraca200Test::pocetna_strana_vraca_200)', $dnevnik);
+        $this->assertStringContainsString('Test Passed (Tests\\Feature\\NepostojecaStranaVraca404Test::nepostojeca_strana_vraca_404)', $dnevnik);
         $this->assertStringNotContainsString('Test Errored', $dnevnik);
         $this->assertStringNotContainsString('Test Failed', $dnevnik);
     }

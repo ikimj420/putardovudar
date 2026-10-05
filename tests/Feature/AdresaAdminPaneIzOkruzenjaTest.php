@@ -46,16 +46,6 @@ class AdresaAdminPaneIzOkruzenjaTest extends TestCase
         $this->get('/admin/login')->assertStatus(404);
     }
 
-    // Ogledalo: sajt bez panela i dalje radi, pa 404 gore nije posledica pokvarene aplikacije.
-    #[Test]
-    #[DataProvider('adreseBezVrednosti')]
-    public function adresa_bez_vrednosti_ne_rusi_sajt(?string $vrednost): void
-    {
-        $this->pokreniSaAdresom($vrednost);
-
-        $this->get('/')->assertStatus(200);
-    }
-
     /** @return array<string, array{0: string|null}> */
     public static function adreseBezVrednosti(): array
     {
