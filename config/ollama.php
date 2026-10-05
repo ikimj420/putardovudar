@@ -10,4 +10,7 @@ return [
     // Ollama podrazumevano čita samo 2-4 hiljade tokena i tiho odseče ostatak teksta.
     'kontekst' => 8192,
 
+    // Koliko znakova teksta strane ide modelu; više od toga ne staje u kontekst.
+    'najvise_znakova' => 12000,
+
 ];

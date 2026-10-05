@@ -24,19 +24,21 @@ class PrilikaUBaziTest extends BazaTestCase
     {
         $this->assertSame('putardovudar_test', DB::getDatabaseName());
         $this->assertTrue(DB::table('migrations')->where('migration', 'like', '%create_prilike_table')->exists());
+        $this->assertTrue(DB::table('migrations')->where('migration', 'like', '%add_obrada_nacrta_to_prilike_table')->exists());
 
         $kolone = array_column(Schema::getColumns('prilike'), 'name');
 
         $this->assertEqualsCanonicalizing([
             'id', 'naslov', 'slug', 'vrsta', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren',
             'mesto', 'online', 'naziv_izvora', 'link_izvora', 'created_at', 'updated_at',
+            'obradeno_at', 'objavio', 'razlog_objave', 'predlog',
         ], $kolone);
     }
 
     #[Test]
     public function rok_mesto_opis_i_izvor_mogu_da_budu_prazni_a_naslov_slug_vrsta_status_i_kratak_opis_ne_mogu(): void
     {
-        $mogu = ['opis', 'rok', 'mesto', 'naziv_izvora', 'link_izvora'];
+        $mogu = ['opis', 'rok', 'mesto', 'naziv_izvora', 'link_izvora', 'obradeno_at', 'objavio', 'razlog_objave', 'predlog'];
         $ne_mogu = ['naslov', 'slug', 'vrsta', 'status', 'kratak_opis', 'rok_stalno_otvoren', 'online'];
 
         $prazno = collect(Schema::getColumns('prilike'))->pluck('nullable', 'name');

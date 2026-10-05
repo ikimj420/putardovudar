@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\KoJeObjavio;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use Database\Factories\PrilikaFactory;
@@ -20,8 +21,11 @@ use Illuminate\Validation\ValidationException;
  * @property StatusPrilike $status
  * @property VrstaPrilike $vrsta
  * @property Carbon|null $rok
+ * @property KoJeObjavio|null $objavio
+ * @property Carbon|null $obradeno_at
+ * @property array<string, mixed>|null $predlog
  */
-#[Fillable(['naslov', 'slug', 'vrsta', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren', 'mesto', 'online', 'naziv_izvora', 'link_izvora'])]
+#[Fillable(['naslov', 'slug', 'vrsta', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren', 'mesto', 'online', 'naziv_izvora', 'link_izvora', 'obradeno_at', 'objavio', 'razlog_objave', 'predlog'])]
 class Prilika extends Model
 {
     /** @use HasFactory<PrilikaFactory> */
@@ -60,6 +64,9 @@ class Prilika extends Model
             'rok' => 'date',
             'rok_stalno_otvoren' => 'boolean',
             'online' => 'boolean',
+            'obradeno_at' => 'datetime',
+            'objavio' => KoJeObjavio::class,
+            'predlog' => 'array',
         ];
     }
 
@@ -82,6 +89,14 @@ class Prilika extends Model
         return $link !== ''
             && filter_var($link, FILTER_VALIDATE_URL) !== false
             && in_array(parse_url($link, PHP_URL_SCHEME), ['http', 'https'], true);
+    }
+
+    // Objava kroz model: pravilo o izvoru (saving) i dalje važi, a ko je objavio ostaje zapisano.
+    public function objavi(KoJeObjavio $ko): void
+    {
+        $this->status = StatusPrilike::Objavljeno;
+        $this->objavio = $ko;
+        $this->save();
     }
 
     // Isti naslov ne sme da završi sa istim slugom: drugi dobija -2, treći -3.

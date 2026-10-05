@@ -8,6 +8,17 @@ use Illuminate\Support\Facades\Http;
 // Jedino mesto u aplikaciji koje zove Ollamu. Adresa, model i vreme čekanja dolaze iz config/ollama.php.
 final class Ollama
 {
+    public function model(): string
+    {
+        return (string) config('ollama.model');
+    }
+
+    // Najviše znakova teksta koje šaljemo modelu; veći tekst ne staje u njegov kontekst.
+    public function najviseZnakova(): int
+    {
+        return (int) config('ollama.najvise_znakova');
+    }
+
     /**
      * Pita model uz kratko uputstvo i vraća njegov odgovor kao JSON objekat. Temperatura je 0.
      *
