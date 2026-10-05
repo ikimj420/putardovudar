@@ -1,5 +1,5 @@
 #!/bin/sh
-# Commit ne prolazi dok `composer provera` nije čist; nema zastavice koja ovo preskače.
+# Commit ne prolazi dok `composer provera` nije čist. Radi tek kad je core.hooksPath=.githooks, i git ga preskače sa --no-verify.
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
 command -v composer >/dev/null 2>&1 || { echo "Commit odbijen: composer nije u PATH-u, pa se provera ne može pustiti." >&2; exit 1; }
