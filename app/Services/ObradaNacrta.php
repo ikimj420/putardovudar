@@ -88,9 +88,16 @@ TEXT;
     {
         return is_bool($forma['vazi_pravilo'] ?? null)
             && is_string($forma['razlog'] ?? null)
-            && is_string($forma['vrsta'] ?? null)
-            && array_key_exists('rok', $forma) && (is_string($forma['rok']) || $forma['rok'] === null)
-            && is_string($forma['citat'] ?? null);
+            && $this->jeTekstIliNull($forma, 'vrsta')
+            && $this->jeTekstIliNull($forma, 'rok')
+            && $this->jeTekstIliNull($forma, 'citat');
+    }
+
+    // Kad pravilo ne važi, model vraća null za vrstu, rok i citat (izmereno u probi sa pravom Ollamom).
+    /** @param  array<string, mixed>  $forma */
+    private function jeTekstIliNull(array $forma, string $kljuc): bool
+    {
+        return array_key_exists($kljuc, $forma) && (is_string($forma[$kljuc]) || $forma[$kljuc] === null);
     }
 
     /**
@@ -104,7 +111,7 @@ TEXT;
             return 'pravilo za objavu ne važi';
         }
 
-        if (VrstaPrilike::tryFrom($forma['vrsta']) === null) {
+        if (! is_string($forma['vrsta']) || VrstaPrilike::tryFrom($forma['vrsta']) === null) {
             return 'vrsta nije sa spiska';
         }
 
@@ -114,7 +121,7 @@ TEXT;
             return 'nema ispravnog roka';
         }
 
-        $citat = TekstStrane::normalizuj($forma['citat']);
+        $citat = TekstStrane::normalizuj((string) $forma['citat']);
 
         if (! str_contains(TekstStrane::normalizuj($tekst), $citat) || ! DatumUTekstu::postoji($citat, $forma['rok'])) {
             return 'rok ne piše u tekstu strane';

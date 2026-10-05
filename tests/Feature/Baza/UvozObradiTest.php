@@ -249,6 +249,72 @@ class UvozObradiTest extends BazaTestCase
         $this->assertNull($nacrt->fresh()->obradeno_at);
     }
 
+    // Pravi model za stranu koja nije prilika vraća null za vrstu, rok i citat (proba, 05.10.2026.).
+    #[Test]
+    public function pravilo_ne_vazi_a_ostala_polja_su_null_ostaje_nacrt_i_obradjen_je(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => null])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo za objavu ne važi): Konkurs za stipendije');
+        $this->artisan('uvoz:obradi')->expectsOutput('Nema nacrta iz uvoza za obradu.');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertNotNull($prilika->obradeno_at);
+        $this->assertNull($prilika->predlog['vrsta']);
+        $this->assertSame('pravilo za objavu ne važi', $prilika->predlog['odbijeno']);
+        $this->assertSame(1, $this->pozivaOllame());
+    }
+
+    // Ogledalo: null tamo gde pravilo važi nije izgovor za objavu.
+    #[Test]
+    public function pravilo_vazi_a_vrsta_ili_citat_su_null_ostaje_nacrt(): void
+    {
+        $bezVrste = $this->nacrt(['naslov' => 'Bez vrste', 'link_izvora' => 'https://a.test/bez-vrste']);
+        $bezCitata = $this->nacrt(['naslov' => 'Bez citata', 'link_izvora' => 'https://a.test/bez-citata']);
+        Http::fake([
+            'https://a.test/bez-vrste' => $this->strana(),
+            'https://a.test/bez-citata' => $this->strana(),
+            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez vrste')
+                ? $this->ollama(['vrsta' => null])
+                : $this->ollama(['citat' => null]),
+        ]);
+
+        $this->artisan('uvoz:obradi')
+            ->expectsOutputToContain('ostaje nacrt (vrsta nije sa spiska): Bez vrste')
+            ->expectsOutputToContain('ostaje nacrt (rok ne piše u tekstu strane): Bez citata');
+
+        $this->assertSame(StatusPrilike::Nacrt, $bezVrste->fresh()->status);
+        $this->assertSame(StatusPrilike::Nacrt, $bezCitata->fresh()->status);
+    }
+
+    /** @return array<string, array{0: array<string, mixed>}> */
+    public static function neispravniOblici(): array
+    {
+        return [
+            'nema razloga' => [['vazi_pravilo' => true, 'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'citat' => 'x']],
+            'nema ključa vrste' => [['vazi_pravilo' => true, 'razlog' => 'x', 'rok' => '2026-10-20', 'citat' => 'x']],
+            'vrsta je broj' => [['vazi_pravilo' => true, 'razlog' => 'x', 'vrsta' => 5, 'rok' => null, 'citat' => '']],
+            'rok je broj' => [['vazi_pravilo' => true, 'razlog' => 'x', 'vrsta' => 'konkurs', 'rok' => 20261020, 'citat' => '']],
+            'pravilo je tekst' => [['vazi_pravilo' => 'da', 'razlog' => 'x', 'vrsta' => null, 'rok' => null, 'citat' => null]],
+        ];
+    }
+
+    /** @param  array<string, mixed>  $forma */
+    #[Test]
+    #[DataProvider('neispravniOblici')]
+    public function odgovor_neispravnog_oblika_se_ne_racuna_kao_obrada(array $forma): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma)]])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor Ollame nema tražena polja)');
+
+        $this->assertNull($nacrt->fresh()->obradeno_at);
+    }
+
     #[Test]
     public function cirilica_sa_strane_ide_modelu_i_proveri_kao_latinica(): void
     {
