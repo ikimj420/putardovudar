@@ -6,6 +6,8 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use Database\Factories\PrilikaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -44,6 +46,18 @@ class Prilika extends Model
             'rok_stalno_otvoren' => 'boolean',
             'online' => 'boolean',
         ];
+    }
+
+    // Jedino mesto gde se odlučuje šta je javno; „danas" je po zoni aplikacije (Europe/Belgrade).
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function javne(Builder $upit): void
+    {
+        $upit->where('status', StatusPrilike::Objavljeno)
+            ->where(fn (Builder $rok) => $rok
+                ->whereNull('rok')
+                ->orWhere('rok_stalno_otvoren', true)
+                ->orWhere('rok', '>=', today()->toDateString()));
     }
 
     // Isti naslov ne sme da završi sa istim slugom: drugi dobija -2, treći -3.
