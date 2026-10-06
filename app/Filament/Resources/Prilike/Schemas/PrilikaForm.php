@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Prilike\Schemas;
 
 use App\Enums\KoJeObjavio;
+use App\Enums\OsnovObjave;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
@@ -95,6 +96,10 @@ class PrilikaForm
                     ->dehydrated(false)
                     ->visible(fn (?Prilika $record): bool => filled($record?->razlog_objave))
                     ->columnSpanFull(),
+                self::predlog('citat_pravila', 'Citat pravila', dug: true)
+                    ->helperText('Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.')
+                    ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'citat_pravila')))
+                    ->columnSpanFull(),
                 Section::make('Predlog Ollame')
                     ->description('Ollama je predložila, ali kod nije prihvatio.')
                     ->schema([
@@ -102,6 +107,8 @@ class PrilikaForm
                         self::predlog('rok', 'Rok', fn (mixed $state): string => self::datumPredloga((string) $state)),
                         self::predlog('razlog', 'Razlog', dug: true),
                         self::predlog('citat', 'Citat iz teksta', dug: true),
+                        self::predlog('osnov', 'Osnov', fn (mixed $state): string => OsnovObjave::tryFrom((string) $state)?->getLabel() ?? (string) $state),
+                        self::predlog('citat_pravila', 'Citat pravila', dug: true),
                     ])
                     ->visible(fn (?Prilika $record): bool => $record?->status === StatusPrilike::Nacrt && filled($record->predlog))
                     ->columnSpanFull(),

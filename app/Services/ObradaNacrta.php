@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\KoJeObjavio;
+use App\Enums\OsnovObjave;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Services\Ollama\OdgovorNijeJson;
@@ -19,8 +20,10 @@ final class ObradaNacrta
 Proveravaš oglas za bazu prilika. Odgovaraj samo iz prosleđenog teksta, ništa ne dodaj iz sopstvenog znanja.
 Pravilo: Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna ljudima iz Srbije, ili ono što je namenjeno Romima.
 Rezultati konkursa, liste dobitnika, vesti i obaveštenja nisu prilika. Ako nije jasno, vazi_pravilo je false.
-Vrati samo JSON objekat sa ključevima:
-vazi_pravilo (true ili false),
+Vrati samo JSON objekat sa ključevima, tačno ovim redom:
+osnov (srbija ako tekst kaže da je prilika dostupna ljudima iz Srbije, romi ako kaže da je namenjena Romima, ili null),
+citat_pravila (tačan isečak iz teksta koji to kaže i sadrži reč Srbija ili Rom, ili prazan tekst),
+vazi_pravilo (true samo ako su osnov i citat_pravila popunjeni i tekst je prilika, a ne rezultat, lista ili vest; inače false),
 razlog (jedna rečenica na srpskom latinicom, zašto pravilo važi ili ne važi),
 vrsta (jedno od: posao, praksa, stipendija, konkurs, obuka, drugo),
 rok (poslednji dan za prijavu, oblika YYYY-MM-DD, ili null ako u tekstu ne piše),
@@ -54,6 +57,8 @@ TEXT;
             'rok' => $forma['rok'],
             'razlog' => $forma['razlog'],
             'citat' => $forma['citat'],
+            'osnov' => $forma['osnov'] ?? null,
+            'citat_pravila' => $forma['citat_pravila'] ?? null,
             'odbijeno' => $odbijeno,
             'model' => $this->ollama->model(),
         ];
@@ -100,6 +105,16 @@ TEXT;
         return array_key_exists($kljuc, $forma) && (is_string($forma[$kljuc]) || $forma[$kljuc] === null);
     }
 
+    // Model tvrdi koji deo pravila važi; objava traži citat koji doslovno piše na strani i sadrži reč tog osnova.
+    /** @param  array<string, mixed>  $forma */
+    private function pravilePotkrepljeno(array $forma, string $strana): bool
+    {
+        $osnov = is_string($forma['osnov'] ?? null) ? OsnovObjave::tryFrom($forma['osnov']) : null;
+        $citat = is_string($forma['citat_pravila'] ?? null) ? TekstStrane::normalizuj($forma['citat_pravila']) : '';
+
+        return $osnov !== null && str_contains($strana, $citat) && $osnov->potkrepljuje($citat);
+    }
+
     /**
      * Vraća razlog zbog kog nacrt ostaje nacrt, ili null kad je sve proverivo.
      *
@@ -109,6 +124,12 @@ TEXT;
     {
         if ($forma['vazi_pravilo'] !== true) {
             return 'pravilo za objavu ne važi';
+        }
+
+        $strana = TekstStrane::normalizuj($tekst);
+
+        if (! $this->pravilePotkrepljeno($forma, $strana)) {
+            return 'pravilo nije potkrepljeno citatom';
         }
 
         if (! is_string($forma['vrsta']) || VrstaPrilike::tryFrom($forma['vrsta']) === null) {
@@ -123,7 +144,7 @@ TEXT;
 
         $citat = TekstStrane::normalizuj((string) $forma['citat']);
 
-        if (! str_contains(TekstStrane::normalizuj($tekst), $citat) || ! DatumUTekstu::postoji($citat, $forma['rok'])) {
+        if (! str_contains($strana, $citat) || ! DatumUTekstu::postoji($citat, $forma['rok'])) {
             return 'rok ne piše u tekstu strane';
         }
 

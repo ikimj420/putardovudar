@@ -27,6 +27,9 @@ class UvozObradiTest extends BazaTestCase
 
     private const STRANA = 'https://a.test/oglas-1';
 
+    // Rečenica na strani koja dokazuje pravilo; lažni model je podrazumevano citira kao osnov „srbija".
+    private const PRAVILO_NA_STRANI = 'Konkurs je otvoren za sve građane Srbije';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -46,9 +49,9 @@ class UvozObradiTest extends BazaTestCase
         ], ...$dopuna]);
     }
 
-    private function strana(string $telo = '<html><body><h1>Konkurs</h1><p>Rok za prijavu je 20. oktobra 2026. godine.</p></body></html>'): mixed
+    private function strana(string $telo = '<html><body><h1>Konkurs</h1><p>Rok za prijavu je 20. oktobra 2026. godine.</p></body></html>', bool $saPravilom = true): mixed
     {
-        return Http::response($telo);
+        return Http::response($telo.($saPravilom ? '<p>'.self::PRAVILO_NA_STRANI.'.</p>' : ''));
     }
 
     /** @param  array<string, mixed>  $dopuna */
@@ -57,6 +60,7 @@ class UvozObradiTest extends BazaTestCase
         $forma = [...[
             'vazi_pravilo' => true, 'razlog' => 'Konkurs za stipendije otvoren za građane Srbije.', 'vrsta' => 'konkurs',
             'rok' => '2026-10-20', 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine',
+            'osnov' => 'srbija', 'citat_pravila' => self::PRAVILO_NA_STRANI,
         ], ...$dopuna];
 
         return Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]]);
@@ -156,6 +160,106 @@ class UvozObradiTest extends BazaTestCase
 
         $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
         $this->assertSame(VrstaPrilike::Drugo, $nacrt->fresh()->vrsta);
+    }
+
+    // Paket 12: pravilo se dokazuje citatom sa strane, kao rok.
+    #[Test]
+    public function objavljena_prilika_cuva_osnov_i_citat_pravila_koji_pisu_na_strani(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame('srbija', $prilika->predlog['osnov']);
+        $this->assertSame(self::PRAVILO_NA_STRANI, $prilika->predlog['citat_pravila']);
+        $this->assertNull($prilika->predlog['odbijeno']);
+    }
+
+    // Ogledalo: osnov „romi" sa citatom koji doslovno piše na strani i ima reč Rom takođe prolazi.
+    #[Test]
+    public function osnov_romi_sa_citatom_koji_ima_rec_rom_se_objavljuje(): void
+    {
+        $nacrt = $this->nacrt();
+        $citat = 'Konkurs je namenjen Romkinjama i Romima';
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['osnov' => 'romi', 'citat_pravila' => $citat])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame('romi', $nacrt->fresh()->predlog['osnov']);
+    }
+
+    /** @return array<string, array{0: array<string, mixed>}> */
+    public static function pravilaBezCitata(): array
+    {
+        return [
+            'izmišljen citat koga nema na strani' => [['citat_pravila' => 'Konkurs je otvoren za sve građane Srbije i regiona']],
+            'romi bez reči Rom u citatu' => [['osnov' => 'romi']],
+            'srbija bez reči Srbija u citatu' => [['citat_pravila' => 'Rok za prijavu je 20. oktobra 2026. godine']],
+            'roman nije Rom' => [['osnov' => 'romi', 'citat_pravila' => 'Objavljen je roman o životu mladih']],
+            'osnov van spiska' => [['osnov' => 'evropa']],
+            'osnov je null' => [['osnov' => null]],
+            'osnov je broj' => [['osnov' => 5]],
+            'prazan citat pravila' => [['citat_pravila' => '']],
+            'citat pravila je null' => [['citat_pravila' => null]],
+            'osnov i citat pravila su izostavljeni' => [['osnov' => '__izostavi__', 'citat_pravila' => '__izostavi__']],
+        ];
+    }
+
+    /** @param  array<string, mixed>  $dopuna */
+    #[Test]
+    #[DataProvider('pravilaBezCitata')]
+    public function pravilo_bez_citata_koji_ga_dokazuje_ostaje_nacrt(array $dopuna): void
+    {
+        $nacrt = $this->nacrt();
+        // Strana ima i rečenicu „Objavljen je roman o životu mladih" da citat o romanu doslovno postoji, a ipak ne prolazi.
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p>'), self::OLLAMA => $this->ollamaBezKljuceva($dopuna)]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom): Konkurs za stipendije');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertNull($prilika->objavio);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $prilika->predlog['odbijeno']);
+        $this->assertNotNull($prilika->obradeno_at);
+        $this->assertFalse(Prilika::javne()->whereKey($prilika->id)->exists());
+    }
+
+    // Provera pravila je prva posle „pravilo ne važi": nepotkrepljeno pravilo se prijavljuje i kad je i rok loš.
+    #[Test]
+    public function nepotkrepljeno_pravilo_se_prijavljuje_pre_greske_u_roku(): void
+    {
+        $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['citat_pravila' => 'Izmišljeno.', 'rok' => '2026-10-04'])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
+    }
+
+    // Ogledalo: potkrepljeno pravilo ne pere loš rok, pa i dalje važi „rok je prošao".
+    #[Test]
+    public function potkrepljeno_pravilo_ne_zamenjuje_proveru_roka(): void
+    {
+        $this->nacrt();
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 4. oktobra 2026. godine.</p>'), self::OLLAMA => $this->ollama(['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (rok je prošao)');
+    }
+
+    /** @param  array<string, mixed>  $dopuna */
+    private function ollamaBezKljuceva(array $dopuna): mixed
+    {
+        $izostavi = array_keys(array_filter($dopuna, fn (mixed $vrednost) => $vrednost === '__izostavi__'));
+        $forma = [...[
+            'vazi_pravilo' => true, 'razlog' => 'Konkurs.', 'vrsta' => 'konkurs', 'rok' => '2026-10-20',
+            'citat' => 'Rok za prijavu je 20. oktobra 2026. godine', 'osnov' => 'srbija', 'citat_pravila' => self::PRAVILO_NA_STRANI,
+        ], ...array_diff_key($dopuna, array_flip($izostavi))];
+
+        return Http::response(['message' => ['content' => json_encode(array_diff_key($forma, array_flip($izostavi)), JSON_UNESCAPED_UNICODE)]]);
     }
 
     #[Test]
@@ -319,7 +423,7 @@ class UvozObradiTest extends BazaTestCase
     public function cirilica_sa_strane_ide_modelu_i_proveri_kao_latinica(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Рок за пријаву је 20. октобра 2026. године.</p>'), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana('<p>Рок за пријаву је 20. октобра 2026. године.</p><p>Конкурс је отворен за све грађане Србије.</p>', saPravilom: false), self::OLLAMA => $this->ollama()]);
 
         $this->artisan('uvoz:obradi');
 
@@ -346,6 +450,10 @@ class UvozObradiTest extends BazaTestCase
             $poruke = $zahtev->data()['messages'];
 
             return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna ljudima iz Srbije, ili ono što je namenjeno Romima.')
+                && str_contains($poruke[0]['content'], 'osnov (srbija ako tekst kaže')
+                && str_contains($poruke[0]['content'], 'vazi_pravilo (true')
+                && strpos($poruke[0]['content'], 'osnov (srbija ako tekst kaže') < strpos($poruke[0]['content'], 'vazi_pravilo (true')
+                && str_contains($poruke[0]['content'], 'citat_pravila (tačan isečak iz teksta koji to kaže i sadrži reč Srbija ili Rom')
                 && str_contains($poruke[1]['content'], "Tekst strane:\n".str_repeat('Dugačak tekst. ', 3).'Du')
                 && ! str_contains($poruke[1]['content'], str_repeat('Dugačak tekst. ', 4));
         });

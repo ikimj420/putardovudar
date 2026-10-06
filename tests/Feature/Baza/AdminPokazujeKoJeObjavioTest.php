@@ -24,6 +24,8 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
 
     private const POMOC_PREDLOG = 'Ollama je predložila, ali kod nije prihvatio.';
 
+    private const POMOC_CITAT_PRAVILA = 'Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,7 +43,8 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     {
         return [...[
             'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'razlog' => 'Konkurs za stipendije.',
-            'citat' => 'Rok za prijavu je 20. oktobra 2026.', 'odbijeno' => 'rok je prošao', 'model' => 'qwen2.5:7b',
+            'citat' => 'Rok za prijavu je 20. oktobra 2026.', 'osnov' => 'romi', 'citat_pravila' => 'Konkurs je namenjen Romima.',
+            'odbijeno' => 'rok je prošao', 'model' => 'qwen2.5:7b',
         ], ...$dopuna];
     }
 
@@ -190,5 +193,86 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
             ->assertHasNoFormErrors();
 
         $this->assertNull(Prilika::query()->where('naslov', 'Nova')->sole()->objavio);
+    }
+
+    // Paket 12: na prilici koju je objavila Ollama piše citat koji dokazuje pravilo.
+    #[Test]
+    public function na_prilici_koju_je_objavila_ollama_pise_citat_pravila(): void
+    {
+        $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['odbijeno' => null])]);
+        $prilika->objavi(KoJeObjavio::Ollama);
+
+        $this->izmena($prilika)
+            ->assertFormFieldIsVisible('predlog.citat_pravila')
+            ->assertFormSet(['predlog.citat_pravila' => 'Konkurs je namenjen Romima.'])
+            ->assertFormFieldIsDisabled('predlog.citat_pravila')
+            ->assertSee(self::POMOC_CITAT_PRAVILA);
+    }
+
+    // Ogledalo: isti predlog na prilici koju je objavio Ivan ne pokazuje tuđi citat kao dokaz.
+    #[Test]
+    public function na_prilici_koju_je_objavio_ivan_ne_pise_citat_pravila(): void
+    {
+        $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog()]);
+        $prilika->objavi(KoJeObjavio::Covek);
+
+        $this->izmena($prilika)->assertFormFieldIsHidden('predlog.citat_pravila')->assertDontSee(self::POMOC_CITAT_PRAVILA)->assertDontSee('Citat pravila');
+    }
+
+    #[Test]
+    public function nacrt_pokazuje_osnov_i_citat_pravila_u_predlogu_ollame(): void
+    {
+        $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog()]);
+
+        $this->izmena($nacrt)
+            ->assertSee('Predlog Ollame')
+            ->assertSee('Citat pravila')
+            ->assertFormSet(['predlog.osnov' => 'Romi', 'predlog.citat_pravila' => 'Konkurs je namenjen Romima.'])
+            ->assertFormFieldIsDisabled('predlog.osnov')
+            ->assertDontSee(self::POMOC_CITAT_PRAVILA);
+
+        $srbija = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['osnov' => 'srbija'])]);
+
+        $this->izmena($srbija)->assertFormSet(['predlog.osnov' => 'Srbija']);
+    }
+
+    // Ogledalo: nacrt bez osnova i citata pravila (predlog iz ranije obrade) ne crta ta dva reda.
+    #[Test]
+    public function nacrt_bez_osnova_i_citata_pravila_ne_crta_ta_dva_reda(): void
+    {
+        $stari = $this->predlog();
+        unset($stari['osnov'], $stari['citat_pravila']);
+        $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $stari]);
+
+        $this->izmena($nacrt)
+            ->assertSee('Predlog Ollame')
+            ->assertFormFieldIsVisible('predlog.razlog')
+            ->assertFormFieldIsHidden('predlog.osnov')
+            ->assertFormFieldIsHidden('predlog.citat_pravila')
+            ->assertDontSee('Citat pravila');
+    }
+
+    // Greška iz paketa 10 T3: forma je pri snimanju nacrta upisivala prazan niz u predlog Ollame.
+    #[Test]
+    public function snimanje_nacrta_ne_brise_predlog_ollame(): void
+    {
+        $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog()]);
+
+        $this->izmena($nacrt)->fillForm(['naslov' => 'Novi naslov'])->call('save')->assertHasNoFormErrors();
+
+        $this->assertSame('Novi naslov', $nacrt->fresh()->naslov);
+        $this->assertSame($this->predlog(), $nacrt->fresh()->predlog);
+    }
+
+    // Ogledalo: nacrt bez predloga se i dalje snima, a predlog ostaje prazan.
+    #[Test]
+    public function snimanje_nacrta_bez_predloga_ostavlja_predlog_praznim(): void
+    {
+        $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt]);
+
+        $this->izmena($nacrt)->fillForm(['naslov' => 'Novi naslov'])->call('save')->assertHasNoFormErrors();
+
+        $this->assertSame('Novi naslov', $nacrt->fresh()->naslov);
+        $this->assertNull($nacrt->fresh()->predlog);
     }
 }
