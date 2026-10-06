@@ -15,13 +15,17 @@ final class PrikazPrilike
 
     public const PROVERI_IZVOR = 'Pre prijave proveri podatke na zvaničnom izvoru.';
 
+    public const BEZ_ROKA = 'Bez roka';
+
+    public const STALNO_OTVORENO = 'Prijave stalno otvorene';
+
     public static function rok(Prilika $prilika): string
     {
         if ($prilika->rok_stalno_otvoren) {
-            return 'Prijave stalno otvorene';
+            return self::STALNO_OTVORENO;
         }
 
-        return $prilika->rok === null ? 'Bez roka' : 'Rok: '.Prikaz::datum($prilika->rok);
+        return $prilika->rok === null ? self::BEZ_ROKA : 'Rok: '.Prikaz::datum($prilika->rok);
     }
 
     // „Online" ima prednost: polje Online znači da se sve radi preko interneta, pa mesto nije bitno.

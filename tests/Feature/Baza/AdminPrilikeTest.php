@@ -196,19 +196,28 @@ class AdminPrilikeTest extends AdminBazaTestCase
     }
 
     // Ogledalo: ista komponenta sa prijavljenim korisnikom radi.
-    // Ogledalo: isti spisak sa rokom i sa „stalno otvoren" crta te redove.
+    // Paket 11: Rok je uvek jedan red („Bez roka" kad roka nema, „Prijave stalno otvorene" ima prednost nad datumom,
+    // kao na sajtu); prazan Izvor ne crta red. Ogledalo: isti spisak sa izvorom i stalno otvorenim rokom crta oba.
     #[Test]
     public function prazna_vrednost_na_spisku_ne_crta_red(): void
     {
         $this->actingAs(User::factory()->create());
 
-        $prilika = Prilika::factory()->create(['rok' => null, 'rok_stalno_otvoren' => false]);
+        $prilika = Prilika::factory()->create(['rok' => null, 'rok_stalno_otvoren' => false, 'naziv_izvora' => null, 'link_izvora' => null]);
 
-        Livewire::test(ListPrilike::class)->assertSee($prilika->naslov)->assertDontSee('Rok');
+        Livewire::test(ListPrilike::class)
+            ->assertSee($prilika->naslov)
+            ->assertSee('Bez roka')
+            ->assertDontSeeHtml('>Izvor<')
+            ->assertDontSee('Prijave stalno otvorene');
 
-        $prilika->update(['rok' => '2026-10-05', 'rok_stalno_otvoren' => true]);
+        $prilika->update(['rok' => '2026-10-05', 'rok_stalno_otvoren' => true, 'naziv_izvora' => 'Fond za mlade talente']);
 
-        Livewire::test(ListPrilike::class)->assertSee('Rok')->assertSee('05.10.2026.')->assertSee('Rok stalno otvoren');
+        Livewire::test(ListPrilike::class)
+            ->assertSee('Prijave stalno otvorene')
+            ->assertSeeHtml('>Izvor<')
+            ->assertDontSee('Bez roka')
+            ->assertDontSee('Rok stalno otvoren');
     }
 
     #[Test]
