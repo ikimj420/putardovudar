@@ -2,6 +2,7 @@
 
 @section('sadrzaj')
     <h1>Prilike</h1>
+    <p class="pomocnik-link">{{ \App\Support\PrikazPomocnika::UVOD_LINKA }} <a href="{{ route('pomocnik.index') }}">{{ \App\Support\PrikazPomocnika::LINK_SA_POCETNE }}</a></p>
 
     @forelse ($prilike as $prilika)
         @if ($loop->first)

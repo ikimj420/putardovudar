@@ -193,3 +193,94 @@ a:focus-visible {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* Pomoćnik: isti izgled kartica kao spisak; telefon prvo */
+.pomocnik-link {
+  margin-bottom: 20px;
+  color: var(--prigusen);
+}
+
+.pomocnik-link a {
+  color: var(--plava);
+  font-weight: 700;
+}
+
+.uvod {
+  margin-bottom: 16px;
+  color: var(--prigusen);
+}
+
+.pitanje {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.pitanje label {
+  font-weight: 700;
+}
+
+.pitanje textarea {
+  width: 100%;
+  font: inherit;
+  padding: 12px;
+  border: 1px solid var(--granica);
+  border-radius: var(--polumer);
+  background: #fff;
+  color: var(--tekst);
+  resize: vertical;
+}
+
+.pitanje button {
+  align-self: stretch;
+  font: inherit;
+  font-weight: 900;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: var(--polumer);
+  background: var(--plava);
+  color: #fff;
+  cursor: pointer;
+}
+
+.greska {
+  color: #a4161a;
+  font-weight: 700;
+}
+
+.odgovor {
+  margin-bottom: 24px;
+}
+
+.naslov-izvora {
+  font-size: 22px;
+  margin-bottom: 12px;
+}
+
+.kartica h3 {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.kartica h3 a {
+  text-decoration: none;
+}
+
+.kartica h3 a:hover {
+  text-decoration: underline;
+}
+
+.spisak + .izvor-upozorenje {
+  margin-top: 16px;
+}
+
+@media (min-width: 720px) {
+  .pitanje {
+    max-width: 760px;
+  }
+
+  .pitanje button {
+    align-self: flex-start;
+  }
+}
