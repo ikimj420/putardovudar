@@ -1,0 +1,106 @@
+<?php
+
+namespace App\Services\Pomocnik;
+
+use App\Models\Prilika;
+use App\Support\DatumiUTekstu;
+use Illuminate\Support\Collection;
+
+// Odgovor modela važi samo ako ne sadrži datum ili link kog nema u zapisima; inače ga menja šablon iz zapisa.
+final class ProveraOdgovora
+{
+    public const NAJVISE_ZNAKOVA = 700;
+
+    private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
+
+    /**
+     * Vraća razlog odbijanja, ili null kad je odgovor proveren.
+     *
+     * @param  Collection<int, Prilika>  $zapisi
+     */
+    public function razlogOdbijanja(string $odgovor, Collection $zapisi): ?string
+    {
+        if (trim($odgovor) === '') {
+            return 'prazan odgovor';
+        }
+
+        if (mb_strlen($odgovor) > self::NAJVISE_ZNAKOVA) {
+            return 'predug odgovor';
+        }
+
+        if (! $this->datumiSuIzZapisa($odgovor, $zapisi)) {
+            return 'datum kog nema u zapisima';
+        }
+
+        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi)) {
+            return 'link kog nema u zapisima';
+        }
+
+        return null;
+    }
+
+    /** @param  Collection<int, Prilika>  $zapisi */
+    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi): bool
+    {
+        $dozvoljeni = [];
+
+        foreach ($zapisi as $prilika) {
+            if ($prilika->rok !== null) {
+                $dozvoljeni[] = ['dan' => $prilika->rok->day, 'mesec' => $prilika->rok->month, 'godina' => $prilika->rok->year];
+            }
+
+            array_push($dozvoljeni, ...DatumiUTekstu::izvuci($prilika->naslov.' '.$prilika->kratak_opis));
+        }
+
+        foreach (DatumiUTekstu::izvuci($odgovor) as $datum) {
+            $postoji = false;
+
+            foreach ($dozvoljeni as $dozvoljen) {
+                $postoji = $postoji || ($dozvoljen['dan'] === $datum['dan'] && $dozvoljen['mesec'] === $datum['mesec'] && ($datum['godina'] === null || $datum['godina'] === $dozvoljen['godina']));
+            }
+
+            if (! $postoji) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @param  Collection<int, Prilika>  $zapisi */
+    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi): bool
+    {
+        $dozvoljeni = [];
+
+        foreach ($zapisi as $prilika) {
+            foreach ([$prilika->link_izvora, route('prilike.show', $prilika->slug)] as $adresa) {
+                $dozvoljeni[] = $this->normalizuj((string) $adresa);
+                $dozvoljeni[] = $this->domen((string) $adresa);
+            }
+        }
+
+        preg_match_all(self::DOMEN, $odgovor, $nadjeni);
+
+        foreach ($nadjeni[0] as $link) {
+            if (! in_array($this->normalizuj($link), $dozvoljeni, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function normalizuj(string $adresa): string
+    {
+        $adresa = mb_strtolower(trim($adresa));
+        $adresa = preg_replace('~^https?://~', '', $adresa) ?? '';
+        $adresa = preg_replace('~^www\.~', '', $adresa) ?? '';
+
+        return rtrim($adresa, '/.,;:!?');
+    }
+
+    private function domen(string $adresa): string
+    {
+        return explode('/', $this->normalizuj($adresa))[0];
+    }
+}

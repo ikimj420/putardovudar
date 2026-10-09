@@ -26,13 +26,33 @@ final class Ollama
      */
     public function odgovoriJsonom(string $uputstvo, string $tekst): array
     {
+        $sadrzaj = $this->pozovi($uputstvo, $tekst, true);
+        $niz = is_string($sadrzaj) ? json_decode($sadrzaj, true) : null;
+
+        if (! is_array($niz) || array_is_list($niz) && $niz !== []) {
+            throw new OdgovorNijeJson('Odgovor Ollame nije JSON objekat');
+        }
+
+        return $niz;
+    }
+
+    // Drugi posao klase: slobodan tekst. Prazan odgovor se vraća kao prazan tekst, a proveru radi pozivalac.
+    public function odgovoriTekstom(string $uputstvo, string $tekst): string
+    {
+        $sadrzaj = $this->pozovi($uputstvo, $tekst, false);
+
+        return is_string($sadrzaj) ? trim($sadrzaj) : '';
+    }
+
+    private function pozovi(string $uputstvo, string $tekst, bool $kaoJson): mixed
+    {
         try {
             $odgovor = Http::timeout(config('ollama.vreme_cekanja'))
                 ->acceptJson()
                 ->post(rtrim((string) config('ollama.adresa'), '/').'/api/chat', [
                     'model' => config('ollama.model'),
                     'stream' => false,
-                    'format' => 'json',
+                    ...($kaoJson ? ['format' => 'json'] : []),
                     'options' => ['temperature' => 0, 'num_ctx' => config('ollama.kontekst')],
                     'messages' => [
                         ['role' => 'system', 'content' => $uputstvo],
@@ -47,13 +67,6 @@ final class Ollama
             throw new OllamaNedostupna('Ollama je odgovorila sa HTTP '.$odgovor->status());
         }
 
-        $sadrzaj = $odgovor->json('message.content');
-        $niz = is_string($sadrzaj) ? json_decode($sadrzaj, true) : null;
-
-        if (! is_array($niz) || array_is_list($niz) && $niz !== []) {
-            throw new OdgovorNijeJson('Odgovor Ollame nije JSON objekat');
-        }
-
-        return $niz;
+        return $odgovor->json('message.content');
     }
 }

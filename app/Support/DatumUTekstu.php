@@ -5,7 +5,7 @@ namespace App\Support;
 // Proverava da li datum doslovno piše u tekstu, u nekom od uobičajenih oblika. Godina mora da piše.
 final class DatumUTekstu
 {
-    private const MESECI = [
+    public const MESECI = [
         1 => 'januar|januara', 2 => 'februar|februara', 3 => 'mart|marta', 4 => 'april|aprila', 5 => 'maj|maja', 6 => 'jun|juna',
         7 => 'jul|jula', 8 => 'avgust|avgusta', 9 => 'septembar|septembra', 10 => 'oktobar|oktobra', 11 => 'novembar|novembra', 12 => 'decembar|decembra',
     ];

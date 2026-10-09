@@ -115,4 +115,50 @@ class OllamaPozivTest extends TestCase
         $this->expectException(OdgovorNijeJson::class);
         (new Ollama)->odgovoriJsonom('U', 'T');
     }
+
+    #[Test]
+    public function odgovori_tekstom_salje_isti_poziv_bez_json_formata_i_vraca_tekst(): void
+    {
+        Http::fake(['http://127.0.0.1:11434/api/chat' => $this->odgovor("  Ima jedna prilika.\n")]);
+
+        $tekst = (new Ollama)->odgovoriTekstom('Uputstvo.', 'Zapisi.');
+
+        $this->assertSame('Ima jedna prilika.', $tekst);
+
+        Http::assertSent(function (Request $zahtev) {
+            $telo = $zahtev->data();
+
+            return $zahtev->url() === 'http://127.0.0.1:11434/api/chat'
+                && $telo['model'] === 'qwen2.5:7b'
+                && $telo['stream'] === false
+                && ! array_key_exists('format', $telo)
+                && $telo['options']['temperature'] === 0
+                && $telo['messages'] === [['role' => 'system', 'content' => 'Uputstvo.'], ['role' => 'user', 'content' => 'Zapisi.']];
+        });
+    }
+
+    // Ogledalo: JSON posao i dalje traži format json.
+    #[Test]
+    public function odgovori_jsonom_i_dalje_trazi_format_json(): void
+    {
+        Http::fake(['http://127.0.0.1:11434/api/chat' => $this->odgovor('{"a": 1}')]);
+
+        (new Ollama)->odgovoriJsonom('U.', 'T.');
+
+        Http::assertSent(fn (Request $zahtev) => $zahtev->data()['format'] === 'json');
+    }
+
+    #[Test]
+    public function odgovori_tekstom_prazan_odgovor_je_prazan_tekst_a_nedostupna_ollama_izuzetak(): void
+    {
+        Http::fake(['http://127.0.0.1:11434/api/chat' => Http::response(['message' => []])]);
+
+        $this->assertSame('', (new Ollama)->odgovoriTekstom('U.', 'T.'));
+
+        Http::fake(['http://127.0.0.1:11434/api/chat' => fn () => throw new ConnectionException('nema veze')]);
+
+        $this->expectException(OllamaNedostupna::class);
+
+        (new Ollama)->odgovoriTekstom('U.', 'T.');
+    }
 }
