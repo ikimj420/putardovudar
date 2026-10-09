@@ -1,0 +1,54 @@
+{
+  "_napomena": "SNIMAK NIJE PRAVI ODGOVOR JOOBLE-A: sastavljen po dokumentaciji (help.jooble.org, „REST API documentation“, polja totalCount i jobs[id, title, location, snippet, salary, source, type, link, company, updated]). Prava proba ostaje za Ivana kad stavi ključ.",
+  "totalCount": 4,
+  "jobs": [
+    {
+      "id": 1100000000000001,
+      "title": "Radnik u skladištu",
+      "location": "Niš",
+      "snippet": "Tražimo radnika za rad u &nbsp;<b>skladištu</b>, puno radno vreme i smene &amp; prevoz.",
+      "salary": "60 000 - 80 000 RSD",
+      "source": "primer-izvor.rs",
+      "type": "Full-time",
+      "link": "https://rs.jooble.org/desc/1100000000000001",
+      "company": "Primer d.o.o.",
+      "updated": "2026-10-08T09:15:00.0000000"
+    },
+    {
+      "id": 1100000000000002,
+      "title": "Продавац у радњи",
+      "location": "Београд",
+      "snippet": "Рад у <b>малопродаји</b> и на каси.",
+      "salary": "",
+      "source": "primer-izvor.rs",
+      "type": "Part-time",
+      "link": "https://rs.jooble.org/desc/1100000000000002",
+      "company": "Радња д.о.о.",
+      "updated": "2026-10-07T12:00:00.0000000"
+    },
+    {
+      "id": 1100000000000003,
+      "title": "Radnik u skladištu (isti oglas, drugi id)",
+      "location": "Niš",
+      "snippet": "Ponovljen oglas sa istim linkom.",
+      "salary": "",
+      "source": "primer-izvor.rs",
+      "type": "",
+      "link": "https://rs.jooble.org/desc/1100000000000001",
+      "company": "Primer d.o.o.",
+      "updated": "2026-10-08T09:20:00.0000000"
+    },
+    {
+      "id": 1100000000000004,
+      "title": "Oglas bez ispravnog linka",
+      "location": "Novi Sad",
+      "snippet": "Link nije adresa.",
+      "salary": "",
+      "source": "primer-izvor.rs",
+      "type": "",
+      "link": "javascript:alert(1)",
+      "company": "Primer d.o.o.",
+      "updated": "2026-10-06T08:00:00.0000000"
+    }
+  ]
+}

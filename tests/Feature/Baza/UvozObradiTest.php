@@ -162,6 +162,20 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(VrstaPrilike::Drugo, $nacrt->fresh()->vrsta);
     }
 
+    // Paket 17: nacrti iz Jooble-a se obrađuju istom komandom; nacrt sa nepoznatog izvora i dalje ne.
+    #[Test]
+    public function nacrt_iz_jooble_a_se_obradjuje_a_sa_nepoznatog_izvora_ne(): void
+    {
+        $jooble = $this->nacrt(['naslov' => 'Posao sa Jooble-a', 'naziv_izvora' => 'Jooble', 'link_izvora' => 'https://rs.jooble.org/desc/1']);
+        $nepoznat = $this->nacrt(['naslov' => 'Nepoznat izvor', 'naziv_izvora' => 'Neki drugi izvor', 'link_izvora' => 'https://rs.jooble.org/desc/2']);
+        Http::fake(['https://rs.jooble.org/desc/1' => $this->strana(), self::OLLAMA => $this->ollama()]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('Posao sa Jooble-a');
+
+        $this->assertNotNull($jooble->fresh()->obradeno_at);
+        $this->assertNull($nepoznat->fresh()->obradeno_at);
+    }
+
     // Paket 12: pravilo se dokazuje citatom sa strane, kao rok.
     #[Test]
     public function objavljena_prilika_cuva_osnov_i_citat_pravila_koji_pisu_na_strani(): void

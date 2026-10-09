@@ -83,4 +83,38 @@ class UvozDnevnoTest extends BazaTestCase
         $this->assertNotFalse($prvaOllama);
         $this->assertLessThan($prvaOllama, $feed);
     }
+
+    // Paket 17: Jooble ide između RSS-a i obrade, a bez ključa se preskače bez zahteva.
+    #[Test]
+    public function jooble_ide_posle_rss_a_a_pre_obrade_kad_ima_kljuca(): void
+    {
+        config()->set('jooble.kljuc', 'PROBNI-KLJUC-123');
+        Http::fake(function (Request $zahtev) {
+            return match (true) {
+                $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml'))),
+                $zahtev->url() === 'https://jooble.org/api/PROBNI-KLJUC-123' => Http::response(['jobs' => [['title' => 'Posao sa Jooble-a', 'snippet' => 'Opis', 'link' => 'https://rs.jooble.org/desc/9']]]),
+                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'osnov' => null, 'citat_pravila' => ''])]]),
+                default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
+            };
+        });
+
+        $this->artisan('uvoz:dnevno')->expectsOutputToContain('→ uvoz:jooble')->assertExitCode(0);
+
+        $adrese = Http::recorded()->map(fn (array $par) => $par[0]->url())->values()->all();
+
+        $this->assertLessThan((int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true), (int) array_search(self::FEED, $adrese, true));
+        $this->assertLessThan((int) array_search(self::OLLAMA, $adrese, true), (int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true));
+        $this->assertSame(4, Prilika::query()->count());
+        $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
+    }
+
+    #[Test]
+    public function bez_kljuca_dnevni_posao_ne_zove_jooble_i_ne_pada(): void
+    {
+        $this->internet();
+
+        $this->artisan('uvoz:dnevno')->expectsOutput('Jooble: preskočeno, JOOBLE_KLJUC nije podešen.')->assertExitCode(0);
+
+        Http::assertNotSent(fn (Request $zahtev) => str_contains($zahtev->url(), 'jooble'));
+    }
 }

@@ -18,13 +18,13 @@ class UvozObradi extends Command
 
     public function handle(ObradaNacrta $obrada): int
     {
-        // Nacrt iz uvoza je onaj koji uvoz ostavlja netaknut: vrsta „Drugo", bez roka, naziv izvora iz config/uvoz.php.
+        // Nacrt iz uvoza je onaj koji uvoz ostavlja netaknut: vrsta „Drugo", bez roka, naziv izvora iz config/uvoz.php ili Jooble.
         $nacrti = Prilika::query()
             ->where('status', StatusPrilike::Nacrt)
             ->where('vrsta', VrstaPrilike::Drugo)
             ->whereNull('rok')
             ->whereNull('obradeno_at')
-            ->whereIn('naziv_izvora', array_column(config('uvoz.izvori'), 'ime'))
+            ->whereIn('naziv_izvora', [...array_column(config('uvoz.izvori'), 'ime'), config('jooble.ime')])
             ->orderBy('id')
             ->get();
 
