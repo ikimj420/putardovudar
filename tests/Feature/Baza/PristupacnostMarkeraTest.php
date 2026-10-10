@@ -120,9 +120,15 @@ class PristupacnostMarkeraTest extends BazaTestCase
     {
         $prilika = Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu']);
 
+        // Jezik strane je jezik aplikacije (sr_Latn → sr-Latn); ogledalo: sa drugim jezikom piše drugi.
+        config(['app.locale' => 'sr_Latn']);
+        app()->setLocale('sr_Latn');
         $html = $this->get(route('prilike.show', $prilika->slug))->getContent();
 
-        $this->assertMatchesRegularExpression('#<html lang="[a-z]{2}(?:-[A-Za-z]+)?">#', $html);
+        $this->assertStringContainsString('<html lang="sr-Latn">', $html);
         $this->assertStringContainsString('<title>Radnik u skladištu - ', $html);
+
+        app()->setLocale('en');
+        $this->assertStringContainsString('<html lang="en">', $this->get(route('prilike.show', $prilika->slug))->getContent());
     }
 }

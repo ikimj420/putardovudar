@@ -1,6 +1,6 @@
 /* Javne strane. Boje, font i oblik kartica su iz prototipa u nasleđu; običan CSS, bez build koraka. */
 :root {
-  /* Boje, zaobljenje i senka iz prototipa (Dokumentacija/NASLEDJE/dizajn/prototip/app.css:16-39); nazivi su prototipski. */
+  /* Boje, zaobljenje i senka iz prototipa (Dokumentacija/NASLEDJE/dizajn/prototip/app.css, promenljive na početku); nazivi su prototipski. */
   --page: #eef5f1;
   --soft: #f4f6f3;
   --soft-2: #e7eee9;
@@ -37,6 +37,9 @@
 
   /* Tamnija plava za tekst i brojeve: prototipska --blue-hover (3,8 : 1) ne ispunjava WCAG AA (4,5 : 1) na svetloj pozadini. */
   --blue-text: #2563b8;
+
+  /* Okvir polja mora da se razlikuje od pozadine bar 3 : 1 (WCAG 1.4.11); prototipska --border je oko 1,3 : 1. */
+  --input-border: #6f7a76;
 }
 
 * {
@@ -55,6 +58,17 @@ body {
 
 a {
   color: inherit;
+}
+
+/* Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu: 57 px sa skriptom i na laptopu, 101 px bez skripta na telefonu, uz 16 px. */
+html {
+  scroll-padding-top: 73px;
+}
+
+@media (max-width: 1000px) {
+  html:not(.js) {
+    scroll-padding-top: 117px;
+  }
 }
 
 /* Vidljiv fokus na svemu što se fokusira, ne samo na vezama. */
@@ -150,7 +164,7 @@ a {
 }
 
 .meni-sredina a:hover {
-  color: var(--blue-hover);
+  color: var(--blue-text);
 }
 
 /* „Pomoćnik": pilula sa prelivom po ivici, kao u prototipu */
@@ -396,12 +410,22 @@ h1.prazno {
   color: var(--dark);
 }
 
-/* Oznake i podaci u pilulama */
+/* Oznake i podaci u pilulama; na telefonu jedan podatak po redu (pravilo ekrana), od 720 px jedna do druge. */
 .oznake,
 .meta {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
+}
+
+@media (min-width: 720px) {
+  .oznake,
+  .meta {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
 }
 
 .naslovna-traka .oznake {
@@ -719,7 +743,7 @@ h1.prazno {
   width: 100%;
   font: inherit;
   padding: 14px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--input-border);
   border-radius: var(--radius);
   background: var(--input-bg);
   color: var(--input-text);

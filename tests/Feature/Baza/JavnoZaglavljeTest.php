@@ -8,11 +8,12 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Concerns\StilJavnihStrana;
 
 #[Group('baza')]
 class JavnoZaglavljeTest extends BazaTestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, StilJavnihStrana;
 
     #[Test]
     public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_meni_prilike_vodici_organizacije_pomocnik(): void
@@ -66,6 +67,22 @@ class JavnoZaglavljeTest extends BazaTestCase
         $this->assertFileExists(public_path('js/javno.js'));
     }
 
+    // Ploča menija se zatvara na dugme, na vezu u njoj, na Escape i kad fokus ili dodir izađe iz zaglavlja (inače Tab posle
+    // poslednje veze završi ispod ploče). Ponašanje je izmereno u pregledaču (izveštaj paketa 35), ovde je zaključano ono što ga pravi.
+    #[Test]
+    public function skript_menija_zatvara_plocu_na_dugme_vezu_escape_i_izlazak_iz_zaglavlja(): void
+    {
+        $skript = (string) file_get_contents(public_path('js/javno.js'));
+
+        $this->assertStringContainsString("dugme.addEventListener('click'", $skript);
+        $this->assertStringContainsString("meni.addEventListener('click'", $skript);
+        $this->assertStringContainsString("dogadjaj.key === 'Escape'", $skript);
+        $this->assertStringContainsString("document.addEventListener('focusin', izvanZaglavlja);", $skript);
+        $this->assertStringContainsString("document.addEventListener('click', izvanZaglavlja);", $skript);
+        $this->assertStringContainsString('!zaglavlje.contains(dogadjaj.target)', $skript);
+        $this->assertStringContainsString("dugme.setAttribute('aria-expanded'", $skript);
+    }
+
     // Bez spoljnih adresa: stil, skript i slike dolaze sa našeg sajta; stil i skript ne zovu nijednu spoljnu adresu.
     #[Test]
     public function javne_strane_ne_zovu_spoljne_adrese(): void
@@ -91,11 +108,11 @@ class JavnoZaglavljeTest extends BazaTestCase
         }
     }
 
-    // Boje, zaobljenje i senka su iz prototipa (app.css:16-39), pod prototipskim nazivima; stari nazivi ne postoje.
+    // Boje, zaobljenje i senka su iz prototipa (promenljive na početku njegovog app.css), pod prototipskim nazivima; stari nazivi ne postoje.
     #[Test]
     public function stil_nosi_prototipske_boje_pod_prototipskim_nazivima(): void
     {
-        $stil = (string) file_get_contents(public_path('css/javno.css'));
+        $stil = $this->stilBezUpita();
         $prototip = [
             'page' => '#eef5f1', 'soft' => '#f4f6f3', 'soft-2' => '#e7eee9', 'text' => '#071012', 'muted' => '#59635f', 'dark' => '#071012',
             'blue' => '#4d98ee', 'blue-hover' => '#347ed3', 'green' => '#55d8b2', 'green-hover' => '#3fc49e', 'red' => '#ff4a4a', 'red-hover' => '#e73939',

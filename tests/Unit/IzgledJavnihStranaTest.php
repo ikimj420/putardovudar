@@ -14,7 +14,7 @@ class IzgledJavnihStranaTest extends TestCase
         $stil = $this->klaseIzStila((string) file_get_contents($korenski.'/public/css/javno.css'));
         $koriscene = [];
 
-        foreach (glob($korenski.'/resources/views/javno/*.blade.php') ?: [] as $pogled) {
+        foreach ([...(glob($korenski.'/resources/views/javno/*.blade.php') ?: []), ...(glob($korenski.'/resources/views/errors/*.blade.php') ?: [])] as $pogled) {
             $koriscene += array_fill_keys($this->klaseIzPogleda((string) file_get_contents($pogled)), $pogled);
         }
 
@@ -29,6 +29,9 @@ class IzgledJavnihStranaTest extends TestCase
     public function merilo_prepoznaje_klase_u_pogledu_i_u_stilu(): void
     {
         $this->assertSame(['kartica', 'red'], $this->klaseIzPogleda('<article class="kartica"><p class="red">x</p></article>'));
+        // Klase koje se biraju u izrazu ({{ }}) važe isto kao pisane: filter „aktivno" i bočna kolona.
+        $this->assertSame(['filter-pilula', 'aktivno'], $this->klaseIzPogleda('<a class="filter-pilula{{ $a ? \' aktivno\' : \'\' }}">x</a>'));
+        $this->assertSame(['detalj', 'sa-bocnim'], $this->klaseIzPogleda('<div class="{{ $a ? \'detalj sa-bocnim\' : \'detalj\' }}">x</div>'));
         $this->assertSame(['kartica', 'red'], $this->klaseIzStila('.kartica h2 { } /* .komentar */ .red:hover { }'));
     }
 
@@ -46,9 +49,18 @@ class IzgledJavnihStranaTest extends TestCase
     /** @return list<string> */
     private function klaseIzPogleda(string $pogled): array
     {
-        preg_match_all('/\bclass="([^"{]+)"/', $pogled, $nalazi);
+        preg_match_all('/\bclass="([^"]*)"/', $pogled, $nalazi);
+        $klase = [];
 
-        return array_values(array_unique(preg_split('/\s+/', trim(implode(' ', $nalazi[1]))) ?: []));
+        foreach ($nalazi[1] as $vrednost) {
+            // Pisane klase su van {{ }}; one koje izraz bira stoje u njemu kao tekst pod navodnicima.
+            $klase[] = (string) preg_replace('/\{\{.*?\}\}/s', ' ', $vrednost);
+            preg_match_all('/\{\{(.*?)\}\}/s', $vrednost, $izrazi);
+            preg_match_all("/'\s*([a-z][a-z0-9 _-]*)'/", implode(' ', $izrazi[1]), $literali);
+            $klase = [...$klase, ...$literali[1]];
+        }
+
+        return array_values(array_unique(preg_split('/\s+/', trim(implode(' ', $klase))) ?: []));
     }
 
     /** @return list<string> */

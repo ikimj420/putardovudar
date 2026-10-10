@@ -113,6 +113,21 @@ class FilterPrilikaPoVrstiTest extends BazaTestCase
         }
     }
 
+    // Nejavna prilika iste vrste kao javna ne sme da uđe u filtrirani spisak (kroz Prilika::javne(), ne kroz sve prilike).
+    #[Test]
+    public function filtrirani_spisak_ne_pokazuje_nacrt_arhivirano_i_isteklo_iste_vrste(): void
+    {
+        Prilika::factory()->objavljena()->create(['naslov' => 'Javna posao', 'vrsta' => VrstaPrilike::Posao, 'rok' => '2026-12-15']);
+        Prilika::factory()->create(['naslov' => 'Nacrt posao', 'vrsta' => VrstaPrilike::Posao, 'status' => StatusPrilike::Nacrt, 'rok' => '2026-12-15']);
+        Prilika::factory()->arhivirana()->create(['naslov' => 'Arhivirana posao', 'vrsta' => VrstaPrilike::Posao, 'rok' => '2026-12-15']);
+        Prilika::factory()->objavljena()->create(['naslov' => 'Istekla posao', 'vrsta' => VrstaPrilike::Posao, 'rok' => '2026-10-01']);
+
+        $this->assertSame(['Javna posao'], $this->naslovi($this->get(route('prilike.index', ['vrsta' => 'posao']))->assertOk()->getContent()));
+
+        // Ogledalo: baza ima četiri prilike te vrste, a javna je samo jedna, pa test nije prošao nad praznim skupom.
+        $this->assertSame(4, Prilika::query()->where('vrsta', VrstaPrilike::Posao)->count());
+    }
+
     // Dugme postoji samo za vrstu koja ima bar jednu javnu priliku; nacrt, arhivirano i isteklo ne računaju.
     #[Test]
     public function vrsta_bez_javne_prilike_nema_dugme_a_nacrt_arhivirano_i_isteklo_ne_ulaze(): void

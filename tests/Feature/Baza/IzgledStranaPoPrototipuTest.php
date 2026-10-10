@@ -11,9 +11,11 @@ use App\Support\PrikazPomocnika;
 use App\Support\PrikazVodica;
 use App\Support\PrikazZaglavlja;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Concerns\StilJavnihStrana;
 use Tests\Concerns\VidljivTekst;
 
 // Paket 33: strane po prototipu. Tekstovi su isti kao ranije (to proveravaju postojeći testovi); ovde je struktura:
@@ -21,7 +23,7 @@ use Tests\Concerns\VidljivTekst;
 #[Group('baza')]
 class IzgledStranaPoPrototipuTest extends BazaTestCase
 {
-    use RefreshDatabase, VidljivTekst;
+    use RefreshDatabase, StilJavnihStrana, VidljivTekst;
 
     /** @return array<string, string> ime strane => adresa, uz po jedan zapis svake vrste */
     private function adrese(): array
@@ -96,12 +98,15 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
     #[Test]
     public function kartice_zadrzavaju_redosled_u_kodu_a_stil_ih_slaze_kao_u_prototipu(): void
     {
+        // Rok od 15.12.2026. mora da ostane budući, inače prilika nestaje sa spiska.
+        $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
+
         Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'mesto' => 'Niš', 'kratak_opis' => 'Puno radno vreme.', 'rok' => '2026-12-15']);
         $html = $this->get(route('prilike.index'))->getContent();
 
         $this->assertMatchesRegularExpression('#<article class="kartica redosled">\s*<h2><a [^>]*>Radnik u skladištu</a></h2>\s*<div class="oznake"><span class="oznaka">[^<]+</span></div>\s*<div class="meta">\s*<span class="meta-stavka">Rok: 15\.12\.2026\.</span>\s*<span class="meta-stavka">Niš</span>\s*</div>\s*<p class="kratko">Puno radno vreme\.</p>#s', $html);
 
-        $stil = (string) file_get_contents(public_path('css/javno.css'));
+        $stil = $this->stilBezUpita();
 
         foreach (['.redosled .oznake' => 1, '.redosled h2' => 2, '.redosled .kratko' => 3, '.redosled .meta' => 4] as $izbor => $redosled) {
             $this->assertMatchesRegularExpression('/'.preg_quote($izbor, '/').' \{\s*order: '.$redosled.';/', $stil, $izbor);
@@ -138,6 +143,26 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
         $this->assertStringContainsString('class="izvor-upozorenje"', $this->get(route('prilike.show', $sve->slug))->getContent());
         $this->assertStringContainsString('class="sadrzaj-opis"', $this->get(route('prilike.show', $sve->slug))->getContent());
         $this->assertStringNotContainsString('class="sadrzaj-opis"', $this->get(route('prilike.show', $bezOpisa->slug))->getContent());
+
+        // Druga polovina uslova: opis bez izvora (masovni upit zaobilazi pravilo objave) takođe nema bočnu kolonu.
+        $bezIzvora = Prilika::factory()->objavljena()->create(['opis' => 'Opis.', 'naziv_izvora' => 'Izvor', 'link_izvora' => 'https://primer.rs/c']);
+        Prilika::query()->whereKey($bezIzvora->getKey())->update(['naziv_izvora' => null, 'link_izvora' => null]);
+
+        $this->assertStringContainsString('<div class="detalj">', $this->get(route('prilike.show', $bezIzvora->slug))->getContent());
+        $this->assertStringNotContainsString('sa-bocnim', $this->get(route('prilike.show', $bezIzvora->slug))->getContent());
+    }
+
+    // Strana organizacije: bočna kolona sa sajtom samo kad je sajt ispravna adresa; inače jedna kolona.
+    #[Test]
+    public function bocna_kolona_organizacije_postoji_samo_uz_ispravan_sajt(): void
+    {
+        $saSajtom = Organizacija::factory()->objavljena()->create(['sajt' => 'https://primer.rs/']);
+        $bezSajta = Organizacija::factory()->objavljena()->create();
+        Organizacija::query()->whereKey($bezSajta->getKey())->update(['sajt' => 'javascript:alert(1)']);
+
+        $this->assertStringContainsString('<div class="detalj sa-bocnim">', $this->get(route('organizacije.show', $saSajtom->slug))->getContent());
+        $this->assertStringContainsString('<div class="detalj">', $this->get(route('organizacije.show', $bezSajta->slug))->getContent());
+        $this->assertStringNotContainsString('sa-bocnim', $this->get(route('organizacije.show', $bezSajta->slug))->getContent());
     }
 
     // Nacrt vodiča i organizacije nema ni strane ni naslovne trake; spisak ih ne pokazuje.
@@ -155,7 +180,7 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
     #[Test]
     public function stil_nosi_prototipske_vrednosti_naslova_pilula_i_dugmeta(): void
     {
-        $stil = (string) file_get_contents(public_path('css/javno.css'));
+        $stil = $this->stilBezUpita();
 
         $this->assertMatchesRegularExpression('/\.naslovna-traka h1 \{[^}]*letter-spacing: -0\.07em;[^}]*font-weight: 950;/s', $stil);
         $this->assertMatchesRegularExpression('/\.kartica h2,\s*\.kartica h3 \{[^}]*letter-spacing: -0\.06em;[^}]*font-weight: 950;/s', $stil);

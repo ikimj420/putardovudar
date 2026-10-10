@@ -13,10 +13,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AdminBazaTestCase;
+use Tests\Concerns\StilJavnihStrana;
 
 #[Group('baza')]
 class EpostaOrganizacijeTest extends AdminBazaTestCase
 {
+    use StilJavnihStrana;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -153,7 +156,7 @@ class EpostaOrganizacijeTest extends AdminBazaTestCase
     #[Test]
     public function pilula_ima_razmak_izmedju_natpisa_i_veze(): void
     {
-        $stil = (string) file_get_contents(public_path('css/javno.css'));
+        $stil = $this->stilBezUpita();
 
         $this->assertMatchesRegularExpression('/\.meta-stavka \{[^}]*display: inline-flex;[^}]*gap: 0\.3em;/s', $stil);
     }
