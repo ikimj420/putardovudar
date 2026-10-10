@@ -48,4 +48,12 @@ class Vodic extends Model
     {
         $upit->where('status', StatusObjave::Objavljeno);
     }
+
+    // Jedino mesto gde se odlučuje šta je nacrt za pregled; admin pita ovde.
+    /** @param  Builder<Vodic>  $upit */
+    #[Scope]
+    protected function nacrti(Builder $upit): void
+    {
+        $upit->where('status', StatusObjave::Nacrt);
+    }
 }

@@ -59,4 +59,12 @@ class Organizacija extends Model
     {
         $upit->where('status', StatusObjave::Objavljeno);
     }
+
+    // Jedino mesto gde se odlučuje šta je nacrt za pregled; admin pita ovde.
+    /** @param  Builder<Organizacija>  $upit */
+    #[Scope]
+    protected function nacrti(Builder $upit): void
+    {
+        $upit->where('status', StatusObjave::Nacrt);
+    }
 }

@@ -87,6 +87,14 @@ class Prilika extends Model
                 ->orWhere('rok', '>=', today()->toDateString()));
     }
 
+    // Jedino mesto gde se odlučuje šta je nacrt za pregled; admin pita ovde.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function nacrti(Builder $upit): void
+    {
+        $upit->where('status', StatusPrilike::Nacrt);
+    }
+
     private static function jeLink(?string $vrednost): bool
     {
         $link = trim((string) $vrednost);

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Vodici\Tables;
 
+use App\Enums\StatusObjave;
 use App\Models\Vodic;
 use App\Support\Prikaz;
 use Closure;
@@ -10,6 +11,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 // Spisak su kartice: jedna kolona na telefonu, tri na laptopu. Jedan podatak po redu; prazna vrednost ne crta red.
@@ -31,6 +33,10 @@ class VodiciTable
                     self::red('Koraka', 'koraka_prikaz', fn (Vodic $vodic): ?string => count($vodic->koraci ?? []) > 0 ? (string) count($vodic->koraci ?? []) : null),
                     self::red('Izmenjen', 'izmenjen_prikaz', fn (Vodic $vodic): ?string => $vodic->updated_at === null ? null : Prikaz::datum($vodic->updated_at)),
                 ])->space(2),
+            ])
+            ->filters([
+                // Veza sa početne strane admina vodi ovde, na spisak samo sa nacrtima.
+                SelectFilter::make('status')->label('Status')->options(StatusObjave::class),
             ])
             ->contentGrid(['xl' => 3])
             ->defaultSort('updated_at', 'desc')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Prilike\Tables;
 
+use App\Enums\StatusPrilike;
 use App\Models\Prilika;
 use App\Support\Prikaz;
 use App\Support\PrikazPrilike;
@@ -11,6 +12,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 // Spisak su kartice: jedna kolona na telefonu, tri na laptopu. Jedan podatak po redu, oznaka levo i vrednost desno;
@@ -35,6 +37,10 @@ class PrilikeTable
                     self::red('Izvor', 'izvor_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::nazivIzvora($prilika)),
                     self::red('Objavio', 'objavio_prikaz', fn (Prilika $prilika): ?string => $prilika->objavio?->getLabel()),
                 ])->space(2),
+            ])
+            ->filters([
+                // Veza sa početne strane admina vodi ovde, na spisak samo sa nacrtima.
+                SelectFilter::make('status')->label('Status')->options(StatusPrilike::class),
             ])
             ->contentGrid(['xl' => 3])
             ->defaultSort('created_at', 'desc')

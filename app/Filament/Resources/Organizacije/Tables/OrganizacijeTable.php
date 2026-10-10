@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Organizacije\Tables;
 
+use App\Enums\StatusObjave;
 use App\Models\Organizacija;
 use Closure;
 use Filament\Actions\EditAction;
@@ -9,6 +10,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
 // Spisak su kartice: jedna kolona na telefonu, tri na laptopu. Jedan podatak po redu; prazna vrednost ne crta red.
@@ -32,6 +34,10 @@ class OrganizacijeTable
                     self::red('Telefon', 'telefon_prikaz', fn (Organizacija $organizacija): ?string => $organizacija->telefon),
                     self::red('Sajt', 'sajt_prikaz', fn (Organizacija $organizacija): ?string => $organizacija->sajt),
                 ])->space(2),
+            ])
+            ->filters([
+                // Veza sa početne strane admina vodi ovde, na spisak samo sa nacrtima.
+                SelectFilter::make('status')->label('Status')->options(StatusObjave::class),
             ])
             ->contentGrid(['xl' => 3])
             ->defaultSort('updated_at', 'desc')

@@ -79,7 +79,9 @@ class AdminJeNaSrpskomLatinicomTest extends AdminBazaTestCase
         $tekst = $this->vidljivTekst($this->strane()['spisak']);
 
         $this->assertStringContainsString('Preskoči na sadržaj', $tekst);
-        $this->assertStringContainsString('Pretraga 1 rezultat', $tekst);
+        // Natpis pretrage i broj rezultata nisu više jedan do drugog: između njih je sada izbor statusa (paket 36).
+        $this->assertStringContainsString('Pretraga', $tekst);
+        $this->assertStringContainsString('1 rezultat', $tekst);
         $this->assertStringNotContainsString('Skip to content', $tekst);
         $this->assertStringNotContainsString('1 result', $tekst);
     }
