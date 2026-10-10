@@ -160,8 +160,12 @@ class GrupeSeNeVidePoSajtuTest extends BazaTestCase
         $this->assertSame(route('prilike.index', ['vrsta' => 'posao']), PrikazPrilike::adresaSpiska(VrstaPrilike::Posao));
         $this->assertSame(route('prilike.index', ['q' => 'niš']), PrikazPrilike::adresaSpiska(null, 'niš'));
         $this->assertSame(route('prilike.index', ['vrsta' => 'posao', 'q' => 'niš']), PrikazPrilike::adresaSpiska(VrstaPrilike::Posao, 'niš'));
-        // Grupe se na sajtu ne biraju: ni vrsta ni pretraga nisu grupa, a drugih parametara nema.
-        $this->assertSame(['vrsta', 'upit'], array_map(fn (\ReflectionParameter $parametar) => $parametar->getName(), (new \ReflectionMethod(PrikazPrilike::class, 'adresaSpiska'))->getParameters()));
+        // Paket 61: „Zatvara se uskoro" je jedini dodatak i čuva se uz vrstu i pretragu; isključen se ne piše u adresu.
+        $this->assertSame(route('prilike.index', ['uskoro' => '1']), PrikazPrilike::adresaSpiska(null, null, true));
+        $this->assertSame(route('prilike.index', ['vrsta' => 'posao', 'q' => 'niš', 'uskoro' => '1']), PrikazPrilike::adresaSpiska(VrstaPrilike::Posao, 'niš', true));
+        $this->assertSame(route('prilike.index', ['vrsta' => 'posao']), PrikazPrilike::adresaSpiska(VrstaPrilike::Posao, null, false));
+        // Grupe se na sajtu ne biraju: ni vrsta, ni pretraga, ni „uskoro" nisu grupa, a drugih parametara nema.
+        $this->assertSame(['vrsta', 'upit', 'uskoro'], array_map(fn (\ReflectionParameter $parametar) => $parametar->getName(), (new \ReflectionMethod(PrikazPrilike::class, 'adresaSpiska'))->getParameters()));
     }
 
     // Stil za red „Ja sam…" i za pilulu sa grupama više ne postoji (ostao bi mrtav, bez ijedne greške u ispisu).

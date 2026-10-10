@@ -1230,6 +1230,11 @@ h1.prazno {
   margin-top: 30px;
 }
 
+/* Početna: odeljak koji sledi odeljku sa spiskom ne sme da se lepi uz njega; isti razmak kao posle spiska. */
+section + section > .naslov-izvora {
+  margin-top: 30px;
+}
+
 /* Koraci i usluge: stavke u belim poljima, kao u prototipu */
 .koraci,
 .usluge {

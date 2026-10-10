@@ -48,6 +48,17 @@
         @endforeach
     </ul>
 
+    @if ($prilikeUskoro->isNotEmpty())
+        <section aria-labelledby="uskoro-naslov">
+            <h2 class="naslov-izvora" id="uskoro-naslov">{{ \App\Support\PrikazPrilike::USKORO }}</h2>
+            <div class="spisak tri">
+                @foreach ($prilikeUskoro as $prilika)
+                    @include('javno.kartica', ['prilika' => $prilika])
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     <section aria-labelledby="prilike-naslov">
         <h2 class="naslov-izvora" id="prilike-naslov">{{ \App\Support\PrikazPocetne::PRILIKE }}</h2>
         @forelse ($prilike as $prilika)

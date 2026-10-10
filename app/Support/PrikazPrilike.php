@@ -20,6 +20,11 @@ final class PrikazPrilike
 
     public const NEMA_REZULTATA = 'Nema prilika za tu pretragu.';
 
+    // Izbor „Zatvara se uskoro" (paket 61): isti natpis na početnoj i na spisku; tekstovi su predlog (PITANJA-58-61.md).
+    public const USKORO = 'Zatvara se uskoro';
+
+    public const NEMA_USKORO = 'Nema prilika koje se zatvaraju uskoro.';
+
     // Nazivi vrsta u množini, za natpis iznad naslova na početnoj (paket 57); „Drugo" nema množinu, pa se tamo ne piše.
     public const VRSTE_U_MNOZINI = [
         'posao' => 'Poslovi', 'praksa' => 'Prakse', 'stipendija' => 'Stipendije', 'konkurs' => 'Konkursi', 'obuka' => 'Obuke',
@@ -89,10 +94,10 @@ final class PrikazPrilike
         };
     }
 
-    // Adresa spiska sa izabranom vrstom i upisanom pretragom; bez njih je običan spisak. Grupe se na sajtu ne biraju (paket 54).
-    public static function adresaSpiska(?VrstaPrilike $vrsta = null, ?string $upit = null): string
+    // Adresa spiska sa izabranom vrstom, upisanom pretragom i izborom „Zatvara se uskoro"; bez njih je običan spisak. Grupe se na sajtu ne biraju (paket 54).
+    public static function adresaSpiska(?VrstaPrilike $vrsta = null, ?string $upit = null, bool $uskoro = false): string
     {
-        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value, 'q' => $upit]));
+        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value, 'q' => $upit, 'uskoro' => $uskoro ? '1' : null]));
     }
 
     // Nazivi grupa jednim redom, ili null kad nema nijedne (tada se ništa ne piše); isto za priliku i za stavku kalendara.

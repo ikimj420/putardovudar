@@ -12,11 +12,17 @@ use Illuminate\Contracts\View\View;
 
 class JavnaPocetnaController extends Controller
 {
+    // Najviše kartica u delu „Zatvara se uskoro" (paket 61).
+    private const NAJVISE_USKORO = 6;
+
     // Početna (paket 57): naslovni deo, pločice i najbliže prilike; sve što se vidi ide kroz Prilika::javne() i ostale javne opsege.
     public function index(): View
     {
         return view('javno.pocetna', [
             'vrste' => Prilika::vrsteSaJavnimPrilikama(),
+            // Deo „Zatvara se uskoro" (paket 61): isti opseg kao izbor na /prilike; bez ijedne prilike dela nema. Ne zove se „uskoro": to ime nosi izbor na spisku,
+            // a forma pretrage nasleđuje promenljive pogleda.
+            'prilikeUskoro' => Prilika::javne()->rokUskoro()->poRoku()->limit(self::NAJVISE_USKORO)->get(),
             'prilike' => Prilika::javne()->poRoku()->limit(6)->get(),
             'plocice' => $plocice = $this->plocice(),
             // Traka „Vodiči" postoji samo kad ima šta da se otvori.
