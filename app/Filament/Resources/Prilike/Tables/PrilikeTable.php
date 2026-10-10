@@ -14,6 +14,7 @@ use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 // Spisak su kartice: jedna kolona na telefonu, tri na laptopu. Jedan podatak po redu, oznaka levo i vrednost desno;
 // prazna vrednost ne crta red.
@@ -32,6 +33,8 @@ class PrilikeTable
                     Split::make([
                         TextColumn::make('status')->label('Status')->badge()->grow(false),
                         TextColumn::make('vrsta')->label('Vrsta')->badge()->grow(false),
+                        TextColumn::make('rok_prosao_oznaka')->state(PrikazPrilike::ROK_PROSAO)->badge()->color('danger')->grow(false)
+                            ->hidden(fn (?Prilika $record): bool => $record === null || ! $record->rokJeProsao()),
                     ]),
                     self::red('Rok', 'rok_prikaz', fn (Prilika $prilika): string => self::rok($prilika)),
                     self::red('Izvor', 'izvor_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::nazivIzvora($prilika)),
@@ -42,6 +45,8 @@ class PrilikeTable
                 // Veza sa početne strane admina vodi ovde, na spisak samo sa nacrtima.
                 SelectFilter::make('status')->label('Status')->options(StatusPrilike::class),
             ])
+            // Filament upit ubacuje po imenu parametra: mora da se zove $query, inače dobija prazan Builder.
+            ->modifyQueryUsing(fn (Builder $query) => Prilika::saOznakomRoka($query))
             ->contentGrid(['xl' => 3])
             ->defaultSort('created_at', 'desc')
             ->recordActions([

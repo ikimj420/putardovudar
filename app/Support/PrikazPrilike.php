@@ -24,6 +24,9 @@ final class PrikazPrilike
 
     public const STALNO_OTVORENO = 'Prijave stalno otvorene';
 
+    // Oznaka na kartici u adminu; sajt je ne piše jer prilike sa prošlim rokom ne prikazuje.
+    public const ROK_PROSAO = 'Rok prošao';
+
     public static function rok(Prilika $prilika): string
     {
         if ($prilika->rok_stalno_otvoren) {

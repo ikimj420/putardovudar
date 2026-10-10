@@ -75,16 +75,45 @@ class Prilika extends Model
         ];
     }
 
-    // Jedino mesto gde se odlučuje šta je javno; „danas" je po zoni aplikacije (Europe/Belgrade).
+    // Jedino mesto gde se odlučuje da li je rok prošao: ima rok, prijave nisu stalno otvorene, a rok je pre današnjeg dana
+    // (rok „danas" nije prošao). „Danas" je po zoni aplikacije (Europe/Belgrade). Javne prilike i oznaka u adminu pitaju ovde.
+    private const ROK_PROSAO = 'prilike.rok_stalno_otvoren = 0 and prilike.rok is not null and prilike.rok < ?';
+
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function rokProsao(Builder $upit): void
+    {
+        $upit->whereRaw(self::ROK_PROSAO, [today()->toDateString()]);
+    }
+
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function rokNijeProsao(Builder $upit): void
+    {
+        $upit->whereRaw('not ('.self::ROK_PROSAO.')', [today()->toDateString()]);
+    }
+
+    // Isti uslov kao rokProsao, ali kao kolona uz svaki zapis spiska, da kartica ne pita bazu za svaki zapis posebno.
+    /**
+     * @param  Builder<Prilika>  $upit
+     * @return Builder<Prilika>
+     */
+    public static function saOznakomRoka(Builder $upit): Builder
+    {
+        return $upit->addSelect('prilike.*')->selectRaw('('.self::ROK_PROSAO.') as rok_prosao', [today()->toDateString()]);
+    }
+
+    public function rokJeProsao(): bool
+    {
+        return (bool) ($this->attributes['rok_prosao'] ?? self::query()->rokProsao()->whereKey($this->getKey())->exists());
+    }
+
+    // Jedino mesto gde se odlučuje šta je javno.
     /** @param  Builder<Prilika>  $upit */
     #[Scope]
     protected function javne(Builder $upit): void
     {
-        $upit->where('status', StatusPrilike::Objavljeno)
-            ->where(fn (Builder $rok) => $rok
-                ->whereNull('rok')
-                ->orWhere('rok_stalno_otvoren', true)
-                ->orWhere('rok', '>=', today()->toDateString()));
+        $upit->where('status', StatusPrilike::Objavljeno)->rokNijeProsao();
     }
 
     // Jedino mesto gde se odlučuje šta je nacrt za pregled; admin pita ovde.
