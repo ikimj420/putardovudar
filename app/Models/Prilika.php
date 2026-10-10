@@ -121,6 +121,17 @@ class Prilika extends Model
         $upit->whereRaw('not ('.self::ROK_PROSAO.')', [today()->toDateString()]);
     }
 
+    // Koliko dana unapred se rok računa kao „uskoro" (paket 61); jedini broj, pa početna i spisak ne mogu da se razilaze.
+    public const DANA_USKORO = 14;
+
+    // Rok od danas do danas + DANA_USKORO, oba dana uključena (zona aplikacije, kao rokProsao); bez roka i stalno otvorene ne ulaze.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function rokUskoro(Builder $upit): void
+    {
+        $upit->where('prilike.rok_stalno_otvoren', false)->whereBetween('prilike.rok', [today()->toDateString(), today()->addDays(self::DANA_USKORO)->toDateString()]);
+    }
+
     // Isti uslov kao rokProsao, ali kao kolona uz svaki zapis spiska, da kartica ne pita bazu za svaki zapis posebno.
     /**
      * @param  Builder<Prilika>  $upit
