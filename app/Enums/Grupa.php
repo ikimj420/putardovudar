@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+use App\Support\PoredjenjeTeksta;
 use Filament\Support\Contracts\HasLabel;
 
 // Kome je prilika namenjena. Redosled slučajeva je redosled na ekranu i u zapisu; jedno mesto za nazive.
@@ -27,6 +28,35 @@ enum Grupa: string implements HasLabel
             self::Povratnici => 'Povratnici iz inostranstva',
             self::Organizacije => 'Organizacije',
             self::Romi => 'Romi i Romkinje',
+        };
+    }
+
+    // Citat potkrepljuje grupu samo ako sadrži reč te grupe (u bilo kom padežu, sa dijakriticima ili bez, latinicom ili ćirilicom).
+    // Rečnik je namerno uzak: „organizacije" su udruženja i organizacije civilnog društva, nikad firme; „roman" i „promocija" nisu Romi.
+    public function potkrepljuje(string $citat): bool
+    {
+        return preg_match($this->uzorak(), PoredjenjeTeksta::normalizuj($citat)) === 1;
+    }
+
+    // Grupe čije reči stoje u tekstu, u redosledu enuma; šta nije u rečniku, nije grupa.
+    /** @return list<self> */
+    public static function izTeksta(string $tekst): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $grupa) => $grupa->potkrepljuje($tekst)));
+    }
+
+    // Uzorci rade nad normalizovanim tekstom (mala slova bez dijakritika, razmak umesto znakova), pa je granica reči \b.
+    private function uzorak(): string
+    {
+        return match ($this) {
+            self::Osnovci => '/\b(?:osnovc[a-z]*|osnovac|osnovnoskol[a-z]*|(?:ucenik|ucenic|dak|dac)[a-z]* (?:[a-z]+ ){0,3}osnovn[a-z]*)\b/',
+            self::Srednjoskolci => '/\b(?:srednjoskol[a-z]*|gimnazijalc[a-z]*|maturant[a-z]*|(?:ucenik|ucenic|dak|dac)[a-z]* (?:[a-z]+ ){0,3}srednj[a-z]*)\b/',
+            self::Studenti => '/\bstudent[a-z]*\b/',
+            self::MasterDoktorski => '/\b(?:master(?:a|u|om|i|e|ima|ant[a-z]*)?|magistar[a-z]*|magistr[a-z]*|doktorsk[a-z]*|doktorand[a-z]*|doktorat[a-z]*|postdiplomsk[a-z]*|postdiplomc[a-z]*|phd|msc)\b/',
+            self::NezaposleniMladi => '/\b(?:nezaposlen[a-z]*|bez zaposlenja|bez posla|trazioc[a-z]* (?:posla|zaposlenja))\b/',
+            self::Povratnici => '/\b(?:povratni[ck][a-z]*|repatrijac[a-z]*|readmisij[a-z]*|(?:vracen[a-z]*|povrata?k[a-z]*) (?:iz|u) (?:inostranstv[a-z]*|zemlj[a-z]*|srbij[a-z]*))\b/',
+            self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje|mladih|za mlade|zena|roma|osoba|gradjana|ljudskih))\b/',
+            self::Romi => '/\brom(?:a|i|e|u|om|ima|kinj[a-z]*|sk[a-z]*)?\b/',
         };
     }
 

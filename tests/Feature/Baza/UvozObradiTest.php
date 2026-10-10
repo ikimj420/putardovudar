@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Baza;
 
+use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Services\ObradaNacrta;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -27,8 +29,8 @@ class UvozObradiTest extends BazaTestCase
 
     private const STRANA = 'https://a.test/oglas-1';
 
-    // Rečenica na strani koja dokazuje pravilo; lažni model je podrazumevano citira kao osnov „srbija".
-    private const PRAVILO_NA_STRANI = 'Konkurs je otvoren za sve građane Srbije';
+    // Rečenica na strani koja dokazuje grupu; lažni model je podrazumevano citira za grupu „studenti".
+    private const PRAVILO_NA_STRANI = 'Konkurs je otvoren za sve studente';
 
     protected function setUp(): void
     {
@@ -58,9 +60,9 @@ class UvozObradiTest extends BazaTestCase
     private function ollama(array $dopuna = []): mixed
     {
         $forma = [...[
-            'vazi_pravilo' => true, 'razlog' => 'Konkurs za stipendije otvoren za građane Srbije.', 'vrsta' => 'konkurs',
+            'vazi_pravilo' => true, 'razlog' => 'Konkurs za stipendije otvoren za studente.', 'vrsta' => 'konkurs',
             'rok' => '2026-10-20', 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine',
-            'osnov' => 'srbija', 'citat_pravila' => self::PRAVILO_NA_STRANI,
+            'grupe' => [['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]],
         ], ...$dopuna];
 
         return Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]]);
@@ -78,7 +80,7 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
 
         $this->artisan('uvoz:obradi')
-            ->expectsOutputToContain('objavljen (Konkurs za stipendije otvoren za građane Srbije.): Konkurs za stipendije')
+            ->expectsOutputToContain('objavljen (Konkurs za stipendije otvoren za studente.): Konkurs za stipendije')
             ->expectsOutput('Obrađeno nacrta: 1. Objavljeno: 1. Ostalo nacrt: 0. Nije obrađeno: 0.')
             ->assertExitCode(0);
 
@@ -88,9 +90,11 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(VrstaPrilike::Konkurs, $prilika->vrsta);
         $this->assertSame('2026-10-20', $prilika->rok->toDateString());
         $this->assertSame(KoJeObjavio::Ollama, $prilika->objavio);
-        $this->assertSame('Konkurs za stipendije otvoren za građane Srbije.', $prilika->razlog_objave);
+        $this->assertSame('Konkurs za stipendije otvoren za studente.', $prilika->razlog_objave);
+        $this->assertSame(['studenti'], $prilika->grupe);
         $this->assertSame('2026-10-05 12:00:00', $prilika->obradeno_at->toDateTimeString());
         $this->assertSame('qwen2.5:7b', $prilika->predlog['model']);
+        $this->assertSame(ObradaNacrta::PRAVILO, $prilika->predlog['pravilo']);
         $this->assertNull($prilika->predlog['odbijeno']);
         $this->assertTrue(Prilika::javne()->whereKey($prilika->id)->exists());
     }
@@ -105,6 +109,8 @@ class UvozObradiTest extends BazaTestCase
             'rok bez citata' => [['citat' => ''], 'rok ne piše u tekstu strane', 'rok'],
             'prošao rok' => [['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'], 'rok je prošao', 'rok'],
             'vrsta van spiska' => [['vrsta' => 'posao-na-crno'], 'vrsta nije sa spiska', 'vrsta'],
+            'vrsta bez reči na strani' => [['vrsta' => 'obuka'], 'vrsta nije potkrepljena', 'vrsta'],
+            'vrsta drugo se ne može dokazati' => [['vrsta' => 'drugo'], 'vrsta nije potkrepljena', 'vrsta'],
             'bez roka' => [['rok' => null, 'citat' => ''], 'nema ispravnog roka', 'rok'],
             'nepostojeći datum' => [['rok' => '2026-02-31'], 'nema ispravnog roka', 'rok'],
         ];
@@ -131,7 +137,8 @@ class UvozObradiTest extends BazaTestCase
         $this->assertNull($prilika->objavio);
         $this->assertNull($prilika->razlog_objave);
         $this->assertSame($razlog, $prilika->predlog['odbijeno']);
-        $this->assertSame($forma['razlog'] ?? 'Konkurs za stipendije otvoren za građane Srbije.', $prilika->predlog['razlog']);
+        $this->assertSame($forma['razlog'] ?? 'Konkurs za stipendije otvoren za studente.', $prilika->predlog['razlog']);
+        $this->assertNull($prilika->grupe);
         $this->assertSame($forma['vrsta'] ?? 'konkurs', $prilika->predlog['vrsta']);
         $this->assertSame('2026-10-05 12:00:00', $prilika->obradeno_at->toDateTimeString());
         $this->assertFalse(Prilika::javne()->whereKey($prilika->id)->exists());
@@ -149,17 +156,52 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
     }
 
-    // Ogledalo: vrsta „drugo" je na spisku, pa prolazi.
+    // Paket 40: vrsta se dokazuje rečju sa strane. „Drugo" nema reč, pa ostaje nacrt (ranije je prolazilo kao vrsta sa spiska).
     #[Test]
-    public function vrsta_drugo_je_sa_spiska(): void
+    public function vrsta_drugo_ostaje_nacrt_jer_se_ne_moze_dokazati(): void
     {
         $nacrt = $this->nacrt();
         Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vrsta' => 'drugo'])]);
 
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (vrsta nije potkrepljena)');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertSame(VrstaPrilike::Drugo, $nacrt->fresh()->vrsta);
+    }
+
+    /** @return array<string, array{0: string, 1: string, 2: string}> vrsta, reč na strani, reč koje nema */
+    public static function vrsteSaRecju(): array
+    {
+        return [
+            'posao' => ['posao', 'Oglas za posao.', 'Oglas za nešto.'],
+            'praksa' => ['praksa', 'Plaćena stručna praksa.', 'Plaćena nešto.'],
+            'stipendija' => ['stipendija', 'Stipendija za učenje.', 'Nagrada za učenje.'],
+            'konkurs' => ['konkurs', 'Javni poziv za prijavu.', 'Javno obaveštenje za prijavu.'],
+            'obuka' => ['obuka', 'Besplatna obuka.', 'Besplatno predavanje.'],
+        ];
+    }
+
+    // Ogledalo: vrsta sa rečju (ili srodnom rečju) na strani prolazi, ista vrsta bez nje ostaje nacrt.
+    #[Test]
+    #[DataProvider('vrsteSaRecju')]
+    public function vrsta_sa_recju_na_strani_prolazi_a_bez_reci_ostaje_nacrt(string $vrsta, string $saRecju, string $bezReci): void
+    {
+        $sa = $this->nacrt(['naslov' => 'Sa rečju', 'link_izvora' => 'https://a.test/sa']);
+        $bez = $this->nacrt(['naslov' => 'Bez reči', 'link_izvora' => 'https://a.test/bez']);
+        // Rečenica o grupi nema nijednu reč vrste (ni „konkurs"), da vrstu dokazuje samo ono što test stavlja u $saRecju.
+        $rok = '<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Otvoreno je za sve studente.</p>';
+        Http::fake([
+            'https://a.test/sa' => Http::response('<p>'.$saRecju.'</p>'.$rok),
+            'https://a.test/bez' => Http::response('<p>'.$bezReci.'</p>'.$rok),
+            self::OLLAMA => $this->ollama(['vrsta' => $vrsta, 'grupe' => [['grupa' => 'studenti', 'citat' => 'Otvoreno je za sve studente']]]),
+        ]);
+
         $this->artisan('uvoz:obradi');
 
-        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
-        $this->assertSame(VrstaPrilike::Drugo, $nacrt->fresh()->vrsta);
+        $this->assertSame(StatusPrilike::Objavljeno, $sa->fresh()->status);
+        $this->assertSame(VrstaPrilike::from($vrsta), $sa->fresh()->vrsta);
+        $this->assertSame(StatusPrilike::Nacrt, $bez->fresh()->status);
+        $this->assertSame('vrsta nije potkrepljena', $bez->fresh()->predlog['odbijeno']);
     }
 
     // Paket 17: nacrti iz Jooble-a se obrađuju istom komandom; nacrt sa nepoznatog izvora i dalje ne.
@@ -176,9 +218,9 @@ class UvozObradiTest extends BazaTestCase
         $this->assertNull($nepoznat->fresh()->obradeno_at);
     }
 
-    // Paket 12: pravilo se dokazuje citatom sa strane, kao rok.
+    // Paket 12 i 40: grupa se dokazuje citatom sa strane, kao rok; prihvaćene grupe se upisuju u priliku.
     #[Test]
-    public function objavljena_prilika_cuva_osnov_i_citat_pravila_koji_pisu_na_strani(): void
+    public function objavljena_prilika_cuva_grupe_i_citate_koji_pisu_na_strani(): void
     {
         $nacrt = $this->nacrt();
         Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
@@ -188,39 +230,147 @@ class UvozObradiTest extends BazaTestCase
         $prilika = $nacrt->fresh();
 
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
-        $this->assertSame('srbija', $prilika->predlog['osnov']);
-        $this->assertSame(self::PRAVILO_NA_STRANI, $prilika->predlog['citat_pravila']);
+        $this->assertSame(['studenti'], $prilika->grupe);
+        $this->assertSame([['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]], $prilika->predlog['grupe']);
+        $this->assertSame(['studenti'], $prilika->predlog['prihvacene_grupe']);
         $this->assertNull($prilika->predlog['odbijeno']);
     }
 
-    // Ogledalo: osnov „romi" sa citatom koji doslovno piše na strani i ima reč Rom takođe prolazi.
+    /** @return array<string, array{0: string, 1: string}> grupa, citat koji piše na strani i sadrži njenu reč */
+    public static function grupeSaCitatom(): array
+    {
+        return [
+            'osnovci' => ['osnovci', 'Poziv je namenjen učenicima osnovnih škola'],
+            'srednjoskolci' => ['srednjoskolci', 'Prijaviti se mogu srednjoškolci'],
+            'studenti' => ['studenti', 'Konkurs je otvoren za sve studente'],
+            'master-doktorski' => ['master-doktorski', 'Konkurs je za doktorske studije u inostranstvu'],
+            'nezaposleni-mladi' => ['nezaposleni-mladi', 'Poziv za nezaposlene mlade do 30 godina'],
+            'povratnici' => ['povratnici', 'Program za povratnike iz inostranstva'],
+            'organizacije' => ['organizacije', 'Konkurs je za organizacije civilnog društva'],
+            'romi' => ['romi', 'Konkurs je namenjen Romkinjama i Romima'],
+        ];
+    }
+
+    // Za svaku grupu: citat koji doslovno piše na strani i sadrži reč grupe prolazi. Reč „Srbija" nigde ne piše.
     #[Test]
-    public function osnov_romi_sa_citatom_koji_ima_rec_rom_se_objavljuje(): void
+    #[DataProvider('grupeSaCitatom')]
+    public function citat_sa_recju_grupe_koji_pise_na_strani_objavljuje_priliku_za_tu_grupu(string $grupa, string $citat): void
     {
         $nacrt = $this->nacrt();
-        $citat = 'Konkurs je namenjen Romkinjama i Romima';
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['osnov' => 'romi', 'citat_pravila' => $citat])]);
+        Http::fake([self::STRANA => $this->strana('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi');
 
         $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
-        $this->assertSame('romi', $nacrt->fresh()->predlog['osnov']);
+        $this->assertSame([$grupa], $nacrt->fresh()->grupe);
+        $this->assertStringNotContainsStringIgnoringCase('srbij', (string) $nacrt->fresh()->predlog['grupe'][0]['citat']);
+    }
+
+    // Ogledalo: ista grupa sa citatom bez njene reči (ili citat kog nema na strani) ostaje nacrt, i ništa se ne upisuje u grupe.
+    #[Test]
+    #[DataProvider('grupeSaCitatom')]
+    public function citat_bez_reci_grupe_ili_kog_nema_na_strani_ostaje_nacrt(string $grupa, string $citat): void
+    {
+        $bezReci = $this->nacrt(['naslov' => 'Bez reči', 'link_izvora' => 'https://a.test/bez-reci']);
+        $izmisljen = $this->nacrt(['naslov' => 'Izmišljen', 'link_izvora' => 'https://a.test/izmisljen']);
+        $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p><p>Konkurs je otvoren za sve građane.</p>';
+        Http::fake([
+            'https://a.test/bez-reci' => Http::response($strana),
+            'https://a.test/izmisljen' => Http::response($strana),
+            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez reči')
+                ? $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => 'Konkurs je otvoren za sve građane']]])
+                : $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => $citat.' i sve ostale']]]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        foreach ([$bezReci, $izmisljen] as $nacrt) {
+            $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status, $nacrt->naslov);
+            $this->assertNull($nacrt->fresh()->grupe);
+            $this->assertSame('pravilo nije potkrepljeno citatom', $nacrt->fresh()->predlog['odbijeno']);
+        }
+    }
+
+    // Više grupa: prolaze samo one čiji citat piše na strani i ima njihovu reč; objava traži bar jednu.
+    #[Test]
+    public function vise_grupa_se_upisuje_samo_za_one_koje_su_potkrepljene(): void
+    {
+        $nacrt = $this->nacrt();
+        $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Poziv je za studente i nezaposlene mlade.</p><p>Konkurs je otvoren za sve građane.</p>';
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [
+            ['grupa' => 'romi', 'citat' => 'Konkurs je otvoren za sve građane'],
+            ['grupa' => 'nezaposleni-mladi', 'citat' => 'Poziv je za studente i nezaposlene mlade'],
+            ['grupa' => 'studenti', 'citat' => 'Poziv je za studente i nezaposlene mlade'],
+            ['grupa' => 'povratnici', 'citat' => 'Nema ga na strani za povratnike'],
+        ]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame(['studenti', 'nezaposleni-mladi'], $prilika->grupe);
+        $this->assertCount(4, $prilika->predlog['grupe']);
+        $this->assertSame(['studenti', 'nezaposleni-mladi'], $prilika->predlog['prihvacene_grupe']);
+    }
+
+    // Firme nisu na spisku: citat o firmama ne dokazuje nijednu grupu, pa prilika samo za firme ostaje nacrt.
+    #[Test]
+    public function prilika_samo_za_firme_ostaje_nacrt(): void
+    {
+        $nacrt = $this->nacrt();
+        $citat = 'Konkurs je otvoren za firme i preduzeća u Srbiji';
+        Http::fake([self::STRANA => $this->strana('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'organizacije', 'citat' => $citat]]])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertNull($nacrt->fresh()->grupe);
+    }
+
+    // Snimak izvora EU mogućnosti: YUCOM je „za organizacije civilnog društva", pa prolazi kao Organizacije (ranije ga nije bilo kako objaviti).
+    #[Test]
+    public function yucom_iz_snimka_prolazi_kao_organizacije(): void
+    {
+        $xml = simplexml_load_string((string) file_get_contents(base_path('tests/Fixtures/rss/eu-mogucnosti-konkursi.xml')));
+        $stavka = collect($xml->channel->item)->first(fn ($item) => str_starts_with((string) $item->title, 'YUCOM'));
+        $this->assertNotNull($stavka);
+
+        $nacrt = $this->nacrt(['naslov' => (string) $stavka->title, 'link_izvora' => (string) $stavka->link]);
+        $opis = trim((string) $stavka->description);
+        $citat = 'Konkurs je za: organizacije civilnog društva i univerzitetske pravne klinike';
+        Http::fake([(string) $stavka->link => Http::response('<p>'.nl2br($opis).'</p>'), self::OLLAMA => $this->ollama([
+            'grupe' => [['grupa' => 'organizacije', 'citat' => $citat]], 'vrsta' => 'konkurs',
+            'rok' => '2026-11-06', 'citat' => 'Rok za prijavu: 6.11.2026. godine do 17:00 časova',
+        ])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame(['organizacije'], $nacrt->fresh()->grupe);
+        $this->assertSame('2026-11-06', $nacrt->fresh()->rok->toDateString());
     }
 
     /** @return array<string, array{0: array<string, mixed>}> */
     public static function pravilaBezCitata(): array
     {
+        $studenti = fn (string $citat) => ['grupe' => [['grupa' => 'studenti', 'citat' => $citat]]];
+
         return [
-            'izmišljen citat koga nema na strani' => [['citat_pravila' => 'Konkurs je otvoren za sve građane Srbije i regiona']],
-            'romi bez reči Rom u citatu' => [['osnov' => 'romi']],
-            'srbija bez reči Srbija u citatu' => [['citat_pravila' => 'Rok za prijavu je 20. oktobra 2026. godine']],
-            'roman nije Rom' => [['osnov' => 'romi', 'citat_pravila' => 'Objavljen je roman o životu mladih']],
-            'osnov van spiska' => [['osnov' => 'evropa']],
-            'osnov je null' => [['osnov' => null]],
-            'osnov je broj' => [['osnov' => 5]],
-            'prazan citat pravila' => [['citat_pravila' => '']],
-            'citat pravila je null' => [['citat_pravila' => null]],
-            'osnov i citat pravila su izostavljeni' => [['osnov' => '__izostavi__', 'citat_pravila' => '__izostavi__']],
+            'izmišljen citat koga nema na strani' => [$studenti('Konkurs je otvoren za sve studente i đake')],
+            'grupa bez svoje reči u citatu' => [$studenti('Rok za prijavu je 20. oktobra 2026. godine')],
+            'srbija nije grupa' => [['grupe' => [['grupa' => 'srbija', 'citat' => 'Konkurs je otvoren za sve građane Srbije']]]],
+            'roman nije Rom' => [['grupe' => [['grupa' => 'romi', 'citat' => 'Objavljen je roman o životu mladih']]]],
+            'grupa van spiska' => [['grupe' => [['grupa' => 'evropljani', 'citat' => self::PRAVILO_NA_STRANI]]]],
+            'grupa je null' => [['grupe' => [['grupa' => null, 'citat' => self::PRAVILO_NA_STRANI]]]],
+            'grupa je broj' => [['grupe' => [['grupa' => 5, 'citat' => self::PRAVILO_NA_STRANI]]]],
+            'prazan citat' => [$studenti('')],
+            'citat je null' => [['grupe' => [['grupa' => 'studenti', 'citat' => null]]]],
+            'stavka je tekst' => [['grupe' => ['studenti']]],
+            'prazna lista grupa' => [['grupe' => []]],
+            'grupe nije lista' => [['grupe' => 'studenti']],
+            'grupe je null' => [['grupe' => null]],
+            'grupe su izostavljene' => [['grupe' => '__izostavi__']],
         ];
     }
 
@@ -231,7 +381,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         // Strana ima i rečenicu „Objavljen je roman o životu mladih" da citat o romanu doslovno postoji, a ipak ne prolazi.
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p>'), self::OLLAMA => $this->ollamaBezKljuceva($dopuna)]);
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p><p>Konkurs je otvoren za sve građane Srbije.</p>'), self::OLLAMA => $this->ollamaBezKljuceva($dopuna)]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom): Konkurs za stipendije');
 
@@ -240,6 +390,8 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
         $this->assertNull($prilika->objavio);
         $this->assertSame('pravilo nije potkrepljeno citatom', $prilika->predlog['odbijeno']);
+        $this->assertSame([], $prilika->predlog['prihvacene_grupe']);
+        $this->assertNull($prilika->grupe);
         $this->assertNotNull($prilika->obradeno_at);
         $this->assertFalse(Prilika::javne()->whereKey($prilika->id)->exists());
     }
@@ -249,7 +401,7 @@ class UvozObradiTest extends BazaTestCase
     public function nepotkrepljeno_pravilo_se_prijavljuje_pre_greske_u_roku(): void
     {
         $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['citat_pravila' => 'Izmišljeno.', 'rok' => '2026-10-04'])]);
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno.']], 'rok' => '2026-10-04'])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
     }
@@ -270,7 +422,7 @@ class UvozObradiTest extends BazaTestCase
         $izostavi = array_keys(array_filter($dopuna, fn (mixed $vrednost) => $vrednost === '__izostavi__'));
         $forma = [...[
             'vazi_pravilo' => true, 'razlog' => 'Konkurs.', 'vrsta' => 'konkurs', 'rok' => '2026-10-20',
-            'citat' => 'Rok za prijavu je 20. oktobra 2026. godine', 'osnov' => 'srbija', 'citat_pravila' => self::PRAVILO_NA_STRANI,
+            'citat' => 'Rok za prijavu je 20. oktobra 2026. godine', 'grupe' => [['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]],
         ], ...array_diff_key($dopuna, array_flip($izostavi))];
 
         return Http::response(['message' => ['content' => json_encode(array_diff_key($forma, array_flip($izostavi)), JSON_UNESCAPED_UNICODE)]]);
@@ -437,7 +589,7 @@ class UvozObradiTest extends BazaTestCase
     public function cirilica_sa_strane_ide_modelu_i_proveri_kao_latinica(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Рок за пријаву је 20. октобра 2026. године.</p><p>Конкурс је отворен за све грађане Србије.</p>', saPravilom: false), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana('<p>Рок за пријаву је 20. октобра 2026. године.</p><p>Конкурс је отворен за све студенте.</p>', saPravilom: false), self::OLLAMA => $this->ollama()]);
 
         $this->artisan('uvoz:obradi');
 
@@ -463,11 +615,12 @@ class UvozObradiTest extends BazaTestCase
 
             $poruke = $zahtev->data()['messages'];
 
-            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna ljudima iz Srbije, ili ono što je namenjeno Romima.')
-                && str_contains($poruke[0]['content'], 'osnov (srbija ako tekst kaže')
+            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni mladi, povratnici iz inostranstva, organizacije — ili ono što je namenjeno Romima.')
+                && str_contains($poruke[0]['content'], 'Organizacije su udruženja i organizacije civilnog društva, ne firme')
+                && str_contains($poruke[0]['content'], 'grupe (lista objekata')
                 && str_contains($poruke[0]['content'], 'vazi_pravilo (true')
-                && strpos($poruke[0]['content'], 'osnov (srbija ako tekst kaže') < strpos($poruke[0]['content'], 'vazi_pravilo (true')
-                && str_contains($poruke[0]['content'], 'citat_pravila (tačan isečak iz teksta koji to kaže i sadrži reč Srbija ili Rom')
+                && strpos($poruke[0]['content'], 'grupe (lista objekata') < strpos($poruke[0]['content'], 'vazi_pravilo (true')
+                && ! str_contains($poruke[0]['content'], 'citat_pravila')
                 && str_contains($poruke[1]['content'], "Tekst strane:\n".str_repeat('Dugačak tekst. ', 3).'Du')
                 && ! str_contains($poruke[1]['content'], str_repeat('Dugačak tekst. ', 4));
         });

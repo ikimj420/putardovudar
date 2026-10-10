@@ -4,7 +4,6 @@ namespace App\Filament\Resources\Prilike\Schemas;
 
 use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
-use App\Enums\OsnovObjave;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
@@ -106,6 +105,10 @@ class PrilikaForm
                     ->helperText('Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.')
                     ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'citat_pravila')))
                     ->columnSpanFull(),
+                self::predlog('grupe', 'Citati za grupe', fn (mixed $state): string => self::grupePredloga($state), dug: true)
+                    ->helperText('Isečci iz teksta strane koji pokazuju kome je prilika namenjena.')
+                    ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'grupe')))
+                    ->columnSpanFull(),
                 Section::make('Predlog Ollame')
                     ->description('Ollama je predložila, ali kod nije prihvatio.')
                     ->schema([
@@ -113,7 +116,8 @@ class PrilikaForm
                         self::predlog('rok', 'Rok', fn (mixed $state): string => self::datumPredloga((string) $state)),
                         self::predlog('razlog', 'Razlog', dug: true),
                         self::predlog('citat', 'Citat iz teksta', dug: true),
-                        self::predlog('osnov', 'Osnov', fn (mixed $state): string => OsnovObjave::tryFrom((string) $state)?->getLabel() ?? (string) $state),
+                        self::predlog('osnov', 'Osnov', fn (mixed $state): string => self::STARI_OSNOV[(string) $state] ?? (string) $state),
+                        self::predlog('grupe', 'Grupe i citati', fn (mixed $state): string => self::grupePredloga($state), dug: true),
                         self::predlog('citat_pravila', 'Citat pravila', dug: true),
                     ])
                     ->visible(fn (?Prilika $record): bool => $record?->status === StatusPrilike::Nacrt && filled($record->predlog))
@@ -133,6 +137,30 @@ class PrilikaForm
             ->disabled()
             ->dehydrated(false)
             ->visible(fn (?Prilika $record): bool => filled(data_get($record?->predlog, $kljuc)));
+    }
+
+    // Stari predlozi (do paketa 40) imaju osnov „romi" ili „srbija"; novi imaju grupe sa citatom.
+    private const STARI_OSNOV = ['romi' => 'Romi', 'srbija' => 'Srbija'];
+
+    // Po jedan red za grupu: „Studenti: „citat"". Polje se formatira i kad je sakriveno, pa pokvaren zapis ne sme da obori stranu;
+    // dva polja dele isto stanje, pa se već složen tekst ne slaže ponovo.
+    private static function grupePredloga(mixed $stanje): string
+    {
+        if (is_string($stanje)) {
+            return $stanje;
+        }
+
+        $redovi = [];
+
+        foreach (is_array($stanje) ? $stanje : [] as $stavka) {
+            $grupa = is_array($stavka) && is_string($stavka['grupa'] ?? null) ? Grupa::tryFrom($stavka['grupa']) : null;
+
+            if ($grupa !== null) {
+                $redovi[] = $grupa->getLabel().': „'.(is_string($stavka['citat'] ?? null) ? $stavka['citat'] : '').'"';
+            }
+        }
+
+        return implode("\n", $redovi);
     }
 
     private static function datumPredloga(string $iso): string

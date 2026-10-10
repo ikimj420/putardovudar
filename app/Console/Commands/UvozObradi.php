@@ -12,21 +12,27 @@ use Illuminate\Console\Command;
 
 class UvozObradi extends Command
 {
-    protected $signature = 'uvoz:obradi';
+    protected $signature = 'uvoz:obradi {--ponovo : ponovo obradi nacrte iz uvoza obrađene po starom pravilu}';
 
     protected $description = 'Ollama predlaže, a kod proverava: nacrti iz uvoza koji ispune pravilo za objavu postaju objavljeni, ostali ostaju nacrti';
 
     public function handle(ObradaNacrta $obrada): int
     {
         // Nacrt iz uvoza je onaj koji uvoz ostavlja netaknut: vrsta „Drugo", bez roka, naziv izvora iz config/uvoz.php ili Jooble.
-        $nacrti = Prilika::query()
+        $upit = Prilika::query()
             ->where('status', StatusPrilike::Nacrt)
             ->where('vrsta', VrstaPrilike::Drugo)
             ->whereNull('rok')
-            ->whereNull('obradeno_at')
             ->whereIn('naziv_izvora', [...array_column(config('uvoz.izvori'), 'ime'), config('jooble.ime')])
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        // Običan prolaz uzima neobrađene; --ponovo uzima obrađene po starom pravilu (u predlogu nema verzije pravila), ali samo
+        // dok ih niko nije menjao: Ivanova izmena posle obrade pomera vreme izmene, a obrada ga postavlja u istom trenutku.
+        $nacrti = $this->option('ponovo')
+            ? $upit->whereNotNull('obradeno_at')->whereNull('predlog->pravilo')->get()
+                ->filter(fn (Prilika $nacrt) => $nacrt->updated_at !== null && $nacrt->obradeno_at !== null && $nacrt->updated_at->lessThanOrEqualTo($nacrt->obradeno_at->copy()->addMinute()))
+                ->values()
+            : $upit->whereNull('obradeno_at')->get();
 
         if ($nacrti->isEmpty()) {
             $this->line('Nema nacrta iz uvoza za obradu.');

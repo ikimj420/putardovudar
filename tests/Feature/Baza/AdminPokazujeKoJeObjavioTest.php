@@ -275,4 +275,67 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $this->assertSame('Novi naslov', $nacrt->fresh()->naslov);
         $this->assertNull($nacrt->fresh()->predlog);
     }
+
+    private const POMOC_CITATI_GRUPA = 'Isečci iz teksta strane koji pokazuju kome je prilika namenjena.';
+
+    /** @return array<string, mixed> */
+    private function predlogSaGrupama(array $dopuna = []): array
+    {
+        return $this->predlog([...[
+            'pravilo' => 2, 'osnov' => null, 'citat_pravila' => null,
+            'grupe' => [['grupa' => 'studenti', 'citat' => 'Konkurs je otvoren za sve studente'], ['grupa' => 'romi', 'citat' => 'Namenjeno je Romkinjama']],
+            'prihvacene_grupe' => ['studenti', 'romi'],
+        ], ...$dopuna]);
+    }
+
+    // Paket 40: na prilici koju je objavila Ollama pišu grupe sa citatom koji ih dokazuje, po jedan red za grupu.
+    #[Test]
+    public function na_prilici_koju_je_objavila_ollama_pisu_citati_za_grupe(): void
+    {
+        $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlogSaGrupama(['odbijeno' => null])]);
+        $prilika->objavi(KoJeObjavio::Ollama);
+
+        $this->izmena($prilika)
+            ->assertFormFieldIsVisible('predlog.grupe')
+            ->assertFormSet(['predlog.grupe' => "Studenti: „Konkurs je otvoren za sve studente\"\nRomi i Romkinje: „Namenjeno je Romkinjama\""])
+            ->assertFormFieldIsDisabled('predlog.grupe')
+            ->assertSee(self::POMOC_CITATI_GRUPA)
+            ->assertSee('Citati za grupe');
+    }
+
+    // Ogledalo: isti predlog na prilici koju je objavio Ivan ne pokazuje tuđe citate kao dokaz.
+    #[Test]
+    public function na_prilici_koju_je_objavio_ivan_ne_pisu_citati_za_grupe(): void
+    {
+        $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlogSaGrupama()]);
+        $prilika->objavi(KoJeObjavio::Covek);
+
+        $this->izmena($prilika)->assertFormFieldIsHidden('predlog.grupe')->assertDontSee(self::POMOC_CITATI_GRUPA)->assertDontSee('Citati za grupe');
+    }
+
+    #[Test]
+    public function nacrt_pokazuje_grupe_i_citate_u_predlogu_ollame_a_pokvaren_zapis_ne_obara_stranu(): void
+    {
+        $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlogSaGrupama([
+            'grupe' => [['grupa' => 'studenti', 'citat' => 'Za studente'], ['grupa' => 'nepoznata', 'citat' => 'Tuđe'], 'tekst', ['grupa' => 'organizacije', 'citat' => null]],
+        ])]);
+
+        $this->izmena($nacrt)
+            ->assertSee('Predlog Ollame')
+            ->assertSee('Grupe i citati')
+            ->assertFormFieldIsVisible('predlog.grupe')
+            ->assertFormSet(['predlog.grupe' => "Studenti: „Za studente\"\nOrganizacije: „\""])
+            ->assertFormFieldIsDisabled('predlog.grupe');
+    }
+
+    // Ogledalo: nacrt bez grupa u predlogu (obrada po starom pravilu ili model nije vratio nijednu) ne crta taj red.
+    #[Test]
+    public function nacrt_bez_grupa_u_predlogu_ne_crta_red_sa_grupama(): void
+    {
+        foreach ([$this->predlog(), $this->predlogSaGrupama(['grupe' => []])] as $predlog) {
+            $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $predlog]);
+
+            $this->izmena($nacrt)->assertSee('Predlog Ollame')->assertFormFieldIsHidden('predlog.grupe')->assertDontSee('Grupe i citati');
+        }
+    }
 }
