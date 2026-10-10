@@ -2,10 +2,12 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Latinica;
+use App\Support\PrikazOrganizacija;
 use App\Support\PrikazPrilike;
 use Illuminate\Support\Collection;
 
@@ -21,12 +23,15 @@ final class Pomocnik
 
     public const SABLON_NASLOV_VODICI = 'Našao sam sledeće vodiče:';
 
+    public const SABLON_NASLOV_ORGANIZACIJE = 'Našao sam sledeće organizacije:';
+
     public const NAJVISE_ZNAKOVA_PITANJA = 300;
 
     public function __construct(
         private readonly PitanjeUFormular $formular,
         private readonly PretragaPrilika $pretraga,
         private readonly PretragaVodica $pretragaVodica,
+        private readonly PretragaOrganizacija $pretragaOrganizacija,
         private readonly PisanjeOdgovora $pisanje,
         private readonly ProveraOdgovora $provera,
         private readonly OpasnaPitanja $opasnaPitanja,
@@ -39,12 +44,12 @@ final class Pomocnik
 
         // Prazno pitanje se ne šalje modelu: nema šta da se pita. Opasno pitanje se ne šalje ni modelu ni pretrazi.
         if ($pitanje === '' || $this->opasnaPitanja->jeOpasno($pitanje)) {
-            return new RezultatPretrage(new Formular, new Collection, new Collection);
+            return new RezultatPretrage(new Formular, new Collection, new Collection, new Collection);
         }
 
         $formular = $this->formular->izPitanja($pitanje, $vremeCekanja);
 
-        return new RezultatPretrage($formular, $this->pretraga->pronadji($formular), $this->pretragaVodica->pronadji($formular));
+        return new RezultatPretrage($formular, $this->pretraga->pronadji($formular), $this->pretragaVodica->pronadji($formular), $this->pretragaOrganizacija->pronadji($formular));
     }
 
     /**
@@ -72,6 +77,7 @@ final class Pomocnik
         $izvori = [
             ...$rezultat->zapisi->map(fn (Prilika $prilika) => $this->izvor($prilika))->all(),
             ...$rezultat->vodici->map(fn (Vodic $vodic) => $this->izvorVodica($vodic))->all(),
+            ...$rezultat->organizacije->map(fn (Organizacija $organizacija) => $this->izvorOrganizacije($organizacija))->all(),
         ];
 
         $ostalo = $ukupno - (int) ceil($pocetak->diffInSeconds(now()));
@@ -81,12 +87,12 @@ final class Pomocnik
         }
 
         try {
-            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $ostalo);
+            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $ostalo);
         } catch (OllamaNedostupna) {
             return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'model ne odgovara');
         }
 
-        $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi, $rezultat->vodici);
+        $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije);
 
         return $razlog === null
             ? new OdgovorPomocnika($tekst, $izvori, false)
@@ -111,12 +117,24 @@ final class Pomocnik
             $blokovi[] = self::SABLON_NASLOV_VODICI."\n".$rezultat->vodici->map(fn (Vodic $vodic) => '• '.$vodic->naslov)->implode("\n");
         }
 
+        if ($rezultat->organizacije->isNotEmpty()) {
+            $blokovi[] = self::SABLON_NASLOV_ORGANIZACIJE."\n".$rezultat->organizacije->map(fn (Organizacija $organizacija) => '• '.$organizacija->naziv)->implode("\n");
+        }
+
         return implode("\n\n", $blokovi);
     }
 
     private function izvorVodica(Vodic $vodic): Izvor
     {
         return new Izvor($vodic->naslov, null, route('vodici.show', $vodic->slug), null, null, true);
+    }
+
+    // Sajt organizacije je njen zvanični izvor; adresa koja nije veb adresa se ne prikazuje.
+    private function izvorOrganizacije(Organizacija $organizacija): Izvor
+    {
+        $sajt = PrikazOrganizacija::linkSajta($organizacija);
+
+        return new Izvor($organizacija->naziv, null, route('organizacije.show', $organizacija->slug), $sajt === null ? null : PrikazOrganizacija::nazivSajta($sajt), $sajt, false, true);
     }
 
     private function izvor(Prilika $prilika): Izvor

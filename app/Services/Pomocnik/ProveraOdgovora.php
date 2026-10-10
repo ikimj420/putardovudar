@@ -2,10 +2,12 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Support\DatumiUTekstu;
 use App\Support\PoredjenjeTeksta;
+use App\Support\PrikazOrganizacija;
 use Illuminate\Support\Collection;
 
 // Odgovor modela važi samo ako ne sadrži datum ili link kog nema u zapisima; inače ga menja šablon iz zapisa.
@@ -24,8 +26,9 @@ final class ProveraOdgovora
      *
      * @param  Collection<int, Prilika>  $zapisi
      * @param  Collection<int, Vodic>  $vodici
+     * @param  Collection<int, Organizacija>  $organizacije
      */
-    public function razlogOdbijanja(string $odgovor, Collection $zapisi, Collection $vodici): ?string
+    public function razlogOdbijanja(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije = new Collection): ?string
     {
         if (trim($odgovor) === '') {
             return 'prazan odgovor';
@@ -36,15 +39,15 @@ final class ProveraOdgovora
         }
 
         // Zapisi postoje, pa odgovor koji kaže da podatka nema protivreči kartici ispod njega.
-        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty()) && preg_match(self::NEMA_PODATKA, PoredjenjeTeksta::normalizuj($odgovor)) === 1) {
+        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty() || $organizacije->isNotEmpty()) && preg_match(self::NEMA_PODATKA, PoredjenjeTeksta::normalizuj($odgovor)) === 1) {
             return 'odgovor kaže da nema podatka';
         }
 
-        if (! $this->datumiSuIzZapisa($odgovor, $zapisi, $vodici)) {
+        if (! $this->datumiSuIzZapisa($odgovor, $zapisi, $vodici, $organizacije)) {
             return 'datum kog nema u zapisima';
         }
 
-        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi, $vodici)) {
+        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi, $vodici, $organizacije)) {
             return 'link kog nema u zapisima';
         }
 
@@ -54,10 +57,15 @@ final class ProveraOdgovora
     /**
      * @param  Collection<int, Prilika>  $zapisi
      * @param  Collection<int, Vodic>  $vodici
+     * @param  Collection<int, Organizacija>  $organizacije
      */
-    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici): bool
+    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije): bool
     {
         $dozvoljeni = [];
+
+        foreach ($organizacije as $organizacija) {
+            array_push($dozvoljeni, ...DatumiUTekstu::izvuci($organizacija->naziv.' '.$organizacija->kratak_opis.' '.implode(' ', $organizacija->usluge ?? [])));
+        }
 
         foreach ($vodici as $vodic) {
             array_push($dozvoljeni, ...DatumiUTekstu::izvuci($vodic->naslov.' '.$vodic->kratak_opis));
@@ -89,10 +97,20 @@ final class ProveraOdgovora
     /**
      * @param  Collection<int, Prilika>  $zapisi
      * @param  Collection<int, Vodic>  $vodici
+     * @param  Collection<int, Organizacija>  $organizacije
      */
-    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici): bool
+    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije): bool
     {
         $dozvoljeni = [];
+
+        foreach ($organizacije as $organizacija) {
+            foreach ([route('organizacije.show', $organizacija->slug), PrikazOrganizacija::linkSajta($organizacija)] as $adresa) {
+                if ($adresa !== null) {
+                    $dozvoljeni[] = $this->normalizuj($adresa);
+                    $dozvoljeni[] = $this->domen($adresa);
+                }
+            }
+        }
 
         foreach ($vodici as $vodic) {
             $adresa = route('vodici.show', $vodic->slug);

@@ -2,6 +2,7 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Services\Ollama\Ollama;
@@ -14,9 +15,9 @@ use Illuminate\Support\Collection;
 final class PisanjeOdgovora
 {
     private const UPUTSTVO = <<<'TEXT'
-Odgovori na pitanje u najviše tri rečenice, na srpskom jeziku latinicom, samo iz priloženih prilika i vodiča.
-Ne navodi linkove i ne dodaj ništa iz sopstvenog znanja. Datum piši samo ako piše u prilikama ili vodičima.
-Ako prilike i vodiči ne odgovaraju pitanju, reci samo da nemaš podatak.
+Odgovori na pitanje u najviše tri rečenice, na srpskom jeziku latinicom, samo iz priloženih prilika, vodiča i organizacija.
+Ne navodi linkove i ne dodaj ništa iz sopstvenog znanja. Datum piši samo ako piše u prilikama, vodičima ili organizacijama.
+Ako prilike, vodiči i organizacije ne odgovaraju pitanju, reci samo da nemaš podatak.
 TEXT;
 
     public function __construct(private readonly Ollama $ollama) {}
@@ -24,10 +25,11 @@ TEXT;
     /**
      * @param  Collection<int, Prilika>  $zapisi
      * @param  Collection<int, Vodic>  $vodici
+     * @param  Collection<int, Organizacija>  $organizacije
      *
      * @throws OllamaNedostupna
      */
-    public function napisi(string $pitanje, Collection $zapisi, Collection $vodici, ?int $vremeCekanja = null): string
+    public function napisi(string $pitanje, Collection $zapisi, Collection $vodici, Collection $organizacije, ?int $vremeCekanja = null): string
     {
         $tekst = "Pitanje: {$pitanje}";
 
@@ -38,6 +40,16 @@ TEXT;
         if ($vodici->isNotEmpty()) {
             // Modelu idu samo naslov i kratak opis; tekst, koraci i beleška ostaju u bazi.
             $tekst .= "\n\nVodiči:\n".$vodici->map(fn (Vodic $vodic) => 'Naslov: '.$vodic->naslov.'; Kratak opis: '.$vodic->kratak_opis)->implode("\n");
+        }
+
+        if ($organizacije->isNotEmpty()) {
+            // Modelu idu samo naziv, vrsta, kratak opis i usluge; opis, mesto, telefon, sajt i beleška ostaju u bazi.
+            $tekst .= "\n\nOrganizacije:\n".$organizacije->map(fn (Organizacija $organizacija) => implode('; ', array_filter([
+                'Naziv: '.$organizacija->naziv,
+                'Vrsta: '.$organizacija->vrsta->getLabel(),
+                'Kratak opis: '.$organizacija->kratak_opis,
+                $organizacija->usluge ? 'Usluge: '.implode(', ', $organizacija->usluge) : null,
+            ])))->implode("\n");
         }
 
         // Model ume da pređe na ćirilicu ili da je pomeša sa latinicom; sajt piše samo latinicom.

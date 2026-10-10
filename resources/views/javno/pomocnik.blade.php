@@ -32,12 +32,14 @@
                         <h3><a href="{{ $izvor->adresa }}">{{ $izvor->naslov }}</a></h3>
                         @if ($izvor->jeVodic)
                             <p><span class="oznaka">{{ \App\Support\PrikazVodica::OZNAKA }}</span></p>
+                        @elseif ($izvor->jeOrganizacija)
+                            <p><span class="oznaka">{{ \App\Support\PrikazOrganizacija::OZNAKA }}</span></p>
                         @else
                             <p class="red">{{ $izvor->rok }}</p>
                         @endif
                         @if ($izvor->zvanicniNaziv)
                             <p class="red">
-                                {{ \App\Support\PrikazPrilike::ZVANICNI_IZVOR }}
+                                {{ $izvor->jeOrganizacija ? \App\Support\PrikazOrganizacija::SAJT.': ' : \App\Support\PrikazPrilike::ZVANICNI_IZVOR }}
                                 @if ($izvor->zvanicniLink)
                                     <a href="{{ $izvor->zvanicniLink }}" rel="noopener noreferrer nofollow" target="_blank">{{ $izvor->zvanicniNaziv }}</a>
                                 @else

@@ -293,7 +293,7 @@ class PomocnikVodiciTest extends BazaTestCase
                 && ! str_contains($poruka, 'Napiši kontakt')
                 && ! str_contains($poruka, 'Tajna beleška')
                 && ! str_contains($poruka, 'Prilike:')
-                && str_contains($telo['messages'][0]['content'], 'samo iz priloženih prilika i vodiča');
+                && str_contains($telo['messages'][0]['content'], 'samo iz priloženih prilika, vodiča i organizacija');
         });
     }
 

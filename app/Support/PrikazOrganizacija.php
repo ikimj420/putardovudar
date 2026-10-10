@@ -9,6 +9,9 @@ final class PrikazOrganizacija
 {
     public const NASLOV = 'Organizacije';
 
+    // Oznaka na kartici organizacije uz odgovor pomoćnika.
+    public const OZNAKA = 'Organizacija';
+
     public const NEMA_ORGANIZACIJA = 'Trenutno nema organizacija.';
 
     // Predlog; Ivan odobrava (PITANJA-23-25.md). Ne kaže da je organizacija nacrt, jer bi to potvrdilo da zapis postoji.
