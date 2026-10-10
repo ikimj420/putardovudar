@@ -292,29 +292,100 @@ class UvozObradiTest extends BazaTestCase
         $this->assertStringNotContainsStringIgnoringCase('srbij', (string) $nacrt->fresh()->predlog['grupe'][0]['citat']);
     }
 
-    // Ogledalo: ista grupa sa citatom bez njene reči (ili citat kog nema na strani) ostaje nacrt, i ništa se ne upisuje u grupe.
+    // Ogledalo: citat koji doslovno piše na strani, ali nema reč grupe, ostaje nacrt i kad na strani ima rečenica sa rečju grupe (kod traži
+    // samo kad citata modela uopšte nema na strani).
     #[Test]
     #[DataProvider('grupeSaCitatom')]
-    public function citat_bez_reci_grupe_ili_kog_nema_na_strani_ostaje_nacrt(string $grupa, string $citat): void
+    public function citat_bez_reci_grupe_ostaje_nacrt_i_kad_strana_ima_recenicu_sa_recju_grupe(string $grupa, string $citat): void
     {
-        $bezReci = $this->nacrt(['naslov' => 'Bez reči', 'link_izvora' => 'https://a.test/bez-reci']);
-        $izmisljen = $this->nacrt(['naslov' => 'Izmišljen', 'link_izvora' => 'https://a.test/izmisljen']);
+        $nacrt = $this->nacrt();
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p><p>Konkurs je otvoren za sve građane.</p>';
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => 'Konkurs je otvoren za sve građane']]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertNull($nacrt->fresh()->grupe);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $nacrt->fresh()->predlog['odbijeno']);
+    }
+
+    // Paket 53/T1: kad citata modela nema na strani, kod nalazi na strani rečenicu sa rečju grupe i nju čuva kao citat.
+    #[Test]
+    #[DataProvider('grupeSaCitatom')]
+    public function kad_citata_modela_nema_na_strani_kod_nalazi_recenicu_sa_recju_grupe(string $grupa, string $citat): void
+    {
+        $nacrt = $this->nacrt();
+        $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p><p>Konkurs je otvoren za sve građane.</p>';
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => $citat.' i sve ostale']]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status, $grupa);
+        $this->assertSame([$grupa], $prilika->grupe);
+        $this->assertSame([['grupa' => $grupa, 'citat' => $citat.'.', 'izvor_citata' => 'kod']], $prilika->predlog['grupe']);
+        $this->assertSame([$grupa], $prilika->predlog['prihvacene_grupe']);
+    }
+
+    // Ogledalo: citat modela koji piše na strani ostaje njegov (bez oznake „kod"), a bez rečenice sa rečju grupe na strani grupa ne prolazi.
+    #[Test]
+    public function citat_modela_na_strani_ostaje_njegov_a_bez_recenice_grupe_na_strani_nema_prolaza(): void
+    {
+        $recen = $this->nacrt(['naslov' => 'Citat modela', 'link_izvora' => 'https://a.test/model']);
+        $bez = $this->nacrt(['naslov' => 'Bez rečenice', 'link_izvora' => 'https://a.test/bez']);
         Http::fake([
-            'https://a.test/bez-reci' => Http::response($strana),
-            'https://a.test/izmisljen' => Http::response($strana),
-            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez reči')
-                ? $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => 'Konkurs je otvoren za sve građane']]])
-                : $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => $citat.' i sve ostale']]]),
+            'https://a.test/model' => $this->strana(),
+            'https://a.test/bez' => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Konkurs je otvoren za sve građane.</p>'),
+            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez rečenice')
+                ? $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno za studente.']]])
+                : $this->ollama(),
         ]);
 
         $this->artisan('uvoz:obradi');
 
-        foreach ([$bezReci, $izmisljen] as $nacrt) {
-            $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status, $nacrt->naslov);
-            $this->assertNull($nacrt->fresh()->grupe);
-            $this->assertSame('pravilo nije potkrepljeno citatom', $nacrt->fresh()->predlog['odbijeno']);
-        }
+        $this->assertSame(StatusPrilike::Objavljeno, $recen->fresh()->status);
+        $this->assertSame([['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]], $recen->fresh()->predlog['grupe']);
+        $this->assertSame(StatusPrilike::Nacrt, $bez->fresh()->status);
+        $this->assertNull($bez->fresh()->grupe);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $bez->fresh()->predlog['odbijeno']);
+    }
+
+    // Rečenica sa namenom ima prednost nad prvom koja grupu samo pominje; citat je doslovan deo strane i kad je rečenica duga.
+    #[Test]
+    public function kod_bira_recenicu_koja_kaze_kome_je_namenjeno_a_dugu_secie_oko_reci_grupe(): void
+    {
+        $nacrt = $this->nacrt();
+        $uvod = 'Prošle godine je bilo mnogo studenata na predavanju.';
+        $namena = 'Konkurs je otvoren za sve studente.';
+        $dugacka = 'Ovo je jedna veoma dugačka rečenica '.str_repeat('o raznim stvarima i događajima ', 20).'koja pominje studente tek pri kraju '.str_repeat('i nastavlja se dalje ', 20).'.';
+        Http::fake([self::STRANA => Http::response('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p><p>'.$uvod.'</p><p>'.$namena.'</p>'), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $citat = $nacrt->fresh()->predlog['grupe'][0]['citat'];
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame($namena, $citat);
+    }
+
+    #[Test]
+    public function duga_recenica_se_seče_oko_reci_grupe_i_ostaje_doslovan_deo_strane(): void
+    {
+        $nacrt = $this->nacrt();
+        $dugacka = 'Ovo je jedna veoma dugačka rečenica '.str_repeat('o raznim stvarima i događajima ', 20).'koja pominje studente tek pri kraju '.str_repeat('i nastavlja se dalje ', 20).'do kraja.';
+        $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p>';
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $citat = $nacrt->fresh()->predlog['grupe'][0]['citat'];
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertStringContainsString('studente', $citat);
+        $this->assertLessThanOrEqual(300, mb_strlen($citat));
+        $this->assertStringContainsString($citat, $dugacka);
+        $this->assertLessThan(mb_strlen($dugacka), mb_strlen($citat));
     }
 
     // Više grupa: prolaze samo one čiji citat piše na strani i ima njihovu reč; objava traži bar jednu.
@@ -406,8 +477,8 @@ class UvozObradiTest extends BazaTestCase
     public function pravilo_bez_citata_koji_ga_dokazuje_ostaje_nacrt(array $dopuna): void
     {
         $nacrt = $this->nacrt();
-        // Strana ima i rečenicu „Objavljen je roman o životu mladih" da citat o romanu doslovno postoji, a ipak ne prolazi.
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p><p>Konkurs je otvoren za sve građane Srbije.</p>'), self::OLLAMA => $this->ollamaBezKljuceva($dopuna)]);
+        // Strana ima i rečenicu „Objavljen je roman o životu mladih" da citat o romanu doslovno postoji, a ipak ne prolazi; rečenice sa rečju grupe na strani nema.
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p><p>Konkurs je otvoren za sve građane Srbije.</p>', saPravilom: false), self::OLLAMA => $this->ollamaBezKljuceva($dopuna)]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom): Konkurs za stipendije');
 
@@ -427,7 +498,7 @@ class UvozObradiTest extends BazaTestCase
     public function nepotkrepljeno_pravilo_se_prijavljuje_pre_greske_u_roku(): void
     {
         $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno.']], 'rok' => '2026-10-04'])]);
+        Http::fake([self::STRANA => $this->strana(saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno.']], 'rok' => '2026-10-04'])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
     }

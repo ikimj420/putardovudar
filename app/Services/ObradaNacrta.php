@@ -33,7 +33,7 @@ TEXT;
     // Verzija pravila upisana u predlog; nacrt obrađen starim pravilom je nema, pa ga uvoz:obradi --ponovo prepoznaje.
     public const PRAVILO = 2;
 
-    public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana) {}
+    public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe) {}
 
     /** @throws OllamaNedostupna */
     public function obradi(Prilika $prilika): IshodObrade
@@ -54,8 +54,7 @@ TEXT;
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nema tražena polja');
         }
 
-        $grupe = $this->grupeModela($forma);
-        $prihvacene = $this->prihvaceneGrupe($grupe, TekstStrane::normalizuj($tekst));
+        [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
         $odbijeno = $this->zasto($forma, $tekst, $prihvacene);
         $predlog = [
             'pravilo' => self::PRAVILO,
@@ -132,25 +131,34 @@ TEXT;
         return $grupe;
     }
 
-    // Grupa se prihvata samo kad njen citat doslovno piše na strani i sadrži reč te grupe.
+    // Grupa se prihvata samo kad njen citat doslovno piše na strani i sadrži reč te grupe. Ako citat modela uopšte ne piše na strani, kod sam
+    // traži na strani rečenicu sa rečju te grupe i nju čuva kao citat (izvor_citata „kod"); bez takve rečenice grupa ne prolazi.
     /**
      * @param  list<array{grupa: string, citat: string}>  $grupe
-     * @return list<Grupa>
+     * @return array{0: list<Grupa>, 1: list<array{grupa: string, citat: string, izvor_citata?: string}>} prihvaćene grupe i stavke sa citatom koji je važio
      */
-    private function prihvaceneGrupe(array $grupe, string $strana): array
+    private function prihvaceneGrupe(array $grupe, string $tekst): array
     {
+        $strana = TekstStrane::normalizuj($tekst);
         $prihvacene = [];
+        $stavke = [];
 
         foreach ($grupe as $stavka) {
             $grupa = Grupa::from($stavka['grupa']);
             $citat = TekstStrane::normalizuj($stavka['citat']);
+            $naStrani = $citat !== '' && $this->pisePoRecima($strana, $citat);
 
-            if ($citat !== '' && $this->pisePoRecima($strana, $citat) && $grupa->potkrepljuje($citat)) {
+            if ($naStrani && $grupa->potkrepljuje($citat)) {
                 $prihvacene[] = $grupa;
+            } elseif (! $naStrani && ($nadjen = $this->citatGrupe->naStrani($grupa, $tekst)) !== null && $this->pisePoRecima($strana, TekstStrane::normalizuj($nadjen))) {
+                $prihvacene[] = $grupa;
+                $stavka = ['grupa' => $stavka['grupa'], 'citat' => $nadjen, 'izvor_citata' => 'kod'];
             }
+
+            $stavke[] = $stavka;
         }
 
-        return Grupa::izVrednosti(array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene));
+        return [Grupa::izVrednosti(array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene)), $stavke];
     }
 
     // Citat piše na strani samo kao cele reči: „roma" nije na strani na kojoj piše samo „Romania".
