@@ -39,7 +39,7 @@ final class ProveraOdgovora
         }
 
         // Zapisi postoje, pa odgovor koji kaže da podatka nema protivreči kartici ispod njega.
-        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty() || $organizacije->isNotEmpty()) && preg_match(self::NEMA_PODATKA, PoredjenjeTeksta::normalizuj($odgovor)) === 1) {
+        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty() || $organizacije->isNotEmpty()) && $this->kazeDaNemaPodatka($odgovor)) {
             return 'odgovor kaže da nema podatka';
         }
 
@@ -52,6 +52,19 @@ final class ProveraOdgovora
         }
 
         return null;
+    }
+
+    // Poredi se rečenica po rečenica (i deo posle zareza): normalizacija briše interpunkciju, pa bi se bez ove podele
+    // „Nema roka. Informacije su na sajtu." čitalo kao „nema informacije".
+    private function kazeDaNemaPodatka(string $odgovor): bool
+    {
+        foreach (preg_split('/[.,;:!?()\n\r–—]+/u', $odgovor) ?: [] as $deo) {
+            if (preg_match(self::NEMA_PODATKA, PoredjenjeTeksta::normalizuj($deo)) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

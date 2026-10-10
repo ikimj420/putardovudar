@@ -4,6 +4,7 @@ namespace Tests\Feature\Baza;
 
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Models\Vodic;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Services\Pomocnik\OdgovorPomocnika;
 use App\Services\Pomocnik\Pomocnik;
@@ -234,6 +235,10 @@ class PomocnikOdgovorTest extends BazaTestCase
             'nema drugih' => ['Nema drugih poslova u Nišu, samo ovaj u skladištu.'],
             'nema roka' => ['Posao u skladištu, prijave stalno otvorene.'],
             'nema roka ali podatak postoji' => ['Nema roka, ali podatak o poslu u skladištu postoji.'],
+            // Granica rečenice i zareza se čuva: „nema" i „podatak" iz različitih delova nisu „nema podatka".
+            'nema roka pa nova rečenica' => ['Ova prilika nema rok. Informacije o prijavi su na sajtu organizacije.'],
+            'nema roka pa zarez' => ['Nema roka, podatak o poslu u skladištu postoji.'],
+            'nema ograničenja pa podaci' => ['Nema ograničenja. Podatke možete poslati poštom.'],
             'reč koja samo sadrži nema' => ['Firma Renema daje podatak o poslu u Nišu.'],
             'nemam vremena' => ['Nemam vremena za duge opise, ali posao u Nišu postoji.'],
             'nema u drugim gradovima' => ['U drugim gradovima nema ništa osim posla u Nišu.'],
@@ -252,6 +257,17 @@ class PomocnikOdgovorTest extends BazaTestCase
         $this->assertNull($odgovor->razlogSablona);
         $this->assertSame($odgovorModela, $odgovor->tekst);
         $this->assertCount(1, $odgovor->izvori);
+    }
+
+    // Svaka vrsta zapisa za sebe otvara proveru: uslov „postoje vodiči" ne sme da otpadne a da nijedan test ne pocrveni.
+    #[Test]
+    public function provera_odbija_nemam_podatak_i_kad_postoji_samo_vodic(): void
+    {
+        $provera = app(ProveraOdgovora::class);
+        $vodic = Vodic::factory()->objavljen()->create(['naslov' => 'Kako napisati prvi CV']);
+
+        $this->assertSame('odgovor kaže da nema podatka', $provera->razlogOdbijanja('Nemam podatak.', new Collection, new Collection([$vodic])));
+        $this->assertNull($provera->razlogOdbijanja('Vodič je ispod.', new Collection, new Collection([$vodic])));
     }
 
     // Ogledalo: bez zapisa „nemam podatak" nije tvrdnja protiv zapisa, pa ga provera ne odbija (a Pomocnik ga ni ne pita).
