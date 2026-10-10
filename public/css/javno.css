@@ -458,6 +458,13 @@ h1.prazno {
   font-weight: 800;
 }
 
+/* Više grupa u jednoj pilula se prelama u redove; razmak gore i dole da tekst ne dodiruje ivicu. */
+.meta-stavka.grupe {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  line-height: 1.3;
+}
+
 /* Spisak: jedna kolona na telefonu, pa dve, a vodiči i tri */
 .spisak {
   display: grid;

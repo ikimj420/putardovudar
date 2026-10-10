@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\Grupa;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
@@ -36,6 +37,11 @@ class PrilikaFactory extends Factory
     public function objavljena(): static
     {
         return $this->state(['status' => StatusPrilike::Objavljeno]);
+    }
+
+    public function zaGrupe(Grupa ...$grupe): static
+    {
+        return $this->state(['grupe' => array_map(fn (Grupa $grupa) => $grupa->value, $grupe)]);
     }
 
     public function arhivirana(): static

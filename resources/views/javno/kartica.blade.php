@@ -6,6 +6,9 @@
         @if (\App\Support\PrikazPrilike::mesto($prilika))
             <span class="meta-stavka">{{ \App\Support\PrikazPrilike::mesto($prilika) }}</span>
         @endif
+        @if (\App\Support\PrikazPrilike::grupe($prilika))
+            <span class="meta-stavka grupe">{{ \App\Support\PrikazPrilike::KOME }}: {{ \App\Support\PrikazPrilike::grupe($prilika) }}</span>
+        @endif
     </div>
     <p class="kratko">{{ $prilika->kratak_opis }}</p>
 </article>

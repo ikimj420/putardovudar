@@ -36,6 +36,7 @@ class PrilikeTable
                         TextColumn::make('rok_prosao_oznaka')->state(PrikazPrilike::ROK_PROSAO)->badge()->color('danger')->grow(false)
                             ->hidden(fn (?Prilika $record): bool => $record === null || ! $record->rokJeProsao()),
                     ]),
+                    self::red(PrikazPrilike::KOME, 'grupe_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::grupe($prilika)),
                     self::red('Rok', 'rok_prikaz', fn (Prilika $prilika): string => self::rok($prilika)),
                     self::red('Izvor', 'izvor_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::nazivIzvora($prilika)),
                     self::red('Objavio', 'objavio_prikaz', fn (Prilika $prilika): ?string => $prilika->objavio?->getLabel()),

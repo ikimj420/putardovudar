@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Prilike\Schemas;
 
+use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\OsnovObjave;
 use App\Enums\StatusPrilike;
@@ -39,6 +40,11 @@ class PrilikaForm
                     ->helperText('Izaberi šta je ova prilika.')
                     ->options(VrstaPrilike::class)
                     ->required(),
+                Select::make('grupe')
+                    ->label('Kome je namenjeno')
+                    ->helperText('Izaberi jednu ili više grupa kojima je prilika namenjena; ostavi prazno ako grupa nije poznata.')
+                    ->options(Grupa::class)
+                    ->multiple(),
                 Select::make('status')
                     ->label('Status')
                     ->helperText('Nacrt se ne vidi javno, Objavljeno se vidi do isteka roka, Arhivirano se ne vidi.')

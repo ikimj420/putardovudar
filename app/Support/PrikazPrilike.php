@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\Grupa;
 use App\Models\Prilika;
 
 // Tekstovi o prilici koje vidi posetilac, na jednom mestu, da kartica i strana ne pišu isto na dva načina.
@@ -20,6 +21,9 @@ final class PrikazPrilike
 
     public const PROVERI_IZVOR = 'Pre prijave proveri podatke na zvaničnom izvoru.';
 
+    // Oznaka grupa na kartici, strani prilike i u adminu; tekst je iz paketa 39.
+    public const KOME = 'Kome je namenjeno';
+
     public const BEZ_ROKA = 'Bez roka';
 
     public const STALNO_OTVORENO = 'Prijave stalno otvorene';
@@ -34,6 +38,14 @@ final class PrikazPrilike
         }
 
         return $prilika->rok === null ? self::BEZ_ROKA : 'Rok: '.Prikaz::datum($prilika->rok);
+    }
+
+    // Nazivi grupa jednim redom, ili null kad prilika nema nijednu grupu (tada se ništa ne piše).
+    public static function grupe(Prilika $prilika): ?string
+    {
+        $nazivi = array_map(fn (Grupa $grupa) => $grupa->getLabel(), $prilika->izabraneGrupe());
+
+        return $nazivi === [] ? null : implode(', ', $nazivi);
     }
 
     // „Online" ima prednost: polje Online znači da se sve radi preko interneta, pa mesto nije bitno.

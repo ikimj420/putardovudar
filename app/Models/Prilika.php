@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
@@ -20,12 +21,13 @@ use Illuminate\Validation\ValidationException;
  *
  * @property StatusPrilike $status
  * @property VrstaPrilike $vrsta
+ * @property list<string>|null $grupe
  * @property Carbon|null $rok
  * @property KoJeObjavio|null $objavio
  * @property Carbon|null $obradeno_at
  * @property array<string, mixed>|null $predlog
  */
-#[Fillable(['naslov', 'slug', 'vrsta', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren', 'mesto', 'online', 'naziv_izvora', 'link_izvora', 'obradeno_at', 'objavio', 'razlog_objave', 'predlog'])]
+#[Fillable(['naslov', 'slug', 'vrsta', 'grupe', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren', 'mesto', 'online', 'naziv_izvora', 'link_izvora', 'obradeno_at', 'objavio', 'razlog_objave', 'predlog'])]
 class Prilika extends Model
 {
     /** @use HasFactory<PrilikaFactory> */
@@ -53,6 +55,10 @@ class Prilika extends Model
                 throw ValidationException::withMessages(['link_izvora' => self::PORUKA_BEZ_IZVORA]);
             }
 
+            // Grupe se čuvaju kao vrednosti iz enuma, u njegovom redosledu, bez ponavljanja; prazno je null.
+            $grupe = array_map(fn (Grupa $grupa) => $grupa->value, Grupa::izVrednosti($prilika->grupe));
+            $prilika->grupe = $grupe === [] ? null : $grupe;
+
             // Objava koja nije prošla kroz objavi() je ručna: čovek je promenio status u admin.
             if ($prilika->isDirty('status') && $prilika->status === StatusPrilike::Objavljeno && ! $prilika->isDirty('objavio')) {
                 $prilika->objavio = KoJeObjavio::Covek;
@@ -65,6 +71,7 @@ class Prilika extends Model
     {
         return [
             'vrsta' => VrstaPrilike::class,
+            'grupe' => 'array',
             'status' => StatusPrilike::class,
             'rok' => 'date',
             'rok_stalno_otvoren' => 'boolean',
@@ -73,6 +80,20 @@ class Prilika extends Model
             'objavio' => KoJeObjavio::class,
             'predlog' => 'array',
         ];
+    }
+
+    // Prilika je namenjena grupi kad je grupa u njenom zapisu; prilika bez grupa ne ulazi ni za jednu.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function zaGrupu(Builder $upit, Grupa $grupa): void
+    {
+        $upit->whereJsonContains('grupe', $grupa->value);
+    }
+
+    /** @return list<Grupa> */
+    public function izabraneGrupe(): array
+    {
+        return Grupa::izVrednosti($this->grupe);
     }
 
     // Jedino mesto gde se odlučuje da li je rok prošao: ima rok, prijave nisu stalno otvorene, a rok je pre današnjeg dana
