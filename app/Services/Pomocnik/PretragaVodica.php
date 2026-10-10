@@ -6,17 +6,26 @@ use App\Models\Vodic;
 use App\Support\PoredjenjeTeksta;
 use Illuminate\Support\Collection;
 
-// Vodiči se traže samo po prihvaćenim ključnim rečima u naslovu i samo kroz Vodic::javni(). Reč „vodič" ne sužava pretragu.
+// Vodiči se traže samo po prihvaćenim ključnim rečima u naslovu i samo kroz Vodic::javni(). Reč „vodič" ne sužava pretragu,
+// a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljeni vodiči po nazivu.
 final class PretragaVodica
 {
     public const NAJVISE_ZAPISA = 3;
+
+    public const NAJVISE_U_SPISKU = 5;
 
     private const NAJVISE_KANDIDATA = 300;
 
     /** @return Collection<int, Vodic> */
     public function pronadji(Formular $formular): Collection
     {
-        $izrazi = $this->izrazi($formular->kljucneReci);
+        $reci = new OpsteReci($formular->kljucneReci);
+
+        if ($reci->jeSamoOpste()) {
+            return $reci->sadrzi(OpsteReci::VODIC) ? Vodic::javni()->orderBy('naslov')->limit(self::NAJVISE_U_SPISKU)->get() : new Collection;
+        }
+
+        $izrazi = $reci->izrazi(OpsteReci::VODIC);
 
         if ($izrazi === []) {
             return new Collection;
@@ -26,26 +35,6 @@ final class PretragaVodica
             ->filter(fn (Vodic $vodic) => $this->sadrziSveIzraze($vodic, $izrazi))
             ->take(self::NAJVISE_ZAPISA)
             ->values();
-    }
-
-    // Reč „vodič" (u bilo kom padežu) ponavlja vrstu strane koja se traži, pa ne sužava; izraz od same te reči otpada.
-    /**
-     * @param  list<string>  $kljucneReci
-     * @return list<string> normalizovani izrazi
-     */
-    private function izrazi(array $kljucneReci): array
-    {
-        $izrazi = [];
-
-        foreach ($kljucneReci as $izraz) {
-            $reci = array_filter(explode(' ', PoredjenjeTeksta::normalizuj($izraz)), fn (string $rec) => $rec !== '' && ! str_starts_with($rec, 'vodic'));
-
-            if ($reci !== []) {
-                $izrazi[] = implode(' ', $reci);
-            }
-        }
-
-        return $izrazi;
     }
 
     /** @param  list<string>  $izrazi */

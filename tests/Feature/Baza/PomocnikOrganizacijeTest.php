@@ -190,6 +190,80 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         }
     }
 
+    // Paket 27: reč „organizacija" ponavlja vrstu strane, pa ne sužava, isto kao „vodič" kod vodiča.
+    #[Test]
+    public function rec_organizacija_ne_suzava_pretragu_u_bilo_kom_padezu(): void
+    {
+        $this->nsz();
+        $pretraga = app(PretragaOrganizacija::class);
+
+        foreach ([['organizacija', 'zapošljavanje'], ['organizacije', 'CV'], ['organizaciju', 'zapošljavanje'], ['organizacijama', 'CV'], ['Organizacija CV']] as $reci) {
+            $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: $reci)), implode(' + ', $reci));
+        }
+        // Ogledalo: ostale reči i dalje sužavaju.
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['organizacije', 'knjigovođa'])));
+    }
+
+    // Paket 27: kad je „organizacija" jedina reč, pitanje je „koje organizacije imate" i vraća se spisak (najviše 5, po nazivu).
+    #[Test]
+    public function sama_rec_organizacija_izlistava_objavljene_organizacije_po_nazivu_najvise_pet_a_nacrt_nikad(): void
+    {
+        foreach (['Sedma', 'Prva', 'Peta', 'Treca', 'Sesta', 'Cetvrta', 'Druga'] as $naziv) {
+            Organizacija::factory()->objavljena()->create(['naziv' => $naziv.' organizacija']);
+        }
+        Organizacija::factory()->create(['naziv' => 'Aaa nacrt', 'status' => StatusObjave::Nacrt]);
+        $pretraga = app(PretragaOrganizacija::class);
+
+        foreach ([['organizacija'], ['organizacije'], ['Organizacijama'], ['organizacije', 'organizacija'], ['vodiči', 'organizacije']] as $reci) {
+            $this->assertSame(
+                ['Cetvrta organizacija', 'Druga organizacija', 'Peta organizacija', 'Prva organizacija', 'Sedma organizacija'],
+                $pretraga->pronadji(new Formular(kljucneReci: $reci))->pluck('naziv')->all(),
+                implode(' + ', $reci),
+            );
+        }
+    }
+
+    // Ogledalo: spisak samo kad je „organizacija" jedina reč i samo kad je ima; „vodiči" same ne izlistavaju organizacije.
+    #[Test]
+    public function spisak_organizacija_se_ne_pravi_kad_ima_druga_rec_ili_nema_reci_organizacija(): void
+    {
+        $this->nsz();
+        $pretraga = app(PretragaOrganizacija::class);
+
+        $this->assertCount(0, $pretraga->pronadji(new Formular));
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['vodiči'])));
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['organizacije', 'knjigovođa'])));
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['?'])));
+        $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: ['organizacije'])));
+    }
+
+    #[Test]
+    public function pitanje_organizacije_vraca_spisak_organizacija_kao_izvore_a_nacrt_nikad(): void
+    {
+        $this->seed(OrganizacijeSeeder::class);
+        Organizacija::query()->whereIn('naziv', ['Nacionalna služba za zapošljavanje', 'Fondacija Tempus'])->get()->each->update(['status' => StatusObjave::Objavljeno]);
+        $this->model(['kljucne_reci' => ['organizacije']], 'Imamo dve organizacije.');
+
+        $odgovor = $this->pitaj('organizacije');
+
+        $this->assertFalse($odgovor->nemaPodatak);
+        $this->assertSame(['Fondacija Tempus', 'Nacionalna služba za zapošljavanje'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
+        $this->assertSame('Imamo dve organizacije.', $odgovor->tekst);
+    }
+
+    // Pitanje o vodičima i organizacijama odjednom izlistava i jedno i drugo.
+    #[Test]
+    public function pitanje_o_vodicima_i_organizacijama_izlistava_oba_spiska(): void
+    {
+        Vodic::factory()->objavljen()->create(['naslov' => 'Kako napisati prvi CV']);
+        $this->nsz();
+        $this->model(['kljucne_reci' => ['vodiči', 'organizacije']]);
+
+        $odgovor = $this->pitaj('Koje vodiče i organizacije imate?');
+
+        $this->assertSame([[true, false], [false, true]], array_map(fn ($izvor) => [$izvor->jeVodic, $izvor->jeOrganizacija], $odgovor->izvori));
+    }
+
     #[Test]
     public function najvise_tri_organizacije_po_abecedi_naziva(): void
     {
