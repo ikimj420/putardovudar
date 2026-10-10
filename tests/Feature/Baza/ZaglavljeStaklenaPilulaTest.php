@@ -25,7 +25,7 @@ class ZaglavljeStaklenaPilulaTest extends BazaTestCase
             $html = $this->get($adresa)->assertOk()->getContent();
 
             // Početna ima svoj naslovni deo (hero), ostale strane naslovnu traku; obe su pod providnim zaglavljem.
-            $this->assertStringContainsString('<body class="ima-traku">', $html, $adresa);
+            $this->assertMatchesRegularExpression('/<body(?: data-strana="[a-z]+")? class="ima-traku">/', $html, $adresa);
             $this->assertStringContainsString($naslovniDeo, $html, $adresa);
             $this->assertSame(1, substr_count($html, '<div class="linija" aria-hidden="true"></div>'), $adresa);
             $this->assertLessThan(strpos($html, '<header class="zaglavlje">'), strpos($html, '<div class="linija" aria-hidden="true"></div>'), $adresa);

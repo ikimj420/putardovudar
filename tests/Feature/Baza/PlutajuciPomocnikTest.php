@@ -100,7 +100,9 @@ class PlutajuciPomocnikTest extends BazaTestCase
             $html = $odgovor->getContent();
             $obidjeno++;
 
-            $this->assertSame(1, substr_count($html, '<a class="plutajuci-dugme" href="'.route('pomocnik.index').'" data-pomocnik-otvori aria-controls="pomocnik-prozor">'.PrikazPomocnika::NASLOV.'</a>'), $ime);
+            $this->assertSame(1, preg_match('#<aside class="plutajuci" aria-label="'.PrikazPomocnika::NASLOV.'" data-pomocnik>\s*<a class="plutajuci-dugme" href="'.preg_quote(route('pomocnik.index'), '#').'" data-pomocnik-otvori aria-controls="pomocnik-prozor"><span class="plutajuci-krug" aria-hidden="true"><svg [^>]*focusable="false">.*?</svg></span>'.PrikazPomocnika::NASLOV.'</a>#s', $html), $ime);
+            // Dugme je u svom orijentiru (aside), pa nije slobodan sadržaj izvan orijentira (axe: region).
+            $this->assertSame(1, substr_count($html, '</aside>'), $ime);
             // Prozor je skriven dok skript ne radi, i nosi isti obrazac kao strana pomoćnika.
             $this->assertStringContainsString('<section class="plutajuci-prozor" id="pomocnik-prozor" role="dialog" aria-labelledby="pomocnik-naslov"', $html, $ime);
             $this->assertMatchesRegularExpression('#<section class="plutajuci-prozor"[^>]* hidden>#', $html, $ime);

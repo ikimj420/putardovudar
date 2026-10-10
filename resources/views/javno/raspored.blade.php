@@ -7,7 +7,18 @@
     <link rel="stylesheet" href="{{ asset('css/javno.css') }}?v={{ filemtime(public_path('css/javno.css')) }}">
     <script src="{{ asset('js/javno.js') }}?v={{ filemtime(public_path('js/javno.js')) }}"></script>
 </head>
-{!! View::hasSection('traka') || View::hasSection('hero') ? '<body class="ima-traku">' : '<body>' !!}
+{{-- Svaka strana ima svoju boju (paket 57): prilike narandžasta, vodiči ljubičasta, organizacije bobica, kalendar zlato; početna i pomoćnik su noć. --}}
+@php
+    $strana = match (true) {
+        request()->routeIs('prilike.*') => 'prilike',
+        request()->routeIs('vodici.*') => 'vodici',
+        request()->routeIs('organizacije.*') => 'organizacije',
+        request()->routeIs('kalendar.*') => 'kalendar',
+        default => null,
+    };
+    $atributiTela = trim(($strana ? 'data-strana="'.$strana.'" ' : '').(View::hasSection('traka') || View::hasSection('hero') ? 'class="ima-traku"' : ''));
+@endphp
+{!! '<body'.($atributiTela !== '' ? ' '.$atributiTela : '').'>' !!}
     <div class="linija" aria-hidden="true"></div>
     <header class="zaglavlje">
         <nav class="zaglavlje-red" aria-label="Glavni meni">
@@ -24,10 +35,10 @@
             <button class="dugme-meni" type="button" aria-label="{{ \App\Support\PrikazZaglavlja::OTVORI_MENI }}" aria-controls="meni" aria-expanded="false" hidden>☰</button>
             <div class="meni" id="meni">
                 <div class="meni-sredina">
-                    <a href="{{ route('prilike.index') }}">Prilike</a>
-                    <a href="{{ route('vodici.index') }}">{{ \App\Support\PrikazVodica::NASLOV }}</a>
-                    <a href="{{ route('organizacije.index') }}">{{ \App\Support\PrikazOrganizacija::NASLOV }}</a>
-                    <a href="{{ route('kalendar.index') }}">{{ \App\Support\PrikazKalendara::NASLOV }}</a>
+                    <a href="{{ route('prilike.index') }}"@if ($strana === 'prilike') aria-current="page"@endif>Prilike</a>
+                    <a href="{{ route('vodici.index') }}"@if ($strana === 'vodici') aria-current="page"@endif>{{ \App\Support\PrikazVodica::NASLOV }}</a>
+                    <a href="{{ route('organizacije.index') }}"@if ($strana === 'organizacije') aria-current="page"@endif>{{ \App\Support\PrikazOrganizacija::NASLOV }}</a>
+                    <a href="{{ route('kalendar.index') }}"@if ($strana === 'kalendar') aria-current="page"@endif>{{ \App\Support\PrikazKalendara::NASLOV }}</a>
                 </div>
                 <div class="meni-desno">
                     <a class="asistent" href="{{ route('pomocnik.index') }}"@unless (request()->routeIs('pomocnik.*')) data-pomocnik-otvori aria-controls="pomocnik-prozor"@endunless>{{ \App\Support\PrikazPomocnika::NASLOV }}</a>

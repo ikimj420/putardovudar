@@ -127,7 +127,7 @@ class JavnoZaglavljeTest extends BazaTestCase
 
         // Ogledalo: nazivi iz prototipa (plava, zelena, crvena) i nazivi pre prototipa ne postoje.
         $this->assertDoesNotMatchRegularExpression('/--(?:blue|green|red)[a-z-]*:|var\(--(?:blue|green|red)[a-z-]*\)/', $stil);
-        $this->assertDoesNotMatchRegularExpression('/--(?:strana|kartica|tekst|prigusen|granica|plava|zelena|senka|polumer)\b/', $stil);
+        $this->assertDoesNotMatchRegularExpression('/--(?:strana|kartica|tekst|prigusen|granica|plava|zelena|senka|polumer)(?![\w-])/', $stil);
     }
 
     // Bez plave, zelene i crvene: nijedna boja u stilu nema ton plave, zelene, tirkizne ni crvene. Ljubičasta, ruža, narandžasta i zlato su dozvoljeni;

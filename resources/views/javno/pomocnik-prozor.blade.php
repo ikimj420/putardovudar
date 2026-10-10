@@ -1,6 +1,6 @@
 {{-- Plutajući pomoćnik na svakoj javnoj strani osim na samoj strani pomoćnika. Bez skripta dugme je obična veza ka strani pomoćnika, a prozor ostaje skriven. --}}
-<div class="plutajuci" data-pomocnik>
-    <a class="plutajuci-dugme" href="{{ route('pomocnik.index') }}" data-pomocnik-otvori aria-controls="pomocnik-prozor">{{ \App\Support\PrikazPomocnika::NASLOV }}</a>
+<aside class="plutajuci" aria-label="{{ \App\Support\PrikazPomocnika::NASLOV }}" data-pomocnik>
+    <a class="plutajuci-dugme" href="{{ route('pomocnik.index') }}" data-pomocnik-otvori aria-controls="pomocnik-prozor"><span class="plutajuci-krug" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 64 64" focusable="false"><path d="M12 60V28C12 15 21 6 32 6s20 9 20 22v32" fill="none" stroke="currentColor" stroke-width="6"/><path d="M32 14l12 6v40H32z" fill="currentColor"/></svg></span>{{ \App\Support\PrikazPomocnika::NASLOV }}</a>
     <section class="plutajuci-prozor" id="pomocnik-prozor" role="dialog" aria-labelledby="pomocnik-naslov" data-trazim="{{ \App\Support\PrikazPomocnika::TRAZIM }}" hidden>
         <div class="plutajuci-glava">
             <h2 id="pomocnik-naslov">{{ \App\Support\PrikazPomocnika::NASLOV }}</h2>
@@ -17,4 +17,4 @@
             <button type="submit">{{ \App\Support\PrikazPomocnika::DUGME }}</button>
         </form>
     </section>
-</div>
+</aside>

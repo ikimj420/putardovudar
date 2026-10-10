@@ -10,6 +10,8 @@
   --zlato: #e7b53c;
   --bobica: #891f5d;
   --bobica-svetla: #b83c7e;
+  --ljubicasta-svetla: #7d36e0;
+  --zlato-meko: #f5d98a;
   --papir: #fbfafd;
   --pesak: #f2f0f6;
   --mastilo: #1a1a1c;
@@ -53,8 +55,47 @@
   --sjaj-2: rgba(240, 153, 76, 0.28);
   --sjaj-3: rgba(137, 31, 93, 0.75);
 
+  /* Boja strane: aktivna stavka menija i plutajući pomoćnik. Početna i pomoćnik su noć sa narandžasto-zlatnim krugom; ostale strane dole menjaju ove promenljive. */
+  --strana-pozadina: rgba(39, 15, 67, 0.82);
+  --strana-slova: #ffffff;
+  --strana-krug: linear-gradient(135deg, var(--narandzasta), var(--zlato));
+  --strana-ikona: var(--noc);
+
   --font-tekst: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-naslov: "Plus Jakarta Sans", Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Svaka strana ima svoju boju. Slova na obojenoj podlozi su tamna (noć) na narandžastoj i zlatnoj, a bela na ljubičastoj i bobici; svaki par je izmeren. */
+body[data-strana="prilike"] {
+  --sjaj-2: rgba(224, 114, 41, 0.6);
+  --strana-pozadina: linear-gradient(135deg, var(--narandzasta), var(--narandzasta-meka));
+  --strana-slova: var(--noc);
+  --strana-krug: rgba(39, 15, 67, 0.12);
+  --strana-ikona: var(--noc);
+}
+
+body[data-strana="vodici"] {
+  --sjaj-2: rgba(101, 31, 199, 0.8);
+  --strana-pozadina: linear-gradient(135deg, var(--ljubicasta), var(--ljubicasta-svetla));
+  --strana-slova: #ffffff;
+  --strana-krug: rgba(255, 255, 255, 0.22);
+  --strana-ikona: #ffffff;
+}
+
+body[data-strana="organizacije"] {
+  --sjaj-2: rgba(184, 60, 126, 0.75);
+  --strana-pozadina: linear-gradient(135deg, var(--bobica), var(--bobica-svetla));
+  --strana-slova: #ffffff;
+  --strana-krug: rgba(255, 255, 255, 0.22);
+  --strana-ikona: #ffffff;
+}
+
+body[data-strana="kalendar"] {
+  --sjaj-2: rgba(231, 181, 60, 0.5);
+  --strana-pozadina: linear-gradient(135deg, var(--zlato), var(--zlato-meko));
+  --strana-slova: var(--noc);
+  --strana-krug: rgba(39, 15, 67, 0.12);
+  --strana-ikona: var(--noc);
 }
 
 /* Inter je lokalni fajl (public/fonts/javno, licenca uz njega); nijedna spoljna adresa. */
@@ -262,6 +303,12 @@ html {
   background: rgba(26, 26, 28, 0.06);
 }
 
+/* Aktivna stavka menija je u boji strane. */
+.meni a[aria-current="page"] {
+  background: var(--strana-pozadina);
+  color: var(--strana-slova);
+}
+
 /* „Pomoćnik": mala narandžasta pilula kao u predlogu; tamna slova, jer bela na narandžastoj nema kontrast. */
 .meni .asistent {
   display: inline-flex;
@@ -320,6 +367,11 @@ html {
 
   .js .ima-traku .zaglavlje:not(.skrolovano) .meni-sredina a:hover {
     background: rgba(255, 255, 255, 0.12);
+  }
+
+  .js .ima-traku .zaglavlje:not(.skrolovano) .meni-sredina a[aria-current="page"] {
+    background: var(--strana-pozadina);
+    color: var(--strana-slova);
   }
 }
 
@@ -1186,20 +1238,38 @@ h1.prazno {
 .plutajuci-dugme {
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   min-height: 48px;
-  padding: 0 22px;
+  padding: 7px 18px 7px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: var(--button-dark-bg);
-  color: var(--button-dark-text);
+  background: var(--strana-pozadina);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  color: var(--strana-slova);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
   box-shadow: var(--shadow-velika);
+  transition:
+    background 0.4s ease,
+    color 0.4s ease,
+    transform 0.25s ease;
 }
 
 .plutajuci-dugme:hover {
-  background: var(--ljubicasta);
-  color: #fff;
+  transform: translateY(-2px);
+}
+
+.plutajuci-krug {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--strana-krug);
+  color: var(--strana-ikona);
+  transition: background 0.4s ease;
 }
 
 .plutajuci-prozor {
