@@ -171,16 +171,73 @@ class PomocnikVodiciTest extends BazaTestCase
         $this->assertSame([false], array_map(fn ($izvor) => $izvor->jeVodic, $odgovor->izvori));
     }
 
+    // Od paketa 23 vodiči se traže samo po naslovu (Ivanova odluka, merenje u paketu 21): kratak opis i tekst se ne pretražuju.
     #[Test]
-    public function sve_kljucne_reci_moraju_da_pisu_u_naslovu_ili_kratkom_opisu(): void
+    public function sve_kljucne_reci_moraju_da_pisu_u_naslovu_a_ne_u_kratkom_opisu_ni_tekstu(): void
     {
         $this->cv();
         $pretraga = app(PretragaVodica::class);
 
-        $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: ['CV', 'iskustvo'])));
+        $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: ['CV', 'prvi'])));
+        $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: ['CV'])));
         $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['CV', 'knjigovođa'])));
-        // „Dugačak" je samo u tekstu vodiča, a tekst se ne pretražuje.
+        // „Iskustvo" je samo u kratkom opisu, a „dugačak" samo u tekstu vodiča: ni jedno ni drugo se ne pretražuje.
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['CV', 'iskustvo'])));
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['iskustvo'])));
         $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['dugačak'])));
+    }
+
+    // Merenje iz paketa 21: „CV" je vraćao i vodiče o e-pošti i prijavi, jer im opis pominje CV.
+    #[Test]
+    public function reč_u_opisu_drugog_vodica_ga_ne_dovodi_u_odgovor(): void
+    {
+        $this->cv();
+        Vodic::factory()->objavljen()->create(['naslov' => 'Kako napisati email uz prijavu', 'kratak_opis' => 'Kratka poruka koja prati CV.']);
+        Vodic::factory()->objavljen()->create(['naslov' => 'Kako se prijaviti za posao ili praksu', 'kratak_opis' => 'Od CV-a do razgovora.']);
+
+        $naslovi = app(PretragaVodica::class)->pronadji(new Formular(kljucneReci: ['CV']))->pluck('naslov')->all();
+
+        $this->assertSame(['Kako napisati prvi CV'], $naslovi);
+    }
+
+    // Merenje iz paketa 21: „dokumenta" nije stizalo do vodiča „Šta ako ti fali dokument?", jer su tri druga imala reč u opisu.
+    #[Test]
+    public function vodic_sa_recju_u_naslovu_ne_ostaje_iza_vodica_sa_recju_u_opisu(): void
+    {
+        foreach (['Kako poslati prijavu online', 'Kako se prijaviti za stipendiju', 'Kako tražiti pismo preporuke', 'Kako napisati email uz prijavu'] as $naslov) {
+            Vodic::factory()->objavljen()->create(['naslov' => $naslov, 'kratak_opis' => 'Koja dokumenta treba priložiti.']);
+        }
+        Vodic::factory()->objavljen()->create(['naslov' => 'Šta ako ti fali dokument?', 'kratak_opis' => 'Kako da dođeš do kopije.']);
+
+        $naslovi = app(PretragaVodica::class)->pronadji(new Formular(kljucneReci: ['dokumenta']))->pluck('naslov')->all();
+
+        $this->assertSame(['Šta ako ti fali dokument?'], $naslovi);
+    }
+
+    // „Vodič" ponavlja vrstu strane koja se traži, pa ne sužava pretragu (kao reč koja ponavlja vrstu ili grad kod prilika).
+    #[Test]
+    public function rec_vodic_ne_suzava_pretragu_u_bilo_kom_padezu(): void
+    {
+        $this->cv();
+        $pretraga = app(PretragaVodica::class);
+
+        foreach ([['vodič', 'CV'], ['vodiči', 'CV'], ['vodiča', 'CV'], ['vodičima', 'CV'], ['Vodič CV'], ['vodic', 'cv']] as $reci) {
+            $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: $reci)), implode(' + ', $reci));
+        }
+        // Ogledalo: ostale reči i dalje sužavaju, a sama reč „vodič" nije pretraga.
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['vodič', 'knjigovođa'])));
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['vodič'])));
+        $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['vodiči', 'vodič'])));
+    }
+
+    // Ogledalo: otpada samo reč „vodič", ne svaka reč koja počinje na „vod".
+    #[Test]
+    public function recka_koja_samo_pocinje_kao_vodic_i_dalje_trazi(): void
+    {
+        Vodic::factory()->objavljen()->create(['naslov' => 'Kako da prijaviš kvar na vodovodu', 'kratak_opis' => 'Za stanare.']);
+
+        $this->assertCount(1, app(PretragaVodica::class)->pronadji(new Formular(kljucneReci: ['vodovod'])));
+        $this->assertCount(0, app(PretragaVodica::class)->pronadji(new Formular(kljucneReci: ['vodovod', 'CV'])));
     }
 
     #[Test]
