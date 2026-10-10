@@ -18,6 +18,7 @@
                     <a href="{{ route('prilike.index') }}">Prilike</a>
                     <a href="{{ route('vodici.index') }}">{{ \App\Support\PrikazVodica::NASLOV }}</a>
                     <a href="{{ route('organizacije.index') }}">{{ \App\Support\PrikazOrganizacija::NASLOV }}</a>
+                    <a href="{{ route('kalendar.index') }}">{{ \App\Support\PrikazKalendara::NASLOV }}</a>
                 </div>
                 <div class="meni-desno">
                     <a class="asistent" href="{{ route('pomocnik.index') }}">{{ \App\Support\PrikazPomocnika::NASLOV }}</a>

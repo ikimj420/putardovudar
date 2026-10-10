@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\JavneOrganizacijeController;
 use App\Http\Controllers\JavnePrilikeController;
+use App\Http\Controllers\JavniKalendarController;
 use App\Http\Controllers\JavniVodiciController;
 use App\Http\Controllers\PomocnikController;
 use Illuminate\Support\Facades\Route;
@@ -13,5 +14,6 @@ Route::get('/vodici', [JavniVodiciController::class, 'index'])->name('vodici.ind
 Route::get('/vodici/{slug}', [JavniVodiciController::class, 'show'])->name('vodici.show');
 Route::get('/organizacije', [JavneOrganizacijeController::class, 'index'])->name('organizacije.index');
 Route::get('/organizacije/{slug}', [JavneOrganizacijeController::class, 'show'])->name('organizacije.show');
+Route::get('/kalendar', [JavniKalendarController::class, 'index'])->name('kalendar.index');
 Route::get('/pomocnik', [PomocnikController::class, 'index'])->name('pomocnik.index');
 Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->middleware('throttle:pomocnik')->name('pomocnik.pitaj');

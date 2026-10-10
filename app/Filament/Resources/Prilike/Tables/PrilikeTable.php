@@ -3,11 +3,16 @@
 namespace App\Filament\Resources\Prilike\Tables;
 
 use App\Enums\StatusPrilike;
+use App\Filament\Resources\Kalendar\KalendarResource;
 use App\Models\Prilika;
+use App\Services\KalendarIzPrilike;
 use App\Support\Prikaz;
+use App\Support\PrikazKalendara;
 use App\Support\PrikazPrilike;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
@@ -53,6 +58,21 @@ class PrilikeTable
             ->recordActions([
                 // Dugme ide ispod kartice preko cele širine (pravilo za telefon); Filament nema opciju za to, a admin nema svoju temu.
                 EditAction::make()->label('Uredi')->button()->extraAttributes(['style' => 'width: 100%; justify-content: center;']),
+                // Samo kad je rok prošao, i samo ko sme da dodaje u kalendar (brava na radnji koja piše). Stavka je nacrt popunjen iz prilike.
+                Action::make('dodajUKalendar')
+                    ->label(PrikazKalendara::DODAJ)
+                    ->button()
+                    ->color('gray')
+                    ->extraAttributes(['style' => 'width: 100%; justify-content: center;'])
+                    ->visible(fn (?Prilika $record): bool => $record !== null && $record->rokJeProsao() && KalendarResource::canCreate())
+                    ->authorize(fn (): bool => KalendarResource::canCreate())
+                    ->action(function (Prilika $record, Action $action): void {
+                        $stavka = app(KalendarIzPrilike::class)->dodaj($record);
+
+                        Notification::make()->title($stavka->wasRecentlyCreated ? PrikazKalendara::DODATO : PrikazKalendara::VEC_JE)->success()->send();
+
+                        $action->redirect(KalendarResource::getUrl('edit', ['record' => $stavka]));
+                    }),
             ]);
     }
 

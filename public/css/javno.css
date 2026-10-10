@@ -634,6 +634,11 @@ h1.prazno {
   font-weight: 950;
 }
 
+/* Odeljak (mesec u kalendaru) posle spiska kartica ne sme da se lepi uz poslednju karticu. */
+.spisak + .naslov-izvora {
+  margin-top: 30px;
+}
+
 /* Koraci i usluge: stavke u belim poljima, kao u prototipu */
 .koraci,
 .usluge {

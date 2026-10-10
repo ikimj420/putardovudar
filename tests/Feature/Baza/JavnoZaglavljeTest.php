@@ -16,7 +16,7 @@ class JavnoZaglavljeTest extends BazaTestCase
     use RefreshDatabase, StilJavnihStrana;
 
     #[Test]
-    public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_meni_prilike_vodici_organizacije_pomocnik(): void
+    public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_meni_prilike_vodici_organizacije_kalendar_pomocnik(): void
     {
         $adrese = [route('prilike.index')];
         $this->assertStringContainsString('Trenutno nema otvorenih prilika.', $this->get($adrese[0])->getContent());
@@ -33,15 +33,15 @@ class JavnoZaglavljeTest extends BazaTestCase
             $nazivi = array_map(fn (array $veza) => trim((string) preg_replace('/\s+/', ' ', strip_tags($veza[3]))), $veze);
 
             // Ime sajta (u dva reda, pa u dva dela) vodi na početnu, pa meni tim redom, svaka veza tačno jednom.
-            $this->assertSame(['Putardo Vudar', 'Prilike', 'Vodiči', 'Organizacije', 'Pomoćnik'], $nazivi, $adresa);
-            $this->assertSame([route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('pomocnik.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
+            $this->assertSame(['Putardo Vudar', 'Prilike', 'Vodiči', 'Organizacije', 'Kalendar', 'Pomoćnik'], $nazivi, $adresa);
+            $this->assertSame([route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
             $this->assertStringContainsString('class="logo"', $veze[0][1]);
-            $this->assertStringContainsString('class="asistent"', $veze[4][1]);
+            $this->assertStringContainsString('class="asistent"', $veze[5][1]);
         }
     }
 
     // Ogledalo: zaglavlje je ime sajta i tačno ovaj meni, bez drugih stavki. Do paketa 18 bio je jedan link (Prilike);
-    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, Pomoćnik, a Organizacije posle paketa 20.
+    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, Pomoćnik, a Organizacije posle paketa 20 i Kalendar posle paketa 44.
     #[Test]
     public function zaglavlje_nema_drugih_linkova_osim_menija(): void
     {
@@ -50,7 +50,7 @@ class JavnoZaglavljeTest extends BazaTestCase
         preg_match_all('#<a\b[^>]*href="([^"]*)"#', $zaglavlje[1] ?? '', $adrese);
 
         $this->assertSame(
-            [route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('pomocnik.index')],
+            [route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')],
             $adrese[1],
         );
     }

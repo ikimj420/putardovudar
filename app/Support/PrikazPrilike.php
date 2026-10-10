@@ -50,12 +50,18 @@ final class PrikazPrilike
         return route('prilike.index', array_filter(['vrsta' => $vrsta?->value, 'grupa' => $grupa?->value]));
     }
 
-    // Nazivi grupa jednim redom, ili null kad prilika nema nijednu grupu (tada se ništa ne piše).
-    public static function grupe(Prilika $prilika): ?string
+    // Nazivi grupa jednim redom, ili null kad nema nijedne (tada se ništa ne piše); isto za priliku i za stavku kalendara.
+    /** @param  list<Grupa>  $grupe */
+    public static function nazivi(array $grupe): ?string
     {
-        $nazivi = array_map(fn (Grupa $grupa) => $grupa->getLabel(), $prilika->izabraneGrupe());
+        $nazivi = array_map(fn (Grupa $grupa) => $grupa->getLabel(), $grupe);
 
         return $nazivi === [] ? null : implode(', ', $nazivi);
+    }
+
+    public static function grupe(Prilika $prilika): ?string
+    {
+        return self::nazivi($prilika->izabraneGrupe());
     }
 
     // „Online" ima prednost: polje Online znači da se sve radi preko interneta, pa mesto nije bitno.
