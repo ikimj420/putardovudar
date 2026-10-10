@@ -53,6 +53,8 @@ TEXT;
         $grupe = Grupa::izTeksta($pitanje);
         $kome = $kome !== null && Grupa::izTeksta($kome) !== [] ? null : $kome;
         $reci = array_merge(...array_map(fn (string $rec) => Grupa::izTeksta($rec) === [] ? [$rec] : Grupa::bezReciGrupe($rec), $reci));
+        $recGrupe = Grupa::reciGrupeUTekstu($pitanje);
+        $reci = array_values(array_filter($reci, fn (string $rec) => array_diff(explode(' ', PoredjenjeTeksta::normalizuj($rec)), $recGrupe) !== []));
 
         return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano), $grupe);
     }

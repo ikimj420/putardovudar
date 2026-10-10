@@ -73,6 +73,7 @@ class PomocnikGrupeTest extends BazaTestCase
             'povratnici' => [Grupa::Povratnici, 'Šta ima za povratnike iz inostranstva?'],
             'organizacije' => [Grupa::Organizacije, 'Šta ima za udruženja građana?'],
             'romi' => [Grupa::Romi, 'Ja sam Romkinja, šta ima za mene?'],
+            'odrasli-bez-skole' => [Grupa::OdrasliBezSkole, 'Šta ima za odrasle bez završene škole?'],
         ];
     }
 
@@ -85,7 +86,7 @@ class PomocnikGrupeTest extends BazaTestCase
         // Ogledala: bez grupa, samo za druge grupe i sa rečju iz pitanja u tekstu (ali bez grupe) ne ulaze.
         $this->prilika('Bez grupa');
         $this->prilika('Samo druge grupe', ['grupe' => array_map(fn (Grupa $g) => $g->value, array_filter(Grupa::cases(), fn (Grupa $druga) => $druga !== $grupa))]);
-        $this->prilika('Samo pominje', ['opis' => 'student osnovac srednjoškolac doktorske studije nezaposleni povratnici udruženja Romkinja']);
+        $this->prilika('Samo pominje', ['opis' => 'student osnovac srednjoškolac doktorske studije nezaposleni povratnici udruženja Romkinja odrasli bez škole']);
         $this->model();
 
         $rezultat = $this->pitaj($pitanje);
@@ -113,6 +114,29 @@ class PomocnikGrupeTest extends BazaTestCase
         $this->model(['kljucne_reci' => [$fraza]]);
 
         $this->assertSame($ostaje, $this->pitaj($pitanje)->formular->kljucneReci);
+    }
+
+    // Model ume da razbije reč grupe na posebne ključne reči („bez", „završene", „škole"); one ne idu u reči koje prilika mora da ima.
+    // Ogledalo: iste reči u pitanju koje ne kaže grupu ostaju ključne reči.
+    #[Test]
+    public function reci_koje_cine_rec_grupe_ne_traze_se_u_tekstu_a_iste_reci_bez_grupe_ostaju(): void
+    {
+        $this->prilika('Obuka za odrasle', ['grupe' => ['odrasli-bez-skole'], 'opis' => 'Obuka za odrasle koji nisu završili osnovnu školu.']);
+        $this->model(['kljucne_reci' => ['bez', 'završene', 'škole']]);
+
+        $rezultat = $this->pitaj('Šta ima za odrasle bez završene škole?');
+
+        $this->assertSame([Grupa::OdrasliBezSkole], $rezultat->formular->grupe);
+        $this->assertSame([], $rezultat->formular->kljucneReci);
+        $this->assertSame(['Obuka za odrasle'], $this->naslovi($rezultat));
+    }
+
+    #[Test]
+    public function reci_bez_reci_grupe_u_pitanju_ostaju_kljucne_reci(): void
+    {
+        $this->model(['kljucne_reci' => ['bez', 'dozvole']]);
+
+        $this->assertSame(['bez', 'dozvole'], $this->pitaj('Ima li nečeg bez dozvole?')->formular->kljucneReci);
     }
 
     // Grupu iz pitanja određuje kod po rečniku (paket 40), ne model: model koji ništa ne vrati ne gubi grupu.

@@ -37,12 +37,12 @@ class PrilikaGrupeTest extends AdminBazaTestCase
         return array_combine(array_map(fn (Grupa $grupa) => $grupa->value, Grupa::cases()), array_map(fn (Grupa $grupa) => [$grupa], Grupa::cases()));
     }
 
-    // Nazivi su iz paketa 39, doslovno, tim redosledom.
+    // Nazivi su iz paketa 39 (osam) i paketa 46 (poslednja), doslovno, tim redosledom.
     #[Test]
-    public function grupe_su_osam_i_imaju_nazive_iz_paketa(): void
+    public function grupe_su_devet_i_imaju_nazive_iz_paketa(): void
     {
         $this->assertSame(
-            ['Osnovci', 'Srednjoškolci', 'Studenti', 'Master i doktorski studenti', 'Nezaposleni mladi', 'Povratnici iz inostranstva', 'Organizacije', 'Romi i Romkinje'],
+            ['Osnovci', 'Srednjoškolci', 'Studenti', 'Master i doktorski studenti', 'Nezaposleni mladi', 'Povratnici iz inostranstva', 'Organizacije', 'Romi i Romkinje', 'Odrasli bez završene škole'],
             array_map(fn (Grupa $grupa) => $grupa->getLabel(), Grupa::cases()),
         );
     }
@@ -119,9 +119,9 @@ class PrilikaGrupeTest extends AdminBazaTestCase
         $this->assertNull($prilika->fresh()->grupe);
     }
 
-    // Polje nudi tačno osam grupa (ništa drugo nije za izbor) i dozvoljava više izbora.
+    // Polje nudi tačno devet grupa (ništa drugo nije za izbor) i dozvoljava više izbora.
     #[Test]
-    public function polje_nudi_tacno_osam_grupa_i_vise_izbora(): void
+    public function polje_nudi_tacno_devet_grupa_i_vise_izbora(): void
     {
         $prilika = Prilika::factory()->create();
 

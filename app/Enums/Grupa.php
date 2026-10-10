@@ -16,6 +16,7 @@ enum Grupa: string implements HasLabel
     case Povratnici = 'povratnici';
     case Organizacije = 'organizacije';
     case Romi = 'romi';
+    case OdrasliBezSkole = 'odrasli-bez-skole';
 
     public function getLabel(): string
     {
@@ -28,6 +29,7 @@ enum Grupa: string implements HasLabel
             self::Povratnici => 'Povratnici iz inostranstva',
             self::Organizacije => 'Organizacije',
             self::Romi => 'Romi i Romkinje',
+            self::OdrasliBezSkole => 'Odrasli bez završene škole',
         };
     }
 
@@ -43,6 +45,24 @@ enum Grupa: string implements HasLabel
     public static function izTeksta(string $tekst): array
     {
         return array_values(array_filter(self::cases(), fn (self $grupa) => $grupa->potkrepljuje($tekst)));
+    }
+
+    // Reči koje u tekstu čine reč grupe („bez završene škole"), normalizovane: pitanje ih već kaže kao grupu, a model ih zna
+    // da vrati i kao posebne ključne reči.
+    /** @return list<string> */
+    public static function reciGrupeUTekstu(string $tekst): array
+    {
+        $reci = [];
+
+        foreach (self::cases() as $grupa) {
+            preg_match_all($grupa->uzorak(), PoredjenjeTeksta::normalizuj($tekst), $nalazi);
+
+            foreach ($nalazi[0] as $nalaz) {
+                array_push($reci, ...explode(' ', $nalaz));
+            }
+        }
+
+        return array_values(array_unique($reci));
     }
 
     private const PREDLOZI = ['za', 'u', 'na', 'iz', 'od', 'do', 'po', 'sa', 'o', 'i', 'ili', 'a', 'uz', 'kod', 'pri', 'pod', 'nad', 'pre', 'oko', 'bez'];
@@ -88,6 +108,7 @@ enum Grupa: string implements HasLabel
             self::Povratnici => '/\b(?:povratni[ck][a-z]*|repatrijac[a-z]*|readmisij[a-z]*|(?:vracen[a-z]*|povrata?k[a-z]*) (?:iz|u) (?:inostranstv[a-z]*|zemlj[a-z]*|srbij[a-z]*))\b/',
             self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje|mladih|za mlade|zena|roma|osoba|gradjana|ljudskih))\b/',
             self::Romi => '/\brom(?:a|i|e|u|om|ima|kinj[a-z]*|sk[a-z]*)?\b/',
+            self::OdrasliBezSkole => '/\b(?:odrasl(?:i|ih|im|ima|e|a|u|om|oj)|bez kvalifikacij[a-z]*|nekvalifikovan[a-z]*|niskokvalifikovan[a-z]*|nepismen[a-z]*|bez (?:zavrsen[a-z]* )?(?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*|(?:nisu|nije) zavrsil[a-z]* (?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*|nema(?:ju)? zavrsen[a-z]* (?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*)\b/',
         };
     }
 

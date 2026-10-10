@@ -22,6 +22,7 @@ class GrupaTest extends TestCase
             'nezaposleni-mladi' => ['Nezaposleni mladi do 30 godina', 'za nezaposlena lica', 'mladi bez posla', 'osobe bez zaposlenja', 'Tražioci posla'],
             'povratnici' => ['Povratnici iz inostranstva', 'Povratnici po osnovu sporazuma o readmisiji', 'povratnik u Srbiju', 'Povratak u Srbiju', 'vraćeni iz inostranstva', 'Osobe po sporazumu o readmisiji', 'repatrijaci'],
             'organizacije' => ['Konkurs za organizacije civilnog društva', 'Udruženja građana', 'nevladine organizacije', 'NVO sektor', 'OCD iz cele Srbije', 'neprofitne organizacije', 'Podrška organizacijama koje rade sa mladima', 'organizacije mladih', 'civilni sektor'],
+            'odrasli-bez-skole' => ['Obrazovanje za odrasle', 'Poziv za odrasle osobe', 'Odraslima je otvoreno', 'Osobe bez kvalifikacija', 'nekvalifikovani radnici', 'niskokvalifikovana lica', 'nepismene osobe', 'ljudi bez škole', 'Za one bez završene osnovne škole', 'bez završene škole', 'Poziv za one koji nisu završili osnovnu školu', 'Ko nema završenu srednju školu', 'OBRAZOVANJE ODRASLIH', 'odrasli bez škole'],
             'romi' => ['Rom iz Niša traži posao', 'Konkurs za Romi', 'Zajednica Roma u Srbiji', 'namenjeno Romima', 'pomoć Romu', 'sa Romom', 'mladi Rome', 'mlada Romkinja', 'stipendije za Romkinje', 'Romkinjama je otvoreno', 'romski mladi', 'romska zajednica', 'u romskoj naselju', 'ZA ROMSKU ZAJEDNICU I ROMA', '(Romi), Romkinje; Romima!', 'РОМИ И РОМКИЊЕ'],
         ];
         $skup = [];
@@ -53,6 +54,7 @@ class GrupaTest extends TestCase
             'nezaposleni-mladi' => ['Zaposleni u firmi', 'zaposlenje u Nišu', 'Posao za mlade', 'mladi u zajednici'],
             'povratnici' => ['Povratna informacija', 'povrat sredstava', 'povratni let', 'iz inostranstva stiže pomoć'],
             'organizacije' => ['Firme i preduzeća', 'privredna društva', 'organizacija događaja', 'međunarodne organizacije', 'Za organizacije', 'društvo sa ograničenom odgovornošću', 'kompanije iz Srbije'],
+            'odrasli-bez-skole' => ['Odrastanje u gradu', 'Odraslo drvo', 'Kvalifikacije za rad', 'Škola stranih jezika', 'bez ograničenja', 'Praksa bez iskustva', 'Osnovna škola traži nastavnika', 'Završena škola je uslov', 'Dečija škola crtanja'],
             'romi' => ['Objavljen je roman', 'romani za mlade', 'romantika u parku', 'promocija programa', 'planina Romanija', 'putovanje u Rim', 'Konkurs za sve građane'],
         ];
         $skup = [];

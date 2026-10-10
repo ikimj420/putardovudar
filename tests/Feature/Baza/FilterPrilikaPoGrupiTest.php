@@ -159,14 +159,32 @@ class FilterPrilikaPoGrupiTest extends BazaTestCase
         Prilika::factory()->zaGrupe(Grupa::Osnovci)->create(['naslov' => 'Nacrt za osnovce', 'status' => StatusPrilike::Nacrt]);
         Prilika::factory()->arhivirana()->zaGrupe(Grupa::Romi)->create(['naslov' => 'Arhivirana za Rome']);
         Prilika::factory()->objavljena()->zaGrupe(Grupa::Povratnici)->create(['naslov' => 'Istekla za povratnike', 'rok' => '2026-10-01']);
+        Prilika::factory()->zaGrupe(Grupa::OdrasliBezSkole)->create(['naslov' => 'Nacrt za odrasle', 'status' => StatusPrilike::Nacrt]);
         Prilika::factory()->objavljena()->create(['naslov' => 'Bez grupe', 'rok' => '2026-12-20']);
 
         $this->assertSame(['Studenti'], array_map(fn (array $d) => $d[0], $this->dugmad($this->get(route('prilike.index'))->getContent())));
 
         // Nejavna prilika te grupe ne stiže ni preko adrese: „osnovci" je nepoznata grupa, pa su sve javne prilike.
-        foreach (['osnovci', 'romi', 'povratnici'] as $grupa) {
+        foreach (['osnovci', 'romi', 'povratnici', 'odrasli-bez-skole'] as $grupa) {
             $this->assertSame(['Javna za studente', 'Bez grupe'], $this->naslovi($this->get(route('prilike.index', ['grupa' => $grupa]))->assertOk()->getContent()), $grupa);
         }
+    }
+
+    // Paket 46: dugme „Odrasli bez završene škole" se pojavi tek kad postoji javna prilika za tu grupu, i vodi na njen spisak.
+    #[Test]
+    public function dugme_za_odrasle_bez_skole_se_pojavi_kad_postoji_javna_prilika(): void
+    {
+        Prilika::factory()->objavljena()->zaGrupe(Grupa::Studenti)->create(['naslov' => 'Za studente', 'rok' => '2026-12-15']);
+        Prilika::factory()->zaGrupe(Grupa::OdrasliBezSkole)->create(['naslov' => 'Nacrt za odrasle', 'status' => StatusPrilike::Nacrt]);
+
+        $this->assertSame(['Studenti'], array_column($this->dugmad($this->get(route('prilike.index'))->getContent()), 0));
+
+        Prilika::factory()->objavljena()->zaGrupe(Grupa::OdrasliBezSkole)->create(['naslov' => 'Obuka za odrasle', 'rok' => '2026-12-15']);
+
+        $html = $this->get(route('prilike.index'))->getContent();
+        $this->assertSame(['Studenti', 'Odrasli bez završene škole'], array_column($this->dugmad($html), 0));
+        $this->assertSame(PrikazPrilike::adresaSpiska(null, Grupa::OdrasliBezSkole), $this->dugmad($html)[1][1]);
+        $this->assertSame(['Obuka za odrasle'], $this->naslovi($this->get(route('prilike.index', ['grupa' => 'odrasli-bez-skole']))->assertOk()->getContent()));
     }
 
     // Nejavna prilika iste grupe kao javna ne ulazi u filtrirani spisak (kroz Prilika::javne(), ne kroz sve prilike).

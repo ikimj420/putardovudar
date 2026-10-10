@@ -273,6 +273,7 @@ class UvozObradiTest extends BazaTestCase
             'povratnici' => ['povratnici', 'Program za povratnike iz inostranstva'],
             'organizacije' => ['organizacije', 'Konkurs je za organizacije civilnog društva'],
             'romi' => ['romi', 'Konkurs je namenjen Romkinjama i Romima'],
+            'odrasli-bez-skole' => ['odrasli-bez-skole', 'Obuka je za odrasle koji nisu završili osnovnu školu'],
         ];
     }
 
