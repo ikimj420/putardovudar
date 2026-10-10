@@ -10,13 +10,15 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property StatusObjave $status
  * @property list<string>|null $koraci
+ * @property int|null $sablon_id šablon po kome pomoćnik piše tekst za ovaj vodič („Napiši moj“)
  * @property string|null $primer gotov primer (pismo, e-pošta, CV…) koji se na strani vodiča pokazuje ispod koraka
  */
-#[Fillable(['naslov', 'slug', 'kratak_opis', 'tekst', 'koraci', 'primer', 'beleska', 'status'])]
+#[Fillable(['naslov', 'slug', 'kratak_opis', 'tekst', 'koraci', 'primer', 'sablon_id', 'beleska', 'status'])]
 class Vodic extends Model
 {
     /** @use HasFactory<VodicFactory> */
@@ -40,6 +42,18 @@ class Vodic extends Model
     protected function casts(): array
     {
         return ['status' => StatusObjave::class, 'koraci' => 'array'];
+    }
+
+    /** @return BelongsTo<Sablon, $this> */
+    public function sablon(): BelongsTo
+    {
+        return $this->belongsTo(Sablon::class);
+    }
+
+    // Šablon uz vodič, ali samo ako je javan (objavljen): nacrt šablona se ne nudi nikome.
+    public function javniSablon(): ?Sablon
+    {
+        return $this->sablon_id === null ? null : Sablon::javni()->find($this->sablon_id);
     }
 
     // Jedino mesto gde se odlučuje koji vodiči su javni.

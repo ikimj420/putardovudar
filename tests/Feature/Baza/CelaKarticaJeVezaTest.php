@@ -5,7 +5,6 @@ namespace Tests\Feature\Baza;
 use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
-use App\Models\Sablon;
 use App\Models\Vodic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -59,14 +58,12 @@ class CelaKarticaJeVezaTest extends BazaTestCase
         $prilika = Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'rok' => '2026-12-15', 'link_izvora' => 'https://fond.rs/dositeja']);
         $vodic = Vodic::factory()->objavljen()->create();
         $organizacija = Organizacija::factory()->objavljena()->create(['telefon' => '011/123-456']);
-        $sablon = Sablon::factory()->objavljen()->create();
         KalendarStavka::factory()->objavljena()->create(['naziv' => 'Dositeja prošle godine', 'otvoreno_do' => '2026-01-26', 'link_izvora' => 'https://fond.rs/dositeja']);
 
         return [
             'prilike' => [route('prilike.index'), route('prilike.show', $prilika->slug)],
             'vodiči' => [route('vodici.index'), route('vodici.show', $vodic->slug)],
             'organizacije' => [route('organizacije.index'), route('organizacije.show', $organizacija->slug)],
-            'šabloni' => [route('sabloni.index'), route('sabloni.show', $sablon->slug)],
             'kalendar' => [route('kalendar.index'), route('prilike.show', $prilika->slug)],
         ];
     }
@@ -93,7 +90,7 @@ class CelaKarticaJeVezaTest extends BazaTestCase
             }
         }
 
-        $this->assertGreaterThanOrEqual(5, $obidjeno);
+        $this->assertGreaterThanOrEqual(4, $obidjeno);
     }
 
     // Dugmad i ostale veze u kartici nisu „kartica-veza": „Pozovi" i zvanični izvor rade svako za sebe.

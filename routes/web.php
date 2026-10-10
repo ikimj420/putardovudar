@@ -3,7 +3,6 @@
 use App\Http\Controllers\JavneOrganizacijeController;
 use App\Http\Controllers\JavnePrilikeController;
 use App\Http\Controllers\JavniKalendarController;
-use App\Http\Controllers\JavniSabloniController;
 use App\Http\Controllers\JavniVodiciController;
 use App\Http\Controllers\PomocnikController;
 use Illuminate\Support\Facades\Route;
@@ -17,8 +16,8 @@ Route::get('/vodici/{slug}', [JavniVodiciController::class, 'show'])->name('vodi
 Route::get('/organizacije', [JavneOrganizacijeController::class, 'index'])->name('organizacije.index');
 Route::get('/organizacije/{slug}', [JavneOrganizacijeController::class, 'show'])->name('organizacije.show');
 Route::get('/kalendar', [JavniKalendarController::class, 'index'])->name('kalendar.index');
-Route::get('/sabloni', [JavniSabloniController::class, 'index'])->name('sabloni.index');
-Route::get('/sabloni/{slug}', [JavniSabloniController::class, 'show'])->name('sabloni.show');
-Route::post('/sabloni/{slug}', [JavniSabloniController::class, 'sklopi'])->name('sabloni.sklopi');
+// Šabloni su samo u adminu (paket 56); stare javne adrese vode na vodiče.
+Route::redirect('/sabloni', '/vodici', 301);
+Route::redirect('/sabloni/{slug}', '/vodici', 301);
 Route::get('/pomocnik', [PomocnikController::class, 'index'])->name('pomocnik.index');
 Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->middleware('throttle:pomocnik')->name('pomocnik.pitaj');

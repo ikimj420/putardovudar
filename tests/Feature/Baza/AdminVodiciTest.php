@@ -7,6 +7,7 @@ use App\Filament\Resources\Vodici\Pages\CreateVodic;
 use App\Filament\Resources\Vodici\Pages\EditVodic;
 use App\Filament\Resources\Vodici\Pages\ListVodici;
 use App\Filament\Resources\Vodici\VodicResource;
+use App\Models\Sablon;
 use App\Models\User;
 use App\Models\Vodic;
 use Filament\Facades\Filament;
@@ -183,13 +184,52 @@ class AdminVodiciTest extends AdminBazaTestCase
         $this->assertNull($vodic->fresh()->primer);
     }
 
+    // Paket 56 T2: vodič ima najviše jedan šablon, može i bez; izbor nudi sve šablone (i nacrte), a javnost ga vidi tek kad je objavljen.
+    #[Test]
+    public function sablon_se_bira_menja_i_skida_sa_vodica(): void
+    {
+        $molba = Sablon::factory()->create(['naslov' => 'Molba']);
+        $zahtev = Sablon::factory()->objavljen()->create(['naslov' => 'Zahtev']);
+
+        Livewire::test(CreateVodic::class)
+            ->fillForm(['naslov' => 'Kako napisati molbu', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.', 'sablon_id' => $molba->getKey()])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $vodic = Vodic::query()->sole();
+        $this->assertSame($molba->getKey(), $vodic->sablon_id);
+
+        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['sablon_id' => $zahtev->getKey()])->call('save')->assertHasNoFormErrors();
+        $this->assertSame($zahtev->getKey(), $vodic->fresh()->sablon_id);
+
+        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['sablon_id' => null])->call('save')->assertHasNoFormErrors();
+        $this->assertNull($vodic->fresh()->sablon_id);
+    }
+
+    // Ogledalo: vodič se snima i bez šablona, a izbor ne prima šablon koji ne postoji.
+    #[Test]
+    public function vodic_se_snima_bez_sablona_a_nepostojeci_sablon_se_odbija(): void
+    {
+        Livewire::test(CreateVodic::class)
+            ->fillForm(['naslov' => 'Bez šablona', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.'])
+            ->call('create')
+            ->assertHasNoFormErrors();
+        $this->assertNull(Vodic::query()->sole()->sablon_id);
+
+        Livewire::test(CreateVodic::class)
+            ->fillForm(['naslov' => 'Sa lažnim', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.', 'sablon_id' => 999999])
+            ->call('create')
+            ->assertHasFormErrors(['sablon_id']);
+        $this->assertSame(1, Vodic::query()->count());
+    }
+
     #[Test]
     public function natpisi_i_objasnjenja_polja_su_na_srpskom(): void
     {
         $this->get(VodicResource::getUrl('create'))->assertOk()->assertSeeInOrder([
             'Naslov', 'Naslov vodiča koji se vidi na spisku', 'Slug', 'Deo adrese strane',
             'Kratak opis', 'Jedna do dve rečenice za spisak', 'Tekst', 'Ceo vodič, običnim rečima',
-            'Koraci', 'Spisak koraka redom', 'Primer', 'Gotov primer (pismo, e-pošta, CV…)', 'Beleška', 'Samo za tebe, ne vidi se na sajtu',
+            'Koraci', 'Spisak koraka redom', 'Primer', 'Gotov primer (pismo, e-pošta, CV…)', 'Šablon', 'Šablon po kome pomoćnik piše tekst za ovaj vodič', 'Beleška', 'Samo za tebe, ne vidi se na sajtu',
             'Status', 'Nacrt se ne vidi javno, a Objavljeno se vidi na sajtu.',
         ]);
     }

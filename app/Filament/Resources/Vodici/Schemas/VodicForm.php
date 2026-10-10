@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Vodici\Schemas;
 
 use App\Enums\StatusObjave;
+use App\Models\Sablon;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -52,6 +53,12 @@ class VodicForm
                     ->rows(8)
                     ->autosize()
                     ->columnSpanFull(),
+                Select::make('sablon_id')
+                    ->label('Šablon')
+                    ->helperText('Šablon po kome pomoćnik piše tekst za ovaj vodič („Napiši moj“); najviše jedan, može i bez. Dugme se vidi na strani vodiča tek kad je šablon objavljen.')
+                    ->options(fn (): array => Sablon::query()->orderBy('naslov')->pluck('naslov', 'id')->all())
+                    ->placeholder('Bez šablona')
+                    ->nullable(),
                 Textarea::make('beleska')
                     ->label('Beleška')
                     ->helperText('Samo za tebe, ne vidi se na sajtu; npr. odakle je vodič.')

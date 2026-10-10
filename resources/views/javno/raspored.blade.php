@@ -19,7 +19,6 @@
                     <a href="{{ route('vodici.index') }}">{{ \App\Support\PrikazVodica::NASLOV }}</a>
                     <a href="{{ route('organizacije.index') }}">{{ \App\Support\PrikazOrganizacija::NASLOV }}</a>
                     <a href="{{ route('kalendar.index') }}">{{ \App\Support\PrikazKalendara::NASLOV }}</a>
-                    <a href="{{ route('sabloni.index') }}">{{ \App\Support\PrikazSablona::NASLOV }}</a>
                 </div>
                 <div class="meni-desno">
                     <a class="asistent" href="{{ route('pomocnik.index') }}"@unless (request()->routeIs('pomocnik.*')) data-pomocnik-otvori aria-controls="pomocnik-prozor"@endunless>{{ \App\Support\PrikazPomocnika::NASLOV }}</a>

@@ -6,7 +6,6 @@ use App\Enums\VrstaPrilike;
 use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
-use App\Models\Sablon;
 use App\Models\Vodic;
 use App\Services\Pomocnik\Pomocnik;
 use App\Support\PrikazPomocnika;
@@ -79,14 +78,13 @@ class PlutajuciPomocnikTest extends BazaTestCase
         $prilika = $this->prilika();
         $vodic = Vodic::factory()->objavljen()->create();
         $organizacija = Organizacija::factory()->objavljena()->create();
-        $sablon = Sablon::factory()->objavljen()->create();
         KalendarStavka::factory()->objavljena()->create(['otvoreno_do' => '2026-01-26']);
 
         return [
             'početna' => route('pocetna'), 'prilike' => route('prilike.index'), 'prilika' => route('prilike.show', $prilika->slug),
             'vodiči' => route('vodici.index'), 'vodič' => route('vodici.show', $vodic->slug),
             'organizacije' => route('organizacije.index'), 'organizacija' => route('organizacije.show', $organizacija->slug),
-            'kalendar' => route('kalendar.index'), 'šabloni' => route('sabloni.index'), 'šablon' => route('sabloni.show', $sablon->slug),
+            'kalendar' => route('kalendar.index'),
             'nepostojeća' => url('/nema-te-strane'),
         ];
     }
@@ -117,7 +115,7 @@ class PlutajuciPomocnikTest extends BazaTestCase
             $this->assertStringContainsString('<a class="asistent" href="'.route('pomocnik.index').'" data-pomocnik-otvori', $html, $ime);
         }
 
-        $this->assertGreaterThanOrEqual(11, $obidjeno);
+        $this->assertGreaterThanOrEqual(9, $obidjeno);
 
         $html = $this->get(route('pomocnik.index'))->assertOk()->getContent();
         $this->assertStringNotContainsString('plutajuci', $html);

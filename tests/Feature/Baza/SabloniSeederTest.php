@@ -24,8 +24,6 @@ class SabloniSeederTest extends BazaTestCase
         $this->assertSame(['molba', 'zahtev'], Sablon::query()->orderBy('id')->pluck('slug')->all());
         $this->assertSame(2, Sablon::query()->where('status', StatusObjave::Nacrt)->count());
         $this->assertSame(0, Sablon::javni()->count());
-        $this->get(route('sabloni.index'))->assertOk()->assertDontSee('Molba');
-        $this->get(route('sabloni.show', 'molba'))->assertNotFound();
     }
 
     // Svaki šablon ima sva polja koja tekst traži (inače se ne bi mogao objaviti), a opšti oblik dopisa ima sve delove iz paketa.
@@ -81,19 +79,5 @@ class SabloniSeederTest extends BazaTestCase
         Sablon::query()->where('slug', 'zahtev')->delete();
         $this->seed(SabloniSeeder::class);
         $this->assertSame(2, Sablon::query()->count());
-    }
-
-    // Objavljeni šablon iz seedera radi do kraja kroz javnu stranu.
-    #[Test]
-    public function objavljena_molba_se_popunjava_kroz_javnu_stranu(): void
-    {
-        $this->seed(SabloniSeeder::class);
-        Sablon::query()->where('slug', 'molba')->firstOrFail()->update(['status' => StatusObjave::Objavljeno]);
-
-        $this->get(route('sabloni.show', 'molba'))->assertOk()->assertSee('Naslov molbe');
-        $html = $this->post(route('sabloni.sklopi', 'molba'), ['ime' => 'Ana Anić', 'primalac' => 'Školi', 'naslov' => 'Molba za upis', 'tekst' => 'Molim za upis deteta.', 'mesto' => 'Leskovac', 'datum' => '10.10.2026.'])->assertOk()->getContent();
-
-        $this->assertStringContainsString("Ana Anić\n", html_entity_decode($html));
-        $this->assertStringContainsString('Leskovac, 10.10.2026.', html_entity_decode($html));
     }
 }

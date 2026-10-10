@@ -33,15 +33,15 @@ class JavnoZaglavljeTest extends BazaTestCase
             $nazivi = array_map(fn (array $veza) => trim((string) preg_replace('/\s+/', ' ', strip_tags($veza[3]))), $veze);
 
             // Ime sajta (u dva reda, pa u dva dela) vodi na početnu, pa meni tim redom, svaka veza tačno jednom.
-            $this->assertSame(['Putardo Vudar', 'Prilike', 'Vodiči', 'Organizacije', 'Kalendar', 'Šabloni', 'Pomoćnik'], $nazivi, $adresa);
-            $this->assertSame([route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('sabloni.index'), route('pomocnik.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
+            $this->assertSame(['Putardo Vudar', 'Prilike', 'Vodiči', 'Organizacije', 'Kalendar', 'Pomoćnik'], $nazivi, $adresa);
+            $this->assertSame([route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
             $this->assertStringContainsString('class="logo"', $veze[0][1]);
-            $this->assertStringContainsString('class="asistent"', $veze[6][1]);
+            $this->assertStringContainsString('class="asistent"', $veze[5][1]);
         }
     }
 
     // Ogledalo: zaglavlje je ime sajta i tačno ovaj meni, bez drugih stavki. Do paketa 18 bio je jedan link (Prilike);
-    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, Pomoćnik, a Organizacije posle paketa 20, Kalendar posle paketa 44 i Šabloni posle paketa 51.
+    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, Pomoćnik, a Organizacije posle paketa 20, Kalendar posle paketa 44; Šabloni (paket 51) su od paketa 56 samo u adminu.
     #[Test]
     public function zaglavlje_nema_drugih_linkova_osim_menija(): void
     {
@@ -50,7 +50,7 @@ class JavnoZaglavljeTest extends BazaTestCase
         preg_match_all('#<a\b[^>]*href="([^"]*)"#', $zaglavlje[1] ?? '', $adrese);
 
         $this->assertSame(
-            [route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('sabloni.index'), route('pomocnik.index')],
+            [route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')],
             $adrese[1],
         );
     }

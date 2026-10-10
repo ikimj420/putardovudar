@@ -4,7 +4,6 @@ namespace Tests\Feature\Baza;
 
 use App\Models\Organizacija;
 use App\Models\Prilika;
-use App\Models\Sablon;
 use App\Models\Vodic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -29,10 +28,7 @@ class StampaStranaTest extends BazaTestCase
         $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.'], 'primer' => 'Primer.']);
         $organizacija = Organizacija::factory()->objavljena()->create(['telefon' => '011/123-456', 'sajt' => 'https://primer.rs/', 'usluge' => ['Savetovanje']]);
 
-        $sablon = Sablon::factory()->objavljen()->create();
-
         return [
-            'šablon' => $this->post(route('sabloni.sklopi', $sablon->slug), ['ime' => 'Ana'])->assertOk()->getContent(),
             'prilika' => $this->get(route('prilike.show', $prilika->slug))->assertOk()->getContent(),
             'vodič' => $this->get(route('vodici.show', $vodic->slug))->assertOk()->getContent(),
             'organizacija' => $this->get(route('organizacije.show', $organizacija->slug))->assertOk()->getContent(),
@@ -72,14 +68,14 @@ class StampaStranaTest extends BazaTestCase
         return $nadjeno;
     }
 
-    // Meni, putanja i dugmad se ne štampaju; svaki od tih selektora pogađa element koji na ove tri strane stvarno postoji (inače je pravilo mrtvo).
+    // Meni, putanja i dugmad se ne štampaju; svaki od tih selektora pogađa element koji na ove strane stvarno postoji (inače je pravilo mrtvo).
     #[Test]
     public function meni_putanja_i_dugmad_se_ne_stampaju_a_pravila_pogadjaju_postojece_elemente(): void
     {
         $sakriveno = $this->selektoriSa($this->stampa(), 'display: none');
         $stranice = $this->strane();
 
-        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
+        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
 
         foreach ($sakriveno as $selektor) {
             $klasa = ltrim($selektor, '.');
