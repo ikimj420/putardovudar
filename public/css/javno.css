@@ -340,6 +340,38 @@ a:focus-visible {
   font-weight: 700;
 }
 
+/* Filter prilika po vrsti: obične veze u pilulama kao u prototipu (bez skripta); aktivna je plava */
+.filteri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.filter-pilula {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--soft);
+  border: 1px solid var(--surface-border-strong);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.filter-pilula:hover {
+  background: var(--soft-2);
+}
+
+.filter-pilula.aktivno {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--dark);
+}
+
 /* Oznake i podaci u pilulama */
 .oznake,
 .meta {

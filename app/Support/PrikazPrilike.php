@@ -9,6 +9,11 @@ final class PrikazPrilike
 {
     public const NEMA_PRILIKA = 'Trenutno nema otvorenih prilika.';
 
+    public const SVE_PRILIKE = 'Sve prilike';
+
+    // Naziv grupe dugmadi za filter, čita ga čitač ekrana; predlog je u PITANJA-26-38.md.
+    public const FILTERI = 'Brzi filteri';
+
     public const NEMA_STRANE = 'Ta strana ne postoji ili prilika više nije otvorena.';
 
     public const ZVANICNI_IZVOR = 'Zvanični izvor: ';
