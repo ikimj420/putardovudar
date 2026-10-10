@@ -7,6 +7,7 @@ use App\Models\Sablon;
 use App\Support\SklapanjeSablona;
 use Database\Seeders\SabloniSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
@@ -24,6 +25,8 @@ class SabloniSeederTest extends BazaTestCase
         $this->assertSame(['molba', 'zahtev'], Sablon::query()->orderBy('id')->pluck('slug')->all());
         $this->assertSame(2, Sablon::query()->where('status', StatusObjave::Nacrt)->count());
         $this->assertSame(0, Sablon::javni()->count());
+        // Nacrt iz seedera nema ni pitanja ni pisanje za posetioca.
+        $this->get(route('pomocnik.napisi.forma', 'molba'))->assertNotFound();
     }
 
     // Svaki šablon ima sva polja koja tekst traži (inače se ne bi mogao objaviti), a opšti oblik dopisa ima sve delove iz paketa.
@@ -79,5 +82,20 @@ class SabloniSeederTest extends BazaTestCase
         Sablon::query()->where('slug', 'zahtev')->delete();
         $this->seed(SabloniSeeder::class);
         $this->assertSame(2, Sablon::query()->count());
+    }
+
+    // Objavljen šablon iz seedera radi do kraja kroz „Napiši moj" (model ne radi, pa stoji šablon sklopljen sa odgovorima).
+    #[Test]
+    public function objavljena_molba_se_popunjava_kroz_pomocnika(): void
+    {
+        $this->seed(SabloniSeeder::class);
+        Sablon::query()->where('slug', 'molba')->firstOrFail()->update(['status' => StatusObjave::Objavljeno]);
+        Http::fake(['*' => Http::response('', 500)]);
+
+        $this->get(route('pomocnik.napisi.forma', 'molba'))->assertOk()->assertSee('Naslov molbe');
+        $html = $this->post(route('pomocnik.napisi', 'molba'), ['polje' => ['ime' => 'Ana Anić', 'primalac' => 'Školi', 'naslov' => 'Molba za upis', 'tekst' => 'Molim za upis deteta.', 'mesto' => 'Leskovac', 'datum' => '10.10.2026.']])->assertOk()->getContent();
+
+        $this->assertStringContainsString("Ana Anić\n", html_entity_decode($html));
+        $this->assertStringContainsString('Leskovac, 10.10.2026.', html_entity_decode($html));
     }
 }
