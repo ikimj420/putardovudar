@@ -11,6 +11,9 @@ final class PrikazOrganizacija
 
     public const NEMA_ORGANIZACIJA = 'Trenutno nema organizacija.';
 
+    // Predlog; Ivan odobrava (PITANJA-23-25.md). Ne kaže da je organizacija nacrt, jer bi to potvrdilo da zapis postoji.
+    public const NEMA_STRANE = 'Ta strana ne postoji ili organizacija više nije dostupna.';
+
     public const MESTO = 'Mesto';
 
     public const ONLINE = 'Online';
