@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Support\DatumUTekstu;
+use Carbon\CarbonImmutable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -67,5 +68,31 @@ class DatumUTekstuTest extends TestCase
         $this->assertFalse(DatumUTekstu::postoji('Rok je 31.02.2026.', '2026-02-31'));
         $this->assertFalse(DatumUTekstu::postoji('Rok je 20.10.2026.', '20.10.2026'));
         $this->assertFalse(DatumUTekstu::postoji('Rok je 20.10.2026.', ''));
+    }
+
+    /** @return array<string, array{0: int, 1: int, 2: string, 3: string|null}> dan, mesec, posle datuma, prvi takav dan */
+    public static function prviDanPosle(): array
+    {
+        return [
+            'u istoj godini' => [26, 10, '2026-09-20', '2026-10-26'],
+            'sledeće godine' => [26, 1, '2026-11-20', '2027-01-26'],
+            'isti dan važi' => [26, 10, '2026-10-26', '2026-10-26'],
+            'dan posle je već sledeća godina' => [26, 10, '2026-10-27', '2027-10-26'],
+            'početak godine' => [1, 1, '2026-01-01', '2026-01-01'],
+            'kraj godine' => [31, 12, '2026-12-31', '2026-12-31'],
+            'prestupni dan čeka prestupnu godinu' => [29, 2, '2026-03-01', '2028-02-29'],
+            'prestupni dan u prestupnoj godini' => [29, 2, '2028-01-10', '2028-02-29'],
+            'preko 2100 koja nije prestupna' => [29, 2, '2097-03-01', '2104-02-29'],
+            'dan koji ne postoji' => [31, 4, '2026-01-01', null],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('prviDanPosle')]
+    public function prvi_dan_posle_datuma_objave(int $dan, int $mesec, string $posle, ?string $ocekivano): void
+    {
+        $datum = DatumUTekstu::prviPosle($dan, $mesec, CarbonImmutable::parse($posle));
+
+        $this->assertSame($ocekivano, $datum?->toDateString());
     }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+
 // Proverava da li datum doslovno piše u tekstu, u nekom od uobičajenih oblika. Godina mora da piše.
 final class DatumUTekstu
 {
@@ -9,6 +12,20 @@ final class DatumUTekstu
         1 => 'januar|januara', 2 => 'februar|februara', 3 => 'mart|marta', 4 => 'april|aprila', 5 => 'maj|maja', 6 => 'jun|juna',
         7 => 'jul|jula', 8 => 'avgust|avgusta', 9 => 'septembar|septembra', 10 => 'oktobar|oktobra', 11 => 'novembar|novembra', 12 => 'decembar|decembra',
     ];
+
+    // Prvi dan sa datim danom i mesecom koji nije pre $posle (isti dan važi); za 29. februar to može da bude i nekoliko godina kasnije.
+    public static function prviPosle(int $dan, int $mesec, CarbonInterface $posle): ?CarbonImmutable
+    {
+        $od = CarbonImmutable::parse($posle->toDateString());
+
+        for ($godina = $od->year; $godina <= $od->year + 8; $godina++) {
+            if (checkdate($mesec, $dan, $godina) && ! CarbonImmutable::create($godina, $mesec, $dan)->startOfDay()->lessThan($od)) {
+                return CarbonImmutable::create($godina, $mesec, $dan)->startOfDay();
+            }
+        }
+
+        return null;
+    }
 
     // $datum je oblika 2026-10-20; tekst treba da je već latinicom (Latinica::izCirilice).
     public static function postoji(string $tekst, string $datum): bool

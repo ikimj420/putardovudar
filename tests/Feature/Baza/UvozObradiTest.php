@@ -169,6 +169,51 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame($status, $nacrt->fresh()->status);
     }
 
+    /** @return array<string, array{0: string|null, 1: string, 2: string, 3: string, 4: string|null}> objavljeno u izvoru, rok modela, citat, rečenica na strani, očekivani rok */
+    public static function rokoviBezGodine(): array
+    {
+        return [
+            'ista godina' => ['2026-09-20', '2026-10-26', 'Prijave su otvorene do 26. oktobra', 'Prijave su otvorene do 26. oktobra.', '2026-10-26'],
+            'godinu ne bira model' => ['2026-09-20', '2031-10-26', 'Prijave su otvorene do 26. oktobra', 'Prijave su otvorene do 26. oktobra.', '2026-10-26'],
+            'sledeća godina' => ['2026-11-20', '2027-01-26', 'Prijave su otvorene do 26. januara', 'Prijave su otvorene do 26. januara.', '2027-01-26'],
+            'isti dan kao objava' => ['2026-10-26', '2026-10-26', 'Prijave su otvorene do 26. oktobra', 'Prijave su otvorene do 26. oktobra.', '2026-10-26'],
+            'od — do, rok je kraj' => ['2026-09-25', '2026-10-12', 'od 28. septembra do 12. oktobra', 'Prijave traju od 28. septembra do 12. oktobra.', '2026-10-12'],
+            'brojevima bez godine' => ['2026-09-20', '2026-10-26', 'Rok je 26.10.', 'Rok je 26.10.', '2026-10-26'],
+            'bez datuma objave se ne prima' => [null, '2026-10-26', 'Prijave su otvorene do 26. oktobra', 'Prijave su otvorene do 26. oktobra.', null],
+            'dan i mesec iz citata nisu u odgovoru' => ['2026-09-20', '2026-10-27', 'Prijave su otvorene do 26. oktobra', 'Prijave su otvorene do 26. oktobra.', null],
+            'mesec iz citata nije u odgovoru' => ['2026-09-20', '2026-11-26', 'Prijave su otvorene do 26. oktobra', 'Prijave su otvorene do 26. oktobra.', null],
+            'u citatu piše druga godina' => ['2026-09-20', '2026-10-26', 'Prijave su otvorene do 26. oktobra 2027', 'Prijave su otvorene do 26. oktobra 2027.', null],
+            'izveden rok je prošao' => ['2026-01-10', '2026-01-26', 'Prijave su otvorene do 26. januara', 'Prijave su otvorene do 26. januara.', null],
+        ];
+    }
+
+    // Paket 53/T3: dan i mesec bez godine; godina je ona u kojoj je taj dan prvi put posle datuma objave u izvoru.
+    #[Test]
+    #[DataProvider('rokoviBezGodine')]
+    public function rok_bez_godine_se_izvodi_iz_datuma_objave_a_bez_njega_se_ne_prima(?string $objavljeno, string $rokModela, string $citat, string $recenica, ?string $ocekivano): void
+    {
+        $nacrt = $this->nacrt(['izvor_objavljen' => $objavljeno]);
+        Http::fake([self::STRANA => Http::response('<p>Konkurs.</p><p>'.$recenica.'</p><p>'.self::PRAVILO_NA_STRANI.'.</p>'), self::OLLAMA => $this->ollama(['rok' => $rokModela, 'citat' => $citat])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        if ($ocekivano !== null) {
+            $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+            $this->assertSame($ocekivano, $prilika->rok->toDateString());
+            $this->assertSame($ocekivano, $prilika->predlog['rok']);
+            $this->assertSame($rokModela, $prilika->predlog['rok_modela']);
+
+            return;
+        }
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertNull($prilika->rok);
+        $this->assertContains($prilika->predlog['odbijeno'], ['rok ne piše u tekstu strane', 'rok je prošao']);
+        $this->assertSame($objavljeno === '2026-01-10' ? 'rok je prošao' : 'rok ne piše u tekstu strane', $prilika->predlog['odbijeno']);
+    }
+
     // Ogledalo: rok od danas je još dobar, pa se objavljuje.
     #[Test]
     public function rok_danas_nije_prosao(): void

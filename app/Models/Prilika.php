@@ -24,10 +24,11 @@ use Illuminate\Validation\ValidationException;
  * @property list<string>|null $grupe
  * @property Carbon|null $rok
  * @property KoJeObjavio|null $objavio
+ * @property Carbon|null $izvor_objavljen dan kada je izvor objavio stavku (RSS pubDate); služi da se rok bez godine čita kao prvi takav dan posle objave
  * @property Carbon|null $obradeno_at
  * @property array<string, mixed>|null $predlog
  */
-#[Fillable(['naslov', 'slug', 'vrsta', 'grupe', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren', 'mesto', 'online', 'naziv_izvora', 'link_izvora', 'obradeno_at', 'objavio', 'razlog_objave', 'predlog'])]
+#[Fillable(['naslov', 'slug', 'vrsta', 'grupe', 'status', 'kratak_opis', 'opis', 'rok', 'rok_stalno_otvoren', 'mesto', 'online', 'naziv_izvora', 'link_izvora', 'izvor_objavljen', 'obradeno_at', 'objavio', 'razlog_objave', 'predlog'])]
 class Prilika extends Model
 {
     /** @use HasFactory<PrilikaFactory> */
@@ -76,6 +77,7 @@ class Prilika extends Model
             'rok' => 'date',
             'rok_stalno_otvoren' => 'boolean',
             'online' => 'boolean',
+            'izvor_objavljen' => 'date',
             'obradeno_at' => 'datetime',
             'objavio' => KoJeObjavio::class,
             'predlog' => 'array',

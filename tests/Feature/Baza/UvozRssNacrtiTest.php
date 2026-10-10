@@ -32,7 +32,7 @@ class UvozRssNacrtiTest extends BazaTestCase
         config()->set('uvoz.izvori', [['ime' => 'Izvor A', 'adresa' => self::A]]);
     }
 
-    /** @param  list<array{0: string, 1: string, 2?: string}>  $stavke */
+    /** @param  list<array{0: string, 1: string, 2?: string, 3?: string}>  $stavke */
     private function feed(array $stavke): string
     {
         $xml = '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Probni izvor</title>';
@@ -40,10 +40,32 @@ class UvozRssNacrtiTest extends BazaTestCase
         foreach ($stavke as $stavka) {
             $xml .= '<item><title>'.$stavka[0].'</title><link>'.$stavka[1].'</link>';
             $xml .= isset($stavka[2]) ? '<description><![CDATA['.$stavka[2].']]></description>' : '';
+            $xml .= isset($stavka[3]) ? '<pubDate>'.$stavka[3].'</pubDate>' : '';
             $xml .= '</item>';
         }
 
         return $xml.'</channel></rss>';
+    }
+
+    // Paket 53/T3: dan objave iz RSS-a se čuva (u zoni aplikacije); šta se ne može pročitati ostaje prazno.
+    #[Test]
+    public function dan_objave_iz_rss_a_se_cuva_u_zoni_aplikacije_a_nepravilan_ili_prazan_ostaje_prazan(): void
+    {
+        Http::fake([self::A => Http::response($this->feed([
+            ['Obična', 'https://a.test/1', 'Opis.', 'Mon, 21 Sep 2026 07:45:58 +0000'],
+            ['Pred ponoć po UTC', 'https://a.test/2', 'Opis.', 'Mon, 21 Sep 2026 23:30:00 +0000'],
+            ['Sa pomakom', 'https://a.test/3', 'Opis.', 'Tue, 22 Sep 2026 00:30:00 +0200'],
+            ['Nepravilan', 'https://a.test/4', 'Opis.', 'nije datum'],
+            ['Bez datuma', 'https://a.test/5', 'Opis.'],
+        ]))]);
+
+        $this->artisan('uvoz:rss')->assertExitCode(0);
+
+        $dani = Prilika::query()->orderBy('id')->get()->mapWithKeys(fn (Prilika $prilika) => [$prilika->naslov => $prilika->izvor_objavljen?->toDateString()])->all();
+
+        $this->assertSame([
+            'Obična' => '2026-09-21', 'Pred ponoć po UTC' => '2026-09-22', 'Sa pomakom' => '2026-09-22', 'Nepravilan' => null, 'Bez datuma' => null,
+        ], $dani);
     }
 
     #[Test]

@@ -6,6 +6,7 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Support\Latinica;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use SimpleXMLElement;
 use Throwable;
@@ -94,7 +95,22 @@ final class UvozRss
             'kratak_opis' => mb_strimwidth($opis === '' ? $naslov : $opis, 0, 300, '…'),
             'naziv_izvora' => $imeIzvora,
             'link_izvora' => $link,
+            'izvor_objavljen' => $this->objavljeno((string) $stavka->pubDate),
         ];
+    }
+
+    // Dan objave u zoni aplikacije; šta se ne može pročitati ostaje prazno, pa se rok bez godine tada ne prima.
+    private function objavljeno(string $pubDate): ?string
+    {
+        if (trim($pubDate) === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($pubDate)->setTimezone(config('app.timezone'))->toDateString();
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     private function tekst(string $html): string

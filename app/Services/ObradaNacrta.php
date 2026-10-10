@@ -9,8 +9,10 @@ use App\Models\Prilika;
 use App\Services\Ollama\OdgovorNijeJson;
 use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
+use App\Support\DatumiUTekstu;
 use App\Support\DatumUTekstu;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Illuminate\Validation\ValidationException;
 
 // Ollama predlaže, kod odlučuje: objava samo ako je sve što model tvrdi proverljivo u tekstu strane.
@@ -55,11 +57,12 @@ TEXT;
         }
 
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
-        $odbijeno = $this->zasto($forma, $tekst, $prihvacene);
+        [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen);
         $predlog = [
             'pravilo' => self::PRAVILO,
             'vrsta' => $forma['vrsta'],
-            'rok' => $forma['rok'],
+            'rok' => $rok?->toDateString() ?? $forma['rok'],
+            'rok_modela' => $forma['rok'],
             'razlog' => $forma['razlog'],
             'citat' => $forma['citat'],
             'grupe' => $grupe,
@@ -74,7 +77,7 @@ TEXT;
         if ($odbijeno === null) {
             $prilika->vrsta = VrstaPrilike::from($forma['vrsta']);
             $prilika->grupe = array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene);
-            $prilika->rok = $forma['rok'];
+            $prilika->setAttribute('rok', $rok?->toDateString());
             $prilika->razlog_objave = $forma['razlog'];
 
             try {
@@ -168,48 +171,71 @@ TEXT;
     }
 
     /**
-     * Vraća razlog zbog kog nacrt ostaje nacrt, ili null kad je sve proverivo.
+     * Vraća razlog zbog kog nacrt ostaje nacrt (ili null kad je sve proverivo) i rok koji važi: datum iz odgovora, ili, kad na strani piše dan i
+     * mesec bez godine, prvi takav dan posle datuma objave u izvoru. Godinu ne bira model.
      *
      * @param  array<string, mixed>  $forma
      * @param  list<Grupa>  $prihvacene
+     * @return array{0: ?string, 1: ?CarbonImmutable}
      */
-    private function zasto(array $forma, string $tekst, array $prihvacene): ?string
+    private function zasto(array $forma, string $tekst, array $prihvacene, ?CarbonInterface $objavljeno): array
     {
         if ($forma['vazi_pravilo'] !== true) {
-            return 'pravilo za objavu ne važi';
+            return ['pravilo za objavu ne važi', null];
         }
 
         $strana = TekstStrane::normalizuj($tekst);
 
         if ($prihvacene === []) {
-            return 'pravilo nije potkrepljeno citatom';
+            return ['pravilo nije potkrepljeno citatom', null];
         }
 
         $vrsta = is_string($forma['vrsta']) ? VrstaPrilike::tryFrom($forma['vrsta']) : null;
 
         if ($vrsta === null) {
-            return 'vrsta nije sa spiska';
+            return ['vrsta nije sa spiska', null];
         }
 
         // Vrsta se dokazuje rečju sa strane (ne samo citatom): „stipendija" bez ijedne reči o stipendiji ostaje nacrt.
         if (! $vrsta->potkrepljenaTekstom($tekst)) {
-            return 'vrsta nije potkrepljena';
+            return ['vrsta nije potkrepljena', null];
         }
 
         $rok = is_string($forma['rok']) ? CarbonImmutable::createFromFormat('!Y-m-d', $forma['rok']) : null;
 
         if ($rok === null || $rok->format('Y-m-d') !== $forma['rok']) {
-            return 'nema ispravnog roka';
+            return ['nema ispravnog roka', null];
         }
 
         $citat = TekstStrane::normalizuj((string) $forma['citat']);
 
-        if (! $this->pisePoRecima($strana, $citat) || ! DatumUTekstu::postoji($citat, $forma['rok'])) {
-            return 'rok ne piše u tekstu strane';
+        if (! $this->pisePoRecima($strana, $citat)) {
+            return ['rok ne piše u tekstu strane', null];
         }
 
-        if ($rok->lessThan(today())) {
-            return 'rok je prošao';
+        if (! DatumUTekstu::postoji($citat, $forma['rok'])) {
+            $rok = $this->rokBezGodine($rok, $citat, $objavljeno);
+
+            if ($rok === null) {
+                return ['rok ne piše u tekstu strane', null];
+            }
+        }
+
+        return [$rok->lessThan(today()) ? 'rok je prošao' : null, $rok];
+    }
+
+    // Dan i mesec iz odgovora moraju da pišu u citatu bez godine; godina je ona u kojoj je taj dan prvi put posle datuma objave. Bez datuma
+    // objave, ili kad u citatu piše druga godina, rok se ne prima.
+    private function rokBezGodine(CarbonImmutable $rok, string $citat, ?CarbonInterface $objavljeno): ?CarbonImmutable
+    {
+        if ($objavljeno === null) {
+            return null;
+        }
+
+        foreach (DatumiUTekstu::izvuci($citat) as $datum) {
+            if ($datum['godina'] === null && $datum['dan'] === $rok->day && $datum['mesec'] === $rok->month) {
+                return DatumUTekstu::prviPosle($rok->day, $rok->month, $objavljeno);
+            }
         }
 
         return null;
