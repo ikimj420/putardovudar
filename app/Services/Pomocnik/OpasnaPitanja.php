@@ -4,7 +4,7 @@ namespace App\Services\Pomocnik;
 
 use App\Support\PoredjenjeTeksta;
 
-// Pitanja o prevari i lažiranju ne idu ni do modela ni do pretrage; spisak je iz starog projekta (VudarAssistantService.php:1513-1538).
+// Pitanja o prevari i lažiranju ne idu ni do modela ni do pretrage; spisak je iz starog projekta (VudarAssistantService::isUnsafe).
 final class OpasnaPitanja
 {
     // „zaobiđem" i „zaobidjem" se razlikuju i posle normalizacije (đ postaje d), pa su oba u spisku.

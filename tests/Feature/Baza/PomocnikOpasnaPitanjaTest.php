@@ -91,14 +91,24 @@ class PomocnikOpasnaPitanjaTest extends BazaTestCase
         Http::assertNothingSent();
     }
 
-    // Opasan deo mora da stane u prvih 300 znakova, jer samo toliko ide modelu.
+    // Modelu ide samo očišćeno pitanje (latinica, najviše 300 znakova), i za formular i za odgovor. Ćirilica se širi pri
+    // pretvaranju („љ" je „lj"), pa pitanje od 186 znakova može da preraste 300 i da opasan kraj ostane iza reza.
     #[Test]
-    public function opasna_rec_posle_tristo_znakova_ne_stize_do_modela_pa_je_ne_treba_odbijati(): void
+    public function modelu_ide_isto_ocisceno_pitanje_za_formular_i_odgovor_pa_opasan_kraj_posle_reza_ne_stize_do_njega(): void
     {
-        $pitanje = str_repeat('Ima li posla u Nišu? ', 15).'lažiram dokument';
+        $pitanje = 'Ima li posla u Nišu? '.str_repeat('љ', 140).' како да лажирам документ';
 
-        $this->assertGreaterThan(Pomocnik::NAJVISE_ZNAKOVA_PITANJA, mb_strlen($pitanje));
-        $this->assertFalse(app(Pomocnik::class)->odgovori($pitanje)->odbijeno);
+        $this->assertLessThan(Pomocnik::NAJVISE_ZNAKOVA_PITANJA, mb_strlen($pitanje));
+        $odgovor = app(Pomocnik::class)->odgovori($pitanje);
+
+        // Pitanje je bezopasno u onome što model vidi (rez je pre opasnog dela), pa se odgovara; zapis je pronađen.
+        $this->assertFalse($odgovor->odbijeno);
+        $this->assertNotEmpty($odgovor->izvori);
+        Http::assertSentCount(2);
+        Http::assertNotSent(fn (Request $zahtev) => str_contains(json_encode($zahtev->data(), JSON_UNESCAPED_UNICODE) ?: '', 'лажирам')
+            || str_contains(json_encode($zahtev->data(), JSON_UNESCAPED_UNICODE) ?: '', 'lažiram')
+            || str_contains(json_encode($zahtev->data(), JSON_UNESCAPED_UNICODE) ?: '', 'laziram'));
+        Http::assertNotSent(fn (Request $zahtev) => preg_match('/\p{Cyrillic}/u', json_encode($zahtev->data(), JSON_UNESCAPED_UNICODE) ?: '') === 1);
     }
 
     #[Test]

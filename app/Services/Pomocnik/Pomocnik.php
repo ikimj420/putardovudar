@@ -61,8 +61,11 @@ final class Pomocnik
      */
     public function odgovori(string $pitanje): OdgovorPomocnika
     {
+        // Provera i oba poziva modela vide isti tekst; ćirilica se pretvara u duži latinični tekst, pa se sirovo pitanje ne šalje.
+        $pitanje = $this->ocisti($pitanje);
+
         // Opasno pitanje dobija jednu rečenicu: bez modela, bez pretrage, bez izvora.
-        if ($this->opasnaPitanja->jeOpasno($this->ocisti($pitanje))) {
+        if ($this->opasnaPitanja->jeOpasno($pitanje)) {
             return new OdgovorPomocnika(self::NE_MOGU_DA_POMOGNEM, [], false, null, true);
         }
 

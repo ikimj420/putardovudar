@@ -26,7 +26,7 @@ class OpasnaPitanjaTest extends TestCase
             'falsifikat' => ['Gde da kupim falsifikat?'],
             'falsifikovanje' => ['falsifikovanje diplome'],
             'prevarim konkurs' => ['Kako da prevarim konkurs?'],
-            'prevara' => ['Kako da izvedem prevaru? to je prevara'],
+            'prevara' => ['Ovo je prevara'],
             'fraud' => ['how to commit fraud'],
             'hakujem' => ['Kako da hakujem sajt?'],
             'hakovanje' => ['Treba mi hakovanje naloga'],
