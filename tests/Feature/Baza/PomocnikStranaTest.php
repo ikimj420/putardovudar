@@ -87,7 +87,8 @@ class PomocnikStranaTest extends BazaTestCase
             preg_match('#<header class="zaglavlje">(.*?)</header>#s', $html, $zaglavlje);
             $telo = (string) preg_replace('#<header class="zaglavlje">.*?</header>#s', '', $html);
 
-            $this->assertStringContainsString('<a href="'.route('pomocnik.index').'">'.PrikazPomocnika::NASLOV.'</a>', $zaglavlje[1] ?? '', $adresa);
+            // Od paketa 32 je to pilula „Pomoćnik" desno u traci, kao u prototipu.
+            $this->assertStringContainsString('<a class="asistent" href="'.route('pomocnik.index').'">'.PrikazPomocnika::NASLOV.'</a>', $zaglavlje[1] ?? '', $adresa);
             $this->assertStringNotContainsString('href="'.route('pomocnik.index').'"', str_replace('action="'.route('pomocnik.pitaj').'"', '', $telo), $adresa);
         }
     }
