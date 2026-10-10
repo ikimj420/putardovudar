@@ -15,13 +15,13 @@ class GrupaTest extends TestCase
     public static function prolaze(): array
     {
         $primeri = [
-            'osnovci' => ['Konkurs za osnovce', 'Otvoreno za učenike osnovnih škola', 'osnovnoškolci iz cele Srbije', 'Učenici osmog razreda osnovne škole mogu da se prijave', 'Za svakog osnovca', 'ĐACI OSNOVNIH ŠKOLA', 'Nagrade za 200 osnovaca', 'Poziv za đaka osnovne škole'],
-            'srednjoskolci' => ['Za srednjoškolce', 'Učenici srednjih škola', 'gimnazijalci i maturanti', 'Poziv gimnazijalcima', 'za maturante', 'Poziv srednjoškolkama i srednjoškolcima', 'učenicima trećeg razreda srednje škole', 'Za 50 gimnazijalaca', 'Nagrade za najbolje maturanata'],
+            'osnovci' => ['Konkurs za osnovce', 'Otvoreno za učenike osnovnih škola', 'osnovnoškolci iz cele Srbije', 'Učenici osmog razreda osnovne škole mogu da se prijave', 'Za svakog osnovca', 'ĐACI OSNOVNIH ŠKOLA', 'Nagrade za 200 osnovaca', 'Poziv za đaka osnovne škole', 'djaci osnovnih skola', 'Poziv za djaka osnovne škole'],
+            'srednjoskolci' => ['Za srednjoškolce', 'Učenici srednjih škola', 'gimnazijalci i maturanti', 'Poziv gimnazijalcima', 'za maturante', 'Poziv srednjoškolkama i srednjoškolcima', 'učenicima trećeg razreda srednje škole', 'Za 50 gimnazijalaca', 'Nagrade za najbolje maturanata', 'djaci srednjih skola', 'Poziv za đake srednjih škola'],
             'studenti' => ['Studenti prve godine', 'za studentkinje', 'Otvoreno studentima', 'Stipendije za studente iz Srbije', 'Stipendije za 100 studenata'],
             'master-doktorski' => ['Master studije u inostranstvu', 'za doktorske studije', 'doktoranti i doktorandi', 'Poziv doktorandima', 'Za 20 doktoranada', 'postdiplomske studije', 'magistarske studije', 'PhD kandidati', 'studenti mastera'],
             'nezaposleni-mladi' => ['Nezaposleni mladi do 30 godina', 'za nezaposlena lica', 'mladi bez posla', 'osobe bez zaposlenja', 'Tražioci posla'],
             'povratnici' => ['Povratnici iz inostranstva', 'Povratnici po osnovu sporazuma o readmisiji', 'povratnik u Srbiju', 'Povratak u Srbiju', 'vraćeni iz inostranstva', 'Osobe po sporazumu o readmisiji', 'repatrijaci'],
-            'organizacije' => ['Konkurs za organizacije civilnog društva', 'Udruženja građana', 'nevladine organizacije', 'NVO sektor', 'OCD iz cele Srbije', 'neprofitne organizacije', 'Podrška organizacijama koje rade sa mladima', 'organizacije mladih', 'civilni sektor'],
+            'organizacije' => ['Konkurs za organizacije civilnog društva', 'Udruženja građana', 'nevladine organizacije', 'NVO sektor', 'OCD iz cele Srbije', 'neprofitne organizacije', 'Podrška organizacijama koje rade sa mladima', 'organizacije mladih', 'civilni sektor', 'organizacije građanskog društva', 'Građansko društvo u Srbiji', 'omladinske organizacije', 'Omladinskim organizacijama', 'organizacije koje rade sa mladima', 'Podrška organizacijama građana', 'organizacije gradjana', 'gradjansko drustvo'],
             'odrasli-bez-skole' => ['Obrazovanje za odrasle', 'Poziv za odrasle osobe', 'Odraslima je otvoreno', 'Osobe bez kvalifikacija', 'nekvalifikovani radnici', 'niskokvalifikovana lica', 'nepismene osobe', 'ljudi bez škole', 'Za one bez završene osnovne škole', 'bez završene škole', 'Poziv za one koji nisu završili osnovnu školu', 'Ko nema završenu srednju školu', 'OBRAZOVANJE ODRASLIH', 'odrasli bez škole'],
             'romi' => ['Rom iz Niša traži posao', 'Konkurs za Romi', 'Zajednica Roma u Srbiji', 'namenjeno Romima', 'pomoć Romu', 'sa Romom', 'mladi Rome', 'mlada Romkinja', 'stipendije za Romkinje', 'Romkinjama je otvoreno', 'romski mladi', 'romska zajednica', 'u romskoj naselju', 'ZA ROMSKU ZAJEDNICU I ROMA', '(Romi), Romkinje; Romima!', 'РОМИ И РОМКИЊЕ'],
         ];
@@ -53,7 +53,7 @@ class GrupaTest extends TestCase
             'master-doktorski' => ['Mastercard popust', 'Masterplan grada', 'doktor opšte prakse', 'majstor za vodovod', 'Mastering Excel'],
             'nezaposleni-mladi' => ['Zaposleni u firmi', 'zaposlenje u Nišu', 'Posao za mlade', 'mladi u zajednici'],
             'povratnici' => ['Povratna informacija', 'povrat sredstava', 'povratni let', 'iz inostranstva stiže pomoć'],
-            'organizacije' => ['Firme i preduzeća', 'privredna društva', 'organizacija događaja', 'međunarodne organizacije', 'Za organizacije', 'društvo sa ograničenom odgovornošću', 'kompanije iz Srbije'],
+            'organizacije' => ['Firme i preduzeća', 'privredna društva', 'organizacija događaja', 'međunarodne organizacije', 'Za organizacije', 'društvo sa ograničenom odgovornošću', 'kompanije iz Srbije', 'omladinski hotel', 'omladinske sportske igre', 'građansko pravo', 'građanski rat', 'organizacije događaja'],
             'odrasli-bez-skole' => ['Odrastanje u gradu', 'Odraslo drvo', 'Kvalifikacije za rad', 'Škola stranih jezika', 'bez ograničenja', 'Praksa bez iskustva', 'Osnovna škola traži nastavnika', 'Završena škola je uslov', 'Dečija škola crtanja'],
             'romi' => ['Objavljen je roman', 'romani za mlade', 'romantika u parku', 'promocija programa', 'planina Romanija', 'putovanje u Rim', 'Konkurs za sve građane'],
         ];

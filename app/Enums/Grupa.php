@@ -100,13 +100,13 @@ enum Grupa: string implements HasLabel
     private function uzorak(): string
     {
         return match ($this) {
-            self::Osnovci => '/\b(?:osnov(?:c|ac)[a-z]*|osnovnoskol[a-z]*|(?:ucenik|ucenic|dak(?:a|u|om)?\b|dac)[a-z]* (?:[a-z]+ ){0,3}osnovn[a-z]*)\b/',
-            self::Srednjoskolci => '/\b(?:srednjoskol[a-z]*|gimnazijal(?:c|ac)[a-z]*|maturan(?:t|at)[a-z]*|(?:ucenik|ucenic|dak(?:a|u|om)?\b|dac)[a-z]* (?:[a-z]+ ){0,3}srednj[a-z]*)\b/',
+            self::Osnovci => '/\b(?:osnov(?:c|ac)[a-z]*|osnovnoskol[a-z]*|(?:ucenik|ucenic|dj?ak(?:a|u|om|e)?\b|dj?ac)[a-z]* (?:[a-z]+ ){0,3}osnovn[a-z]*)\b/',
+            self::Srednjoskolci => '/\b(?:srednjoskol[a-z]*|gimnazijal(?:c|ac)[a-z]*|maturan(?:t|at)[a-z]*|(?:ucenik|ucenic|dj?ak(?:a|u|om|e)?\b|dj?ac)[a-z]* (?:[a-z]+ ){0,3}srednj[a-z]*)\b/',
             self::Studenti => '/\bstuden(?:t|at)[a-z]*\b/',
             self::MasterDoktorski => '/\b(?:master(?:a|u|om|i|e|ima|ant[a-z]*)?|magistar[a-z]*|magistr[a-z]*|doktorsk[a-z]*|doktoran(?:d|t|ad)[a-z]*|doktorat[a-z]*|postdiplomsk[a-z]*|postdiplomc[a-z]*|phd|msc)\b/',
             self::NezaposleniMladi => '/\b(?:nezaposlen[a-z]*|bez zaposlenja|bez posla|trazioc[a-z]* (?:posla|zaposlenja))\b/',
             self::Povratnici => '/\b(?:povratni[ck][a-z]*|repatrijac[a-z]*|readmisij[a-z]*|(?:vracen[a-z]*|povrata?k[a-z]*) (?:iz|u) (?:inostranstv[a-z]*|zemlj[a-z]*|srbij[a-z]*))\b/',
-            self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje|mladih|za mlade|zena|roma|osoba|gradjana|ljudskih))\b/',
+            self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|gradj?ansk[a-z]* drustv[a-z]*|omladinsk[a-z]* organizacij[a-z]*|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje|mladih|za mlade|zena|roma|osoba|gradj?ana|ljudskih))\b/',
             self::Romi => '/\brom(?:a|i|e|u|om|ima|kinj[a-z]*|sk[a-z]*)?\b/',
             self::OdrasliBezSkole => '/\b(?:odrasl(?:i|ih|im|ima|e|a|u|om|oj)|bez kvalifikacij[a-z]*|nekvalifikovan[a-z]*|niskokvalifikovan[a-z]*|nepismen[a-z]*|bez (?:zavrsen[a-z]* )?(?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*|(?:nisu|nije) zavrsil[a-z]* (?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*|nema(?:ju)? zavrsen[a-z]* (?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*)\b/',
         };
