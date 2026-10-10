@@ -22,6 +22,11 @@
 @endsection
 
 @section('sadrzaj')
+    @if (\App\Support\PrikazOrganizacija::brojZaPoziv($organizacija))
+        <div class="dugme-red">
+            <a class="dugme-veza" href="tel:{{ \App\Support\PrikazOrganizacija::brojZaPoziv($organizacija) }}" aria-label="{{ \App\Support\PrikazOrganizacija::POZOVI }}: {{ $organizacija->naziv }}">{{ \App\Support\PrikazOrganizacija::POZOVI }}</a>
+        </div>
+    @endif
     @include('javno.podeli', ['naslov' => $organizacija->naziv, 'adresa' => route('organizacije.show', $organizacija->slug)])
     <div class="{{ \App\Support\PrikazOrganizacija::linkSajta($organizacija) ? 'detalj sa-bocnim' : 'detalj' }}">
         <article class="prilika detalj">

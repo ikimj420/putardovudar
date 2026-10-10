@@ -28,6 +28,9 @@ final class PrikazOrganizacija
 
     public const SAJT = 'Sajt';
 
+    // Predlog; Ivan odobrava (PITANJA-46-52.md, paket 48).
+    public const POZOVI = 'Pozovi';
+
     public const USLUGE = 'Usluge';
 
     // Link se piše samo ako je veb adresa: sajt u bazi može da stigne i mimo pravila objave (masovni upit).
@@ -40,6 +43,21 @@ final class PrikazOrganizacija
     public static function eposta(Organizacija $organizacija): ?string
     {
         return EpostaAdresa::jeIspravna($organizacija->eposta) ? trim((string) $organizacija->eposta) : null;
+    }
+
+    // Broj za vezu „tel:": prvi broj iz polja, bez razmaka, crtica, kose crte, tačaka i zagrada; „+381" ostaje, „(0)" posle pozivnog ispada.
+    // Polje je slobodan tekst, pa kad u njemu nema broja od bar pet cifara dugme se ne nudi.
+    public static function brojZaPoziv(Organizacija $organizacija): ?string
+    {
+        $telefon = str_replace('(0)', '', (string) $organizacija->telefon);
+
+        if (preg_match('/\+?\d[\d\s\-\/().]{3,}\d/', $telefon, $broj) !== 1) {
+            return null;
+        }
+
+        $cifre = (string) preg_replace('/\D/', '', $broj[0]);
+
+        return strlen($cifre) < 5 ? null : ($broj[0][0] === '+' ? '+' : '').$cifre;
     }
 
     public static function nazivSajta(string $link): string

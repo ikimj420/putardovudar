@@ -552,6 +552,16 @@ h1.prazno {
   padding-top: 8px;
 }
 
+/* Dugme na kartici ide poslednje; „meta" gura sebe na dno samo kad dugmeta nema, inače to radi dugme. */
+.redosled .dugme-veza {
+  order: 5;
+  margin-top: auto;
+}
+
+.redosled:has(.dugme-veza) .meta {
+  margin-top: 0;
+}
+
 .red {
   color: var(--muted);
   font-weight: 700;
@@ -653,14 +663,29 @@ h1.prazno {
   color: var(--dark);
 }
 
+/* Jedno veliko dugme u svom redu iznad „Pošalji komšiji" („Pozovi", „Dodaj rok u telefon"). */
+.dugme-red {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
 @media (min-width: 720px) {
   .deljenje {
     flex-direction: row;
     align-items: center;
   }
 
+  .dugme-red {
+    flex-direction: row;
+  }
+
   .dugme-veza {
     min-width: 150px;
+  }
+
+  .dugme-red .dugme-veza {
+    min-width: 220px;
   }
 }
 
