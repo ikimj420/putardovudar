@@ -25,8 +25,17 @@
             </div>
         </nav>
     </header>
-    <main class="sirina sadrzaj">
-        @yield('sadrzaj')
+    <main>
+        @hasSection('traka')
+            <section class="naslovna-traka">
+                <div class="sirina">
+                    @yield('traka')
+                </div>
+            </section>
+        @endif
+        <div class="sirina sadrzaj">
+            @yield('sadrzaj')
+        </div>
     </main>
 </body>
 </html>

@@ -61,9 +61,15 @@ a:focus-visible {
 
 .sirina {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+@media (min-width: 720px) {
+  .sirina {
+    padding: 0 34px;
+  }
 }
 
 /* Zaglavlje i meni kao u prototipu: lepljiva traka od 56 px, logo u dva reda, meni po sredini, „Pomoćnik" desno */
@@ -259,11 +265,74 @@ a:focus-visible {
   padding-bottom: 48px;
 }
 
-.sadrzaj h1 {
-  font-size: 30px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  margin-bottom: 20px;
+/* Naslovna traka kao u prototipu: preliv po uglovima, putanja, veliki naslov sa tesnim razmakom slova */
+.naslovna-traka .sirina {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Redosled u kodu strane je isti kao ranije (naslov, vrsta, rok, mesto, opis); ovde se samo slaže kao u prototipu. */
+.naslovna-traka .mrvice {
+  order: 1;
+}
+
+.naslovna-traka h1 {
+  order: 2;
+}
+
+.naslovna-traka .kratko,
+.naslovna-traka .uvod {
+  order: 3;
+}
+
+.naslovna-traka .oznake {
+  order: 4;
+}
+
+.naslovna-traka {
+  padding: 42px 0 34px;
+  background:
+    radial-gradient(circle at 72% 24%, rgba(77, 152, 238, 0.28), transparent 28%),
+    radial-gradient(circle at 18% 76%, rgba(85, 216, 178, 0.25), transparent 30%),
+    var(--page);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.mrvice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mrvice a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.mrvice a:hover {
+  text-decoration: underline;
+}
+
+.naslovna-traka h1 {
+  max-width: 1120px;
+  margin-bottom: 18px;
+  font-size: clamp(36px, 9.5vw, 104px);
+  line-height: 0.95;
+  letter-spacing: -0.07em;
+  font-weight: 950;
+}
+
+.naslovna-traka .kratko {
+  max-width: 720px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.38;
+  font-weight: 700;
 }
 
 .prazno {
@@ -271,42 +340,109 @@ a:focus-visible {
   font-weight: 700;
 }
 
-/* Spisak: jedna kolona na telefonu, pa dve i tri */
+/* Oznake i podaci u pilulama */
+.oznake,
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.naslovna-traka .oznake {
+  margin-top: 22px;
+}
+
+.oznaka {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.meta-stavka {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--input-bg);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Spisak: jedna kolona na telefonu, pa dve, a vodiči i tri */
 .spisak {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
 }
 
-.kartica,
-.prilika {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-}
-
 .kartica {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  padding: 26px;
+  background: var(--card-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .kartica:hover {
+  transform: translateY(-2px);
   box-shadow: var(--shadow);
 }
 
-.kartica h2 {
-  font-size: 22px;
-  line-height: 1.15;
+.kartica h2,
+.kartica h3 {
+  font-size: clamp(30px, 8.4vw, 52px);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+  font-weight: 950;
 }
 
-.kartica h2 a {
+.kartica h2 a,
+.kartica h3 a {
   text-decoration: none;
 }
 
-.kartica h2 a:hover {
+.kartica h2 a:hover,
+.kartica h3 a:hover {
   text-decoration: underline;
+}
+
+.kartica .kratko {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.42;
+  font-weight: 700;
+}
+
+.redosled .oznake {
+  order: 1;
+}
+
+.redosled h2 {
+  order: 2;
+}
+
+.redosled .kratko {
+  order: 3;
+}
+
+.redosled .meta {
+  order: 4;
+  margin-top: auto;
+  padding-top: 8px;
 }
 
 .red {
@@ -314,71 +450,196 @@ a:focus-visible {
   font-weight: 700;
 }
 
-.oznaka {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: var(--green-soft);
-  font-size: 12px;
-  font-weight: 900;
+/* Strana jedne prilike, vodiča ili organizacije: glavni sadržaj i bočna kartica */
+.detalj {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: start;
 }
 
-.kratko {
-  line-height: 1.5;
-}
-
-/* Strana jedne prilike */
 .prilika {
+  display: grid;
+  gap: 16px;
+}
+
+.ploca {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px;
+  background: var(--card-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+}
+
+.ploca h2 {
+  font-size: clamp(30px, 8.4vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.06em;
+  font-weight: 950;
+}
+
+.sadrzaj-opis {
+  max-width: 880px;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+/* Zvanični izvor i sajt: bočna kartica sa linkom i upozorenjem */
+.izvor {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.prilika .sadrzaj-opis {
-  line-height: 1.6;
-}
-
-.izvor {
-  border-left: 4px solid var(--blue-hover);
-  padding-left: 12px;
-  margin-top: 8px;
+  padding: 26px;
+  background: var(--card-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  font-weight: 700;
 }
 
 .izvor a {
   color: var(--blue-hover);
-  font-weight: 700;
+  font-weight: 900;
 }
 
 .izvor-upozorenje {
-  color: var(--muted);
-  margin-top: 4px;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: rgba(255, 74, 74, 0.12);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.bocno {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.naslov-izvora {
+  margin: 8px 0 14px;
+  font-size: clamp(26px, 6vw, 40px);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+  font-weight: 950;
+}
+
+/* Koraci i usluge: stavke u belim poljima, kao u prototipu */
+.koraci,
+.usluge {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  list-style: none;
+  counter-reset: koraci;
+}
+
+.koraci li,
+.usluge li {
+  position: relative;
+  padding: 18px 18px 18px 58px;
+  min-height: 64px;
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.koraci li::before {
+  counter-increment: koraci;
+  content: counter(koraci);
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--blue-hover);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.usluge li::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 24px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
 }
 
 @media (min-width: 720px) {
+  .sadrzaj {
+    padding-top: 34px;
+  }
+
+  .naslovna-traka {
+    padding: 66px 0 42px;
+  }
+
+  .naslovna-traka .kratko {
+    font-size: 18px;
+  }
+
   .spisak {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .sadrzaj h1 {
-    font-size: 40px;
+  .kartica {
+    padding: 34px;
   }
 
-  .prilika {
-    max-width: 760px;
-    padding: 28px;
+  .redosled {
+    min-height: 300px;
+  }
+
+  .ploca,
+  .izvor {
+    padding: 34px;
   }
 }
 
-@media (min-width: 1100px) {
-  .spisak {
+@media (min-width: 1000px) {
+  .spisak.tri {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  .detalj.sa-bocnim {
+    grid-template-columns: 1fr 380px;
+  }
+
+  .kartica h2,
+  .kartica h3 {
+    font-size: clamp(34px, 3.4vw, 52px);
+  }
+
+  .spisak.tri .kartica h2 {
+    font-size: clamp(30px, 3.2vw, 44px);
+  }
+
+  .ploca h2 {
+    font-size: clamp(34px, 4vw, 58px);
+  }
+
+  .naslovna-traka h1 {
+    font-size: clamp(52px, 7vw, 104px);
+  }
 }
 
-/* Pomoćnik: isti izgled kartica kao spisak; telefon prvo */
+/* Pomoćnik: polje i dugme kao u prototipu (tamno dugme, belo polje), odgovor i izvori su kartice */
 .uvod {
-  margin-bottom: 16px;
+  max-width: 720px;
   color: var(--muted);
+  font-weight: 700;
 }
 
 .pitanje {
@@ -389,13 +650,13 @@ a:focus-visible {
 }
 
 .pitanje label {
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .pitanje textarea {
   width: 100%;
   font: inherit;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--input-bg);
@@ -405,14 +666,24 @@ a:focus-visible {
 
 .pitanje button {
   align-self: stretch;
-  font: inherit;
-  font-weight: 900;
-  padding: 12px 20px;
+  min-height: 44px;
+  padding: 0 24px;
   border: 0;
-  border-radius: var(--radius);
-  background: var(--blue-hover);
-  color: #fff;
+  border-radius: 4px;
+  background: var(--button-dark-bg);
+  color: var(--button-dark-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.pitanje button:hover {
+  background: var(--blue);
+  color: var(--dark);
 }
 
 .greska {
@@ -424,22 +695,10 @@ a:focus-visible {
   margin-bottom: 24px;
 }
 
-.naslov-izvora {
-  font-size: 22px;
-  margin-bottom: 12px;
-}
-
+.odgovor h2,
 .kartica h3 {
-  font-size: 22px;
-  line-height: 1.15;
-}
-
-.kartica h3 a {
-  text-decoration: none;
-}
-
-.kartica h3 a:hover {
-  text-decoration: underline;
+  font-size: clamp(26px, 6vw, 34px);
+  line-height: 1.05;
 }
 
 .spisak + .izvor-upozorenje {
@@ -453,23 +712,6 @@ a:focus-visible {
 
   .pitanje button {
     align-self: flex-start;
+    min-width: 150px;
   }
-}
-
-/* Vodiči: koraci su numerisan spisak unutar kartice */
-.koraci {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-left: 24px;
-  line-height: 1.5;
-}
-
-/* Organizacije: usluge su spisak unutar kartice */
-.usluge {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding-left: 24px;
-  line-height: 1.5;
 }

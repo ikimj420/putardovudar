@@ -1,23 +1,44 @@
 @extends('javno.raspored', ['naslov' => $organizacija->naziv])
 
-@section('sadrzaj')
-    <article class="prilika">
-        <h1>{{ $organizacija->naziv }}</h1>
-        <p><span class="oznaka">{{ $organizacija->vrsta->getLabel() }}</span></p>
-        <p class="kratko">{{ $organizacija->kratak_opis }}</p>
-        @if (filled($organizacija->opis))
-            <div class="sadrzaj-opis">{!! nl2br(e($organizacija->opis)) !!}</div>
-        @endif
-
-        @if (filled($organizacija->mesto))
-            <p class="red">{{ \App\Support\PrikazOrganizacija::MESTO }}: {{ $organizacija->mesto }}</p>
-        @endif
+@section('traka')
+    @include('javno.mrvice', ['delovi' => [[config('app.name'), route('pocetna')], [\App\Support\PrikazOrganizacija::NASLOV, route('organizacije.index')], [$organizacija->naziv, null]]])
+    <h1>{{ $organizacija->naziv }}</h1>
+    <p class="kratko">{{ $organizacija->kratak_opis }}</p>
+    <div class="oznake">
+        <span class="oznaka">{{ $organizacija->vrsta->getLabel() }}</span>
         @if ($organizacija->online)
-            <p class="red">{{ \App\Support\PrikazOrganizacija::ONLINE }}</p>
+            <span class="meta-stavka">{{ \App\Support\PrikazOrganizacija::ONLINE }}</span>
+        @endif
+        @if (filled($organizacija->mesto))
+            <span class="meta-stavka">{{ \App\Support\PrikazOrganizacija::MESTO }}: {{ $organizacija->mesto }}</span>
         @endif
         @if (filled($organizacija->telefon))
-            <p class="red">{{ \App\Support\PrikazOrganizacija::TELEFON }}: {{ $organizacija->telefon }}</p>
+            <span class="meta-stavka">{{ \App\Support\PrikazOrganizacija::TELEFON }}: {{ $organizacija->telefon }}</span>
         @endif
+    </div>
+@endsection
+
+@section('sadrzaj')
+    <div class="{{ \App\Support\PrikazOrganizacija::linkSajta($organizacija) ? 'detalj sa-bocnim' : 'detalj' }}">
+        <article class="prilika detalj">
+            @if (filled($organizacija->opis))
+                <div class="ploca">
+                    <div class="sadrzaj-opis">{!! nl2br(e($organizacija->opis)) !!}</div>
+                </div>
+            @endif
+
+            @if (count($organizacija->usluge ?? []) > 0)
+                <div class="ploca">
+                    <h2 class="naslov-izvora">{{ \App\Support\PrikazOrganizacija::USLUGE }}</h2>
+                    <ul class="usluge">
+                        @foreach ($organizacija->usluge as $usluga)
+                            <li>{{ $usluga }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </article>
+
         @if (\App\Support\PrikazOrganizacija::linkSajta($organizacija))
             <div class="izvor">
                 <p>
@@ -26,14 +47,5 @@
                 </p>
             </div>
         @endif
-
-        @if (count($organizacija->usluge ?? []) > 0)
-            <h2 class="naslov-izvora">{{ \App\Support\PrikazOrganizacija::USLUGE }}</h2>
-            <ul class="usluge">
-                @foreach ($organizacija->usluge as $usluga)
-                    <li>{{ $usluga }}</li>
-                @endforeach
-            </ul>
-        @endif
-    </article>
+    </div>
 @endsection

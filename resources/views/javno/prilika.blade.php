@@ -1,17 +1,27 @@
 @extends('javno.raspored', ['naslov' => $prilika->naslov])
 
-@section('sadrzaj')
-    <article class="prilika">
-        <h1>{{ $prilika->naslov }}</h1>
-        <p><span class="oznaka">{{ $prilika->vrsta->getLabel() }}</span></p>
-        <p class="red">{{ \App\Support\PrikazPrilike::rok($prilika) }}</p>
+@section('traka')
+    @include('javno.mrvice', ['delovi' => [[config('app.name'), route('pocetna')], ['Prilike', route('prilike.index')], [$prilika->naslov, null]]])
+    <h1>{{ $prilika->naslov }}</h1>
+    <div class="oznake">
+        <span class="oznaka">{{ $prilika->vrsta->getLabel() }}</span>
+        <span class="meta-stavka">{{ \App\Support\PrikazPrilike::rok($prilika) }}</span>
         @if (\App\Support\PrikazPrilike::mesto($prilika))
-            <p class="red">{{ \App\Support\PrikazPrilike::mesto($prilika) }}</p>
+            <span class="meta-stavka">{{ \App\Support\PrikazPrilike::mesto($prilika) }}</span>
         @endif
-        <p class="kratko">{{ $prilika->kratak_opis }}</p>
-        @if (filled($prilika->opis))
-            <div class="sadrzaj-opis">{!! nl2br(e($prilika->opis)) !!}</div>
-        @endif
+    </div>
+    <p class="kratko">{{ $prilika->kratak_opis }}</p>
+@endsection
+
+@section('sadrzaj')
+    <div class="{{ \App\Support\PrikazPrilike::nazivIzvora($prilika) && filled($prilika->opis) ? 'detalj sa-bocnim' : 'detalj' }}">
+        <article class="prilika">
+            @if (filled($prilika->opis))
+                <div class="ploca">
+                    <div class="sadrzaj-opis">{!! nl2br(e($prilika->opis)) !!}</div>
+                </div>
+            @endif
+        </article>
 
         @if (\App\Support\PrikazPrilike::nazivIzvora($prilika))
             <div class="izvor">
@@ -26,5 +36,5 @@
                 <p class="izvor-upozorenje">{{ \App\Support\PrikazPrilike::PROVERI_IZVOR }}</p>
             </div>
         @endif
-    </article>
+    </div>
 @endsection

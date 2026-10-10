@@ -7,4 +7,7 @@ final class PrikazZaglavlja
 {
     // Naziv dugmeta menija na telefonu; čita ga čitač ekrana, na dugmetu je samo ikona.
     public const OTVORI_MENI = 'Otvori meni';
+
+    // Naziv putanje (ime sajta / odeljak / naslov) iznad naslova strane; čita ga čitač ekrana.
+    public const PUTANJA = 'Putanja';
 }

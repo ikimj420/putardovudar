@@ -33,7 +33,8 @@ class OrganizacijeJavnoTest extends BazaTestCase
         $this->assertStringContainsString('Beograd', $tekst);
         $this->assertStringContainsString('Kratak opis objavljene.', $tekst);
         $this->assertStringNotContainsString('Nacrt organizacija', $tekst);
-        $this->assertSame(1, substr_count($html, '<article class="kartica">'));
+        // Od paketa 33 kartica nosi i klasu redosleda; i dalje je jedna kartica po objavljenom zapisu, a ne red tabele.
+        $this->assertSame(1, substr_count($html, '<article class="kartica redosled">'));
         $this->assertStringNotContainsString('<table', $html);
     }
 

@@ -1,9 +1,12 @@
 @extends('javno.raspored', ['naslov' => \App\Support\PrikazPomocnika::NASLOV])
 
-@section('sadrzaj')
+@section('traka')
+    @include('javno.mrvice', ['delovi' => [[config('app.name'), route('pocetna')], [\App\Support\PrikazPomocnika::NASLOV, null]]])
     <h1>{{ \App\Support\PrikazPomocnika::NASLOV }}</h1>
     <p class="uvod">{{ \App\Support\PrikazPomocnika::UVOD }}</p>
+@endsection
 
+@section('sadrzaj')
     <form class="pitanje" method="post" action="{{ route('pomocnik.pitaj') }}">
         @csrf
         <label for="pitanje">{{ \App\Support\PrikazPomocnika::OZNAKA_POLJA }}</label>
