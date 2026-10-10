@@ -3,6 +3,7 @@
 namespace App\Services\Pomocnik;
 
 use App\Models\Prilika;
+use App\Models\Vodic;
 use App\Support\DatumiUTekstu;
 use Illuminate\Support\Collection;
 
@@ -17,8 +18,9 @@ final class ProveraOdgovora
      * Vraća razlog odbijanja, ili null kad je odgovor proveren.
      *
      * @param  Collection<int, Prilika>  $zapisi
+     * @param  Collection<int, Vodic>  $vodici
      */
-    public function razlogOdbijanja(string $odgovor, Collection $zapisi): ?string
+    public function razlogOdbijanja(string $odgovor, Collection $zapisi, Collection $vodici): ?string
     {
         if (trim($odgovor) === '') {
             return 'prazan odgovor';
@@ -28,21 +30,28 @@ final class ProveraOdgovora
             return 'predug odgovor';
         }
 
-        if (! $this->datumiSuIzZapisa($odgovor, $zapisi)) {
+        if (! $this->datumiSuIzZapisa($odgovor, $zapisi, $vodici)) {
             return 'datum kog nema u zapisima';
         }
 
-        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi)) {
+        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi, $vodici)) {
             return 'link kog nema u zapisima';
         }
 
         return null;
     }
 
-    /** @param  Collection<int, Prilika>  $zapisi */
-    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi): bool
+    /**
+     * @param  Collection<int, Prilika>  $zapisi
+     * @param  Collection<int, Vodic>  $vodici
+     */
+    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici): bool
     {
         $dozvoljeni = [];
+
+        foreach ($vodici as $vodic) {
+            array_push($dozvoljeni, ...DatumiUTekstu::izvuci($vodic->naslov.' '.$vodic->kratak_opis));
+        }
 
         foreach ($zapisi as $prilika) {
             if ($prilika->rok !== null) {
@@ -67,10 +76,19 @@ final class ProveraOdgovora
         return true;
     }
 
-    /** @param  Collection<int, Prilika>  $zapisi */
-    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi): bool
+    /**
+     * @param  Collection<int, Prilika>  $zapisi
+     * @param  Collection<int, Vodic>  $vodici
+     */
+    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici): bool
     {
         $dozvoljeni = [];
+
+        foreach ($vodici as $vodic) {
+            $adresa = route('vodici.show', $vodic->slug);
+            $dozvoljeni[] = $this->normalizuj($adresa);
+            $dozvoljeni[] = $this->domen($adresa);
+        }
 
         foreach ($zapisi as $prilika) {
             foreach ([$prilika->link_izvora, route('prilike.show', $prilika->slug)] as $adresa) {

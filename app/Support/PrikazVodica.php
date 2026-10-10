@@ -10,4 +10,6 @@ final class PrikazVodica
     public const NEMA_VODICA = 'Trenutno nema vodiča.';
 
     public const KORACI = 'Koraci';
+
+    public const OZNAKA = 'Vodič';
 }

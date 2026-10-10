@@ -145,6 +145,19 @@ class PomocnikOdgovorTest extends BazaTestCase
         $this->assertSame($odgovorModela, $odgovor->tekst);
     }
 
+    // Pravi model je u probi (paket 19) odgovorio ćirilicom i mešano; sajt piše samo latinicom.
+    #[Test]
+    public function cirilicni_i_mesani_odgovor_modela_se_ispisuje_latinicom(): void
+    {
+        $this->model('Da tražите писмо, rok je 15. новембра 2026.');
+
+        $odgovor = $this->pitaj();
+
+        $this->assertSame('Da tražite pismo, rok je 15. novembra 2026.', $odgovor->tekst);
+        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertSame(0, preg_match('/\p{Cyrillic}/u', $odgovor->tekst));
+    }
+
     #[Test]
     public function predugacak_odgovor_menja_sablon(): void
     {

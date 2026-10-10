@@ -3,6 +3,7 @@
 namespace App\Services\Pomocnik;
 
 use App\Models\Prilika;
+use App\Models\Vodic;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Latinica;
 use App\Support\PrikazPrilike;
@@ -15,11 +16,14 @@ final class Pomocnik
 
     public const SABLON_NASLOV = 'Našao sam sledeće prilike:';
 
+    public const SABLON_NASLOV_VODICI = 'Našao sam sledeće vodiče:';
+
     public const NAJVISE_ZNAKOVA_PITANJA = 300;
 
     public function __construct(
         private readonly PitanjeUFormular $formular,
         private readonly PretragaPrilika $pretraga,
+        private readonly PretragaVodica $pretragaVodica,
         private readonly PisanjeOdgovora $pisanje,
         private readonly ProveraOdgovora $provera,
     ) {}
@@ -31,12 +35,12 @@ final class Pomocnik
 
         // Prazno pitanje se ne šalje modelu: nema šta da se pita.
         if ($pitanje === '') {
-            return new RezultatPretrage(new Formular, new Collection);
+            return new RezultatPretrage(new Formular, new Collection, new Collection);
         }
 
         $formular = $this->formular->izPitanja($pitanje);
 
-        return new RezultatPretrage($formular, $this->pretraga->pronadji($formular));
+        return new RezultatPretrage($formular, $this->pretraga->pronadji($formular), $this->pretragaVodica->pronadji($formular));
     }
 
     /**
@@ -53,25 +57,42 @@ final class Pomocnik
             return new OdgovorPomocnika(self::NEMAM_PODATAK, [], true);
         }
 
-        $izvori = $rezultat->zapisi->map(fn (Prilika $prilika) => $this->izvor($prilika))->all();
+        $izvori = [
+            ...$rezultat->zapisi->map(fn (Prilika $prilika) => $this->izvor($prilika))->all(),
+            ...$rezultat->vodici->map(fn (Vodic $vodic) => $this->izvorVodica($vodic))->all(),
+        ];
 
         try {
-            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi);
+            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici);
         } catch (OllamaNedostupna) {
-            return new OdgovorPomocnika($this->sablon($rezultat->zapisi), $izvori, false, 'model ne odgovara');
+            return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'model ne odgovara');
         }
 
-        $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi);
+        $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi, $rezultat->vodici);
 
         return $razlog === null
             ? new OdgovorPomocnika($tekst, $izvori, false)
-            : new OdgovorPomocnika($this->sablon($rezultat->zapisi), $izvori, false, $razlog);
+            : new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, $razlog);
     }
 
-    /** @param  Collection<int, Prilika>  $zapisi */
-    private function sablon(Collection $zapisi): string
+    private function sablon(RezultatPretrage $rezultat): string
     {
-        return self::SABLON_NASLOV."\n".$zapisi->map(fn (Prilika $prilika) => '• '.$prilika->naslov.' — '.PrikazPrilike::rok($prilika))->implode("\n");
+        $blokovi = [];
+
+        if ($rezultat->zapisi->isNotEmpty()) {
+            $blokovi[] = self::SABLON_NASLOV."\n".$rezultat->zapisi->map(fn (Prilika $prilika) => '• '.$prilika->naslov.' — '.PrikazPrilike::rok($prilika))->implode("\n");
+        }
+
+        if ($rezultat->vodici->isNotEmpty()) {
+            $blokovi[] = self::SABLON_NASLOV_VODICI."\n".$rezultat->vodici->map(fn (Vodic $vodic) => '• '.$vodic->naslov)->implode("\n");
+        }
+
+        return implode("\n\n", $blokovi);
+    }
+
+    private function izvorVodica(Vodic $vodic): Izvor
+    {
+        return new Izvor($vodic->naslov, null, route('vodici.show', $vodic->slug), null, null, true);
     }
 
     private function izvor(Prilika $prilika): Izvor

@@ -30,7 +30,11 @@
                 @foreach ($odgovor->izvori as $izvor)
                     <article class="kartica">
                         <h3><a href="{{ $izvor->adresa }}">{{ $izvor->naslov }}</a></h3>
-                        <p class="red">{{ $izvor->rok }}</p>
+                        @if ($izvor->jeVodic)
+                            <p><span class="oznaka">{{ \App\Support\PrikazVodica::OZNAKA }}</span></p>
+                        @else
+                            <p class="red">{{ $izvor->rok }}</p>
+                        @endif
                         @if ($izvor->zvanicniNaziv)
                             <p class="red">
                                 {{ \App\Support\PrikazPrilike::ZVANICNI_IZVOR }}
