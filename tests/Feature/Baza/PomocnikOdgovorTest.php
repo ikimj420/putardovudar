@@ -260,6 +260,19 @@ class PomocnikOdgovorTest extends BazaTestCase
             'nisam siguran' => ['Nisam siguran da je podatak o roku tačan.'],
             'nema, pa mnogo reči do podatka' => ['Nema više mesta u Nišu zato podatak o roku stoji u opisu.'],
             'podatak, pa mnogo reči do nema' => ['Podatak o roku za prijavu je naveden u opisu nema potrebe da ga tražiš.'],
+            // Veznici „i", „ili", „te", „niti" i predlozi ne prave „nema podatka" od dve nepovezane misli.
+            'nema roka i informacije' => ['Nema roka i informacije su na sajtu.'],
+            'nema roka ili informacije' => ['Nema roka ili informacije o roku nisu navedene.'],
+            'nema roka te informacije' => ['Nema roka te informacije stoje ispod.'],
+            'nema roka niti informacije' => ['Nema roka niti informacije koje bi ga menjale.'],
+            'nisam našao rok i podatak' => ['Nisam našao rok i podatak o mestu je u opisu.'],
+            'nisam našao drugi posao ali bez zareza' => ['Nisam našao drugi posao ali podatak o skladištu postoji.'],
+            'nema prijavnine i podatak' => ['Nema prijavnine i podatak o roku je ispod.'],
+            'nema govora o podacima' => ['Nema govora o podacima iz prošle godine.'],
+            'nema veze sa informacijama' => ['Nema veze sa informacijama koje su ti potrebne.'],
+            'nema potrebe za podatkom' => ['Nema potrebe za podatkom o roku, prijave su stalno otvorene.'],
+            'informacije nema potrebe' => ['Za dodatne informacije nema potrebe da se javljaš.'],
+            'informacije nema smisla' => ['Informacije nema smisla tražiti drugde.'],
             'podatak postoji a nema roka' => ['Podatak postoji a nema roka za prijavu.'],
             'nema roka no podatak postoji' => ['Nema roka no podatak postoji.'],
             'nema roka nego podatak postoji' => ['Nema roka nego podatak o poslu postoji.'],
@@ -295,6 +308,41 @@ class PomocnikOdgovorTest extends BazaTestCase
 
         $this->assertSame('odgovor kaže da nema podatka', $provera->razlogOdbijanja('Nemam podatak.', new Collection, new Collection([$vodic])));
         $this->assertNull($provera->razlogOdbijanja('Vodič je ispod.', new Collection, new Collection([$vodic])));
+    }
+
+    // Spisak reči koje prekidaju vezu „nema podatak" je ugovor i stoji ovde doslovno (nije izveden iz koda, inače bi izbacivanje
+    // reči iz koda izbacilo i njen primer); svaka reč ima primer, a kod mora da ima tačno ove reči.
+    #[Test]
+    public function svaka_rec_koja_prekida_vezu_nema_podatak_ima_primer(): void
+    {
+        $veznici = ['ali', 'pa', 'a', 'no', 'nego', 'jer', 'dok', 'i', 'ili', 'te', 'niti', 'ni'];
+        $predlozi = ['za', 'sa', 'o', 'u', 'na', 'od', 'do', 'po', 'uz', 'kod', 'iz', 'pri', 'oko', 'bez'];
+        $saveti = ['potrebe', 'veze', 'smisla', 'razloga', 'problema', 'ogranicenja', 'prepreka'];
+
+        foreach (['VEZNICI' => $veznici, 'PREDLOZI' => $predlozi, 'NEMA_SAVET' => $saveti] as $ime => $ocekivano) {
+            $izKoda = explode('|', (new \ReflectionClassConstant(ProveraOdgovora::class, $ime))->getValue());
+            $this->assertEqualsCanonicalizing($ocekivano, $izKoda, $ime);
+        }
+
+        $provera = app(ProveraOdgovora::class);
+        $razlog = fn (string $odgovor) => $provera->razlogOdbijanja($odgovor, new Collection([$this->prilika]), new Collection);
+
+        // Ogledala: bez te reči svaka rečenica jeste tvrdnja da nema podatka.
+        $this->assertSame('odgovor kaže da nema podatka', $razlog('Nema roka podatak o poslu postoji.'));
+        $this->assertSame('odgovor kaže da nema podatka', $razlog('Podatak o roku nema.'));
+        $this->assertSame('odgovor kaže da nema podatka', $razlog('Informacije nema.'));
+
+        foreach ([...$veznici, ...$predlozi] as $rec) {
+            $this->assertNull($razlog("Nema roka {$rec} podatak o poslu postoji."), "posle nema: {$rec}");
+        }
+
+        foreach ($veznici as $rec) {
+            $this->assertNull($razlog("Podatak o roku {$rec} nema."), "pre nema: {$rec}");
+        }
+
+        foreach ($saveti as $rec) {
+            $this->assertNull($razlog("Informacije nema {$rec} da se javljaš."), "savet: {$rec}");
+        }
     }
 
     // Ogledalo: bez zapisa „nemam podatak" nije tvrdnja protiv zapisa, pa ga provera ne odbija (a Pomocnik ga ni ne pita).

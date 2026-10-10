@@ -17,16 +17,26 @@ final class ProveraOdgovora
 
     // Oblici „nema podatka", poređeni nad normalizovanim tekstom (bez dijakritika, bez ćirilice), jedna rečenica ili deo posle
     // zareza odjednom. Između su najviše dve reči, ali nikad veznik: „nema roka ali podatak postoji" nije „nema podatka".
+    // Iza „nema" nije ni predlog („nema veze sa informacijama"), a pre „nema" jeste dozvoljen („podatka o tome nema").
     // „Ni maš" je razdvojen oblik koji model ume da napiše.
-    private const BEZ_VEZNIKA = '(?:(?!ali\b|pa\b|a\b|no\b|nego\b|jer\b|dok\b)\w+\s+)';
+    private const VEZNICI = 'ali|pa|a|no|nego|jer|dok|i|ili|te|niti|ni';
+
+    private const PREDLOZI = 'za|sa|o|u|na|od|do|po|uz|kod|iz|pri|oko|bez';
+
+    // „Informacije nema potrebe" je savet, ne tvrdnja o zapisima.
+    private const NEMA_SAVET = 'potrebe|veze|smisla|razloga|problema|ogranicenja|prepreka';
+
+    private const IZMEDJU_POSLE_NEMA = '(?:(?!(?:'.self::VEZNICI.'|'.self::PREDLOZI.')\b)\w+\s+)';
+
+    private const IZMEDJU_PRE_NEMA = '(?:(?!(?:'.self::VEZNICI.')\b)\w+\s+)';
 
     private const NEMA_PODATKA = [
         // „Nemam / nemaš / nema / nemamo ... podatak ili informacija" u bilo kom licu i padežu.
-        '/\b(?:nem|ni ?m)(?:amo|ate|aju|am|as|a)\s+'.self::BEZ_VEZNIKA.'{0,2}(?:podat|informacij)/',
+        '/\b(?:nem|ni ?m)(?:amo|ate|aju|am|as|a)\s+'.self::IZMEDJU_POSLE_NEMA.'{0,2}(?:podat|informacij)/',
         // „Nisam našao/la ... podatak", „nismo pronašli ...", „nisam uspeo da nađem ...".
-        '/\bnis(?:am|i|mo|te|u)\s+(?:uspe\w+\s+da\s+(?:pro)?nad\w*|(?:pro)?nas(?:ao|la|li|le|lo))\s+'.self::BEZ_VEZNIKA.'{0,2}(?:podat|informacij)/',
+        '/\bnis(?:am|i|mo|te|u)\s+(?:uspe\w+\s+da\s+(?:pro)?nad\w*|(?:pro)?nas(?:ao|la|li|le|lo))\s+'.self::IZMEDJU_POSLE_NEMA.'{0,2}(?:podat|informacij)/',
         // „Podatka nema", „podatka o tome nema".
-        '/\b(?:podat|informacij)\w*\s+'.self::BEZ_VEZNIKA.'{0,3}nem(?:a|am|amo|aju)\b/',
+        '/\b(?:podat|informacij)\w*\s+'.self::IZMEDJU_PRE_NEMA.'{0,3}nem(?:a|am|amo|aju)\b(?!\s+(?:'.self::NEMA_SAVET.'))/',
     ];
 
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
