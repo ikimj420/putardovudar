@@ -37,6 +37,9 @@
                             <p><span class="oznaka">{{ \App\Support\PrikazVodica::OZNAKA }}</span></p>
                         @elseif ($izvor->jeOrganizacija)
                             <p><span class="oznaka">{{ \App\Support\PrikazOrganizacija::OZNAKA }}</span></p>
+                        @elseif ($izvor->jeKalendar)
+                            <p><span class="oznaka">{{ \App\Support\PrikazKalendara::OZNAKA }}</span></p>
+                            <p class="red">{{ $izvor->rok }}</p>
                         @else
                             <p class="red">{{ $izvor->rok }}</p>
                         @endif

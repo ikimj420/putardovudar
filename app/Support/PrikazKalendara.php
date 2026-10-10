@@ -15,6 +15,9 @@ final class PrikazKalendara
 
     public const SADA_OTVORENO = 'Sada otvoreno: ';
 
+    // Oznaka kartice iz kalendara uz odgovor pomoćnika.
+    public const OZNAKA = 'Kalendar';
+
     // Admin: dugme na kartici prilike kojoj je prošao rok, i poruke posle klika.
     public const DODAJ = 'Dodaj u kalendar';
 

@@ -2,12 +2,14 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Support\DatumiUTekstu;
 use App\Support\PoredjenjeTeksta;
 use App\Support\PrikazOrganizacija;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 // Odgovor modela važi samo ako ne sadrži datum ili link kog nema u zapisima; inače ga menja šablon iz zapisa.
@@ -39,6 +41,9 @@ final class ProveraOdgovora
         '/\b(?:podat|informacij)\w*\s+'.self::IZMEDJU_PRE_NEMA.'{0,3}nem(?:a|am|amo|aju)\b(?!\s+(?:'.self::NEMA_SAVET.'))/',
     ];
 
+    // Odgovor o kalendaru ne sme da kaže šta će biti, samo šta je bilo: „otvoriće se", „se otvara", „biće otvorena", „očekuje se".
+    private const PREDVIDJANJE = '/\b(?:(?:se|ce\s+se)\s+otvar\w+|ce\s+se\s+otvori\w*|otvara\s+se|otvori(?:ce|ti)\b|otvorit\s+ce|bice\s+otvoren\w*|ocekuje\s+se|najavljen\w*|sledece\s+godine|naredne\s+godine|ponovo\s+ce)/';
+
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 
     /**
@@ -47,8 +52,9 @@ final class ProveraOdgovora
      * @param  Collection<int, Prilika>  $zapisi
      * @param  Collection<int, Vodic>  $vodici
      * @param  Collection<int, Organizacija>  $organizacije
+     * @param  Collection<int, KalendarStavka>  $kalendar
      */
-    public function razlogOdbijanja(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije = new Collection): ?string
+    public function razlogOdbijanja(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije = new Collection, Collection $kalendar = new Collection): ?string
     {
         if (trim($odgovor) === '') {
             return 'prazan odgovor';
@@ -59,15 +65,21 @@ final class ProveraOdgovora
         }
 
         // Zapisi postoje, pa odgovor koji kaže da podatka nema protivreči kartici ispod njega.
-        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty() || $organizacije->isNotEmpty()) && $this->kazeDaNemaPodatka($odgovor)) {
+        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty() || $organizacije->isNotEmpty() || $kalendar->isNotEmpty()) && $this->kazeDaNemaPodatka($odgovor)) {
             return 'odgovor kaže da nema podatka';
         }
 
-        if (! $this->datumiSuIzZapisa($odgovor, $zapisi, $vodici, $organizacije)) {
+        if (! $this->datumiSuIzZapisa($odgovor, $zapisi, $vodici, $organizacije, $kalendar)) {
             return 'datum kog nema u zapisima';
         }
 
-        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi, $vodici, $organizacije)) {
+        // Kalendar nikad ne predviđa: budući datum (godina posle današnjeg dana) sme samo ako je rok neke prilike u odgovoru,
+        // a rečenica o tome šta će biti otvoreno ne prolazi.
+        if ($kalendar->isNotEmpty() && ($this->imaBuduciDatum($odgovor, $zapisi) || $this->predvidja($odgovor))) {
+            return 'odgovor predviđa budućnost';
+        }
+
+        if (! $this->linkoviSuIzZapisa($odgovor, $zapisi, $vodici, $organizacije, $kalendar)) {
             return 'link kog nema u zapisima';
         }
 
@@ -96,9 +108,17 @@ final class ProveraOdgovora
      * @param  Collection<int, Vodic>  $vodici
      * @param  Collection<int, Organizacija>  $organizacije
      */
-    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije): bool
+    private function datumiSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije, Collection $kalendar): bool
     {
         $dozvoljeni = [];
+
+        foreach ($kalendar as $stavka) {
+            foreach (array_filter([$stavka->otvoreno_od, $stavka->otvoreno_do]) as $datum) {
+                $dozvoljeni[] = ['dan' => $datum->day, 'mesec' => $datum->month, 'godina' => $datum->year];
+            }
+
+            array_push($dozvoljeni, ...DatumiUTekstu::izvuci($stavka->naziv.' '.$stavka->ko_daje.' '.$stavka->napomena));
+        }
 
         foreach ($organizacije as $organizacija) {
             array_push($dozvoljeni, ...DatumiUTekstu::izvuci($organizacija->naziv.' '.$organizacija->kratak_opis.' '.implode(' ', $organizacija->usluge ?? [])));
@@ -136,9 +156,18 @@ final class ProveraOdgovora
      * @param  Collection<int, Vodic>  $vodici
      * @param  Collection<int, Organizacija>  $organizacije
      */
-    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije): bool
+    private function linkoviSuIzZapisa(string $odgovor, Collection $zapisi, Collection $vodici, Collection $organizacije, Collection $kalendar): bool
     {
         $dozvoljeni = [];
+
+        foreach ($kalendar as $stavka) {
+            foreach ([route('kalendar.index'), $stavka->link_izvora] as $adresa) {
+                if (filled($adresa)) {
+                    $dozvoljeni[] = $this->normalizuj((string) $adresa);
+                    $dozvoljeni[] = $this->domen((string) $adresa);
+                }
+            }
+        }
 
         foreach ($organizacije as $organizacija) {
             foreach ([route('organizacije.show', $organizacija->slug), PrikazOrganizacija::linkSajta($organizacija)] as $adresa) {
@@ -171,6 +200,31 @@ final class ProveraOdgovora
         }
 
         return true;
+    }
+
+    // Datum sa godinom posle današnjeg dana je budući; sme samo ako je rok neke prilike u odgovoru (prilike imaju buduće rokove).
+    /** @param  Collection<int, Prilika>  $zapisi */
+    private function imaBuduciDatum(string $odgovor, Collection $zapisi): bool
+    {
+        foreach (DatumiUTekstu::izvuci($odgovor) as $datum) {
+            if ($datum['godina'] === null || ! checkdate($datum['mesec'], $datum['dan'], $datum['godina'])) {
+                continue;
+            }
+
+            $buduci = Carbon::create($datum['godina'], $datum['mesec'], $datum['dan'])->startOfDay()->greaterThan(today());
+            $jeRokPrilike = $zapisi->contains(fn (Prilika $prilika) => $prilika->rok !== null && $prilika->rok->isSameDay(Carbon::create($datum['godina'], $datum['mesec'], $datum['dan'])));
+
+            if ($buduci && ! $jeRokPrilike) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function predvidja(string $odgovor): bool
+    {
+        return preg_match(self::PREDVIDJANJE, PoredjenjeTeksta::normalizuj($odgovor)) === 1;
     }
 
     private function normalizuj(string $adresa): string

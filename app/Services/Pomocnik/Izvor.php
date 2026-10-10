@@ -3,7 +3,7 @@
 namespace App\Services\Pomocnik;
 
 // Izvor uz odgovor sklapa kod iz zapisa, nikad model: naslov, rok, naša strana i zvanični izvor. Vodič nema rok ni zvanični izvor;
-// organizacija nema rok, a njen sajt je zvanični izvor.
+// organizacija nema rok, a njen sajt je zvanični izvor. Stavka kalendara nosi „Prošli put: …" umesto roka, a zvanični izvor je njen link.
 final readonly class Izvor
 {
     public function __construct(
@@ -14,5 +14,6 @@ final readonly class Izvor
         public ?string $zvanicniLink,
         public bool $jeVodic = false,
         public bool $jeOrganizacija = false,
+        public bool $jeKalendar = false,
     ) {}
 }

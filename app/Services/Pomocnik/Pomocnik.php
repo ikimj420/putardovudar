@@ -2,11 +2,14 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Latinica;
+use App\Support\LinkSajta;
+use App\Support\PrikazKalendara;
 use App\Support\PrikazOrganizacija;
 use App\Support\PrikazPrilike;
 use Illuminate\Support\Collection;
@@ -25,6 +28,9 @@ final class Pomocnik
 
     public const SABLON_NASLOV_ORGANIZACIJE = 'Našao sam sledeće organizacije:';
 
+    // Predlog teksta; Ivan odobrava (PITANJA-39-45.md, paket 45).
+    public const SABLON_NASLOV_KALENDAR = 'Našao sam sledeće iz kalendara:';
+
     public const NAJVISE_ZNAKOVA_PITANJA = 300;
 
     public function __construct(
@@ -32,6 +38,7 @@ final class Pomocnik
         private readonly PretragaPrilika $pretraga,
         private readonly PretragaVodica $pretragaVodica,
         private readonly PretragaOrganizacija $pretragaOrganizacija,
+        private readonly PretragaKalendara $pretragaKalendara,
         private readonly PisanjeOdgovora $pisanje,
         private readonly ProveraOdgovora $provera,
         private readonly OpasnaPitanja $opasnaPitanja,
@@ -44,12 +51,12 @@ final class Pomocnik
 
         // Prazno pitanje se ne šalje modelu: nema šta da se pita. Opasno pitanje se ne šalje ni modelu ni pretrazi.
         if ($pitanje === '' || $this->opasnaPitanja->jeOpasno($pitanje)) {
-            return new RezultatPretrage(new Formular, new Collection, new Collection, new Collection);
+            return new RezultatPretrage(new Formular, new Collection, new Collection, new Collection, new Collection);
         }
 
         $formular = $this->formular->izPitanja($pitanje, $vremeCekanja);
 
-        return new RezultatPretrage($formular, $this->pretraga->pronadji($formular), $this->pretragaVodica->pronadji($formular), $this->pretragaOrganizacija->pronadji($formular));
+        return new RezultatPretrage($formular, $this->pretraga->pronadji($formular), $this->pretragaVodica->pronadji($formular), $this->pretragaOrganizacija->pronadji($formular), $this->pretragaKalendara->pronadji($formular));
     }
 
     /**
@@ -81,6 +88,7 @@ final class Pomocnik
             ...$rezultat->zapisi->map(fn (Prilika $prilika) => $this->izvor($prilika))->all(),
             ...$rezultat->vodici->map(fn (Vodic $vodic) => $this->izvorVodica($vodic))->all(),
             ...$rezultat->organizacije->map(fn (Organizacija $organizacija) => $this->izvorOrganizacije($organizacija))->all(),
+            ...$rezultat->kalendar->map(fn (KalendarStavka $stavka) => $this->izvorKalendara($stavka))->all(),
         ];
 
         $ostalo = $ukupno - (int) ceil($pocetak->diffInSeconds(now()));
@@ -90,12 +98,12 @@ final class Pomocnik
         }
 
         try {
-            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $ostalo);
+            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $rezultat->kalendar, $ostalo);
         } catch (OllamaNedostupna) {
             return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'model ne odgovara');
         }
 
-        $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije);
+        $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $rezultat->kalendar);
 
         return $razlog === null
             ? new OdgovorPomocnika($tekst, $izvori, false)
@@ -124,7 +132,19 @@ final class Pomocnik
             $blokovi[] = self::SABLON_NASLOV_ORGANIZACIJE."\n".$rezultat->organizacije->map(fn (Organizacija $organizacija) => '• '.$organizacija->naziv)->implode("\n");
         }
 
+        if ($rezultat->kalendar->isNotEmpty()) {
+            $blokovi[] = self::SABLON_NASLOV_KALENDAR."\n".$rezultat->kalendar->map(fn (KalendarStavka $stavka) => '• '.$stavka->naziv.' — '.PrikazKalendara::prosliPut($stavka))->implode("\n");
+        }
+
         return implode("\n\n", $blokovi);
+    }
+
+    // Izvor iz kalendara vodi na stranu kalendara, a zvanični izvor je link stavke; umesto roka piše „Prošli put: …".
+    private function izvorKalendara(KalendarStavka $stavka): Izvor
+    {
+        $link = LinkSajta::jeIspravan($stavka->link_izvora) ? trim((string) $stavka->link_izvora) : null;
+
+        return new Izvor($stavka->naziv, PrikazKalendara::prosliPut($stavka), route('kalendar.index'), $link === null ? null : PrikazOrganizacija::nazivSajta($link), $link, false, false, true);
     }
 
     private function izvorVodica(Vodic $vodic): Izvor
