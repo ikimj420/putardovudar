@@ -14,4 +14,4 @@ Route::get('/vodici/{slug}', [JavniVodiciController::class, 'show'])->name('vodi
 Route::get('/organizacije', [JavneOrganizacijeController::class, 'index'])->name('organizacije.index');
 Route::get('/organizacije/{slug}', [JavneOrganizacijeController::class, 'show'])->name('organizacije.show');
 Route::get('/pomocnik', [PomocnikController::class, 'index'])->name('pomocnik.index');
-Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->name('pomocnik.pitaj');
+Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->middleware('throttle:pomocnik')->name('pomocnik.pitaj');

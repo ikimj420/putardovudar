@@ -24,4 +24,6 @@ final class PrikazPomocnika
     public const GRESKA_PRAZNO = 'Upiši pitanje.';
 
     public const GRESKA_DUGACKO = 'Pitanje može imati najviše 300 znakova.';
+
+    public const PREVISE_PITANJA = 'Pitanja stižu prebrzo. Probaj ponovo za minut.';
 }

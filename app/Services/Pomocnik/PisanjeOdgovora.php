@@ -27,7 +27,7 @@ TEXT;
      *
      * @throws OllamaNedostupna
      */
-    public function napisi(string $pitanje, Collection $zapisi, Collection $vodici): string
+    public function napisi(string $pitanje, Collection $zapisi, Collection $vodici, ?int $vremeCekanja = null): string
     {
         $tekst = "Pitanje: {$pitanje}";
 
@@ -41,7 +41,7 @@ TEXT;
         }
 
         // Model ume da pređe na ćirilicu ili da je pomeša sa latinicom; sajt piše samo latinicom.
-        return Latinica::izCirilice($this->ollama->odgovoriTekstom(self::UPUTSTVO, $tekst));
+        return Latinica::izCirilice($this->ollama->odgovoriTekstom(self::UPUTSTVO, $tekst, $vremeCekanja));
     }
 
     /** @param  Collection<int, Prilika>  $zapisi */

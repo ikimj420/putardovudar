@@ -24,9 +24,9 @@ final class Ollama
      *
      * @return array<string, mixed>
      */
-    public function odgovoriJsonom(string $uputstvo, string $tekst): array
+    public function odgovoriJsonom(string $uputstvo, string $tekst, ?int $vremeCekanja = null): array
     {
-        $sadrzaj = $this->pozovi($uputstvo, $tekst, true);
+        $sadrzaj = $this->pozovi($uputstvo, $tekst, true, $vremeCekanja);
         $niz = is_string($sadrzaj) ? json_decode($sadrzaj, true) : null;
 
         if (! is_array($niz) || array_is_list($niz) && $niz !== []) {
@@ -37,17 +37,20 @@ final class Ollama
     }
 
     // Drugi posao klase: slobodan tekst. Prazan odgovor se vraća kao prazan tekst, a proveru radi pozivalac.
-    public function odgovoriTekstom(string $uputstvo, string $tekst): string
+    public function odgovoriTekstom(string $uputstvo, string $tekst, ?int $vremeCekanja = null): string
     {
-        $sadrzaj = $this->pozovi($uputstvo, $tekst, false);
+        $sadrzaj = $this->pozovi($uputstvo, $tekst, false, $vremeCekanja);
 
         return is_string($sadrzaj) ? trim($sadrzaj) : '';
     }
 
-    private function pozovi(string $uputstvo, string $tekst, bool $kaoJson): mixed
+    // Pozivalac sme da skrati vreme čekanja (ostatak ukupnog vremena za pitanje), nikad da ga produži.
+    private function pozovi(string $uputstvo, string $tekst, bool $kaoJson, ?int $vremeCekanja): mixed
     {
+        $granica = (int) config('ollama.vreme_cekanja');
+
         try {
-            $odgovor = Http::timeout(config('ollama.vreme_cekanja'))
+            $odgovor = Http::timeout($vremeCekanja === null ? $granica : min($granica, max(1, $vremeCekanja)))
                 ->acceptJson()
                 ->post(rtrim((string) config('ollama.adresa'), '/').'/api/chat', [
                     'model' => config('ollama.model'),

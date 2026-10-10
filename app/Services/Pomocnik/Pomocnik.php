@@ -29,7 +29,7 @@ final class Pomocnik
     ) {}
 
     /** @throws OllamaNedostupna */
-    public function pretrazi(string $pitanje): RezultatPretrage
+    public function pretrazi(string $pitanje, ?int $vremeCekanja = null): RezultatPretrage
     {
         $pitanje = mb_substr(trim(Latinica::izCirilice($pitanje)), 0, self::NAJVISE_ZNAKOVA_PITANJA);
 
@@ -38,20 +38,23 @@ final class Pomocnik
             return new RezultatPretrage(new Formular, new Collection, new Collection);
         }
 
-        $formular = $this->formular->izPitanja($pitanje);
+        $formular = $this->formular->izPitanja($pitanje, $vremeCekanja);
 
         return new RezultatPretrage($formular, $this->pretraga->pronadji($formular), $this->pretragaVodica->pronadji($formular));
     }
 
     /**
      * Pitanje → formular → pretraga → odgovor. Nema zapisa: „nemam podatak" i model se ne zove drugi put.
-     * Ako model u odgovoru ne prođe proveru (ili ne radi), umesto njegovog odgovora stoji šablon iz zapisa.
+     * Ako model u odgovoru ne prođe proveru (ili ne radi, ili nema dovoljno vremena), umesto njegovog odgovora stoji šablon iz zapisa.
+     * Oba poziva zajedno staju u `pomocnik.ukupno_za_pitanje`: prvi dobija polovinu, drugi ostatak.
      *
      * @throws OllamaNedostupna samo kad ne radi prvi poziv (formular); tada nema šta da se kaže
      */
     public function odgovori(string $pitanje): OdgovorPomocnika
     {
-        $rezultat = $this->pretrazi($pitanje);
+        $ukupno = (int) config('pomocnik.ukupno_za_pitanje');
+        $pocetak = now();
+        $rezultat = $this->pretrazi($pitanje, intdiv($ukupno, 2));
 
         if ($rezultat->nemaPodatak()) {
             return new OdgovorPomocnika(self::NEMAM_PODATAK, [], true);
@@ -62,8 +65,14 @@ final class Pomocnik
             ...$rezultat->vodici->map(fn (Vodic $vodic) => $this->izvorVodica($vodic))->all(),
         ];
 
+        $ostalo = $ukupno - (int) ceil($pocetak->diffInSeconds(now()));
+
+        if ($ostalo < (int) config('pomocnik.najmanje_za_odgovor')) {
+            return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'nema vremena');
+        }
+
         try {
-            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici);
+            $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $ostalo);
         } catch (OllamaNedostupna) {
             return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'model ne odgovara');
         }

@@ -30,10 +30,10 @@ TEXT;
     public function __construct(private readonly Ollama $ollama) {}
 
     /** @throws OllamaNedostupna */
-    public function izPitanja(string $pitanje): Formular
+    public function izPitanja(string $pitanje, ?int $vremeCekanja = null): Formular
     {
         try {
-            $forma = $this->ollama->odgovoriJsonom(self::UPUTSTVO, $pitanje);
+            $forma = $this->ollama->odgovoriJsonom(self::UPUTSTVO, $pitanje, $vremeCekanja);
         } catch (OdgovorNijeJson) {
             return new Formular;
         }

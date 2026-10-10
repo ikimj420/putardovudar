@@ -68,6 +68,29 @@ class OllamaPozivTest extends TestCase
         $this->assertSame(7, $opcije['timeout']);
     }
 
+    // Pozivalac sme da skrati vreme čekanja (ostatak ukupnog vremena), nikad da ga produži preko podešavanja.
+    #[Test]
+    public function pozivalac_moze_da_skrati_vreme_cekanja_ali_ne_i_da_ga_produzi(): void
+    {
+        config()->set('ollama.vreme_cekanja', 7);
+        $opcije = [];
+        Http::fake(['*' => function (Request $zahtev, array $dobijene) use (&$opcije) {
+            $opcije[] = $dobijene['timeout'];
+
+            return $this->odgovor('{}');
+        }]);
+        $ollama = new Ollama;
+
+        $ollama->odgovoriJsonom('U', 'T', 3);
+        $ollama->odgovoriTekstom('U', 'T', 4);
+        $ollama->odgovoriJsonom('U', 'T', 30);
+        $ollama->odgovoriTekstom('U', 'T', 30);
+        $ollama->odgovoriJsonom('U', 'T');
+        $ollama->odgovoriJsonom('U', 'T', 0);
+
+        $this->assertSame([3, 4, 7, 7, 7, 1], $opcije);
+    }
+
     #[Test]
     public function prazan_json_objekat_je_ispravan_odgovor(): void
     {
