@@ -163,7 +163,7 @@ class PocetnaTest extends BazaTestCase
         $this->assertFileExists(public_path('img/zrno.svg'));
         $this->assertMatchesRegularExpression('/\n\.hero h1 em \{[^}]*linear-gradient\(100deg, var\(--lila\), var\(--narandzasta-meka\) 70%, var\(--zlato\)\);[^}]*background-clip: text;[^}]*color: transparent;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.hero \.vrata \{[^}]*position: absolute;[^}]*width: 190px;[^}]*opacity: 0\.55;[^}]*pointer-events: none;/', $stil);
-        $this->assertMatchesRegularExpression('/@media \(min-width: 900px\) \{\s*\.hero \{[^}]*padding: 170px 0 100px;\s*\}\s*\.hero h1 \{\s*font-size: 80px;\s*\}\s*\.hero \.vrata \{[^}]*width: 380px;[^}]*opacity: 1;/', $stil);
+        $this->assertMatchesRegularExpression('/@media \(min-width: 900px\) \{\s*\.plocice \{[^}]*\}\s*\.hero \{[^}]*padding: 170px 0 100px;\s*\}\s*\.hero h1 \{\s*font-size: 80px;\s*\}\s*\.hero \.vrata \{[^}]*width: 380px;[^}]*opacity: 1;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-glavno \{[^}]*linear-gradient\(135deg, var\(--narandzasta\)[^}]*color: var\(--noc\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-staklo \{[^}]*backdrop-filter: blur\(12px\);[^}]*color: #fff;/', $stil);
         // Boje oznaka na vratima su iste kao boje vrsta na karticama.

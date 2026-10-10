@@ -69,6 +69,12 @@ class KalendarStavka extends Model
         $upit->where('status', StatusObjave::Objavljeno)->where('otvoreno_do', '<', today()->toDateString());
     }
 
+    // Koliko različitih meseci ima bar jednu javnu stavku; toliko odeljaka ima strana kalendara (stavka stoji u mesecu svog roka).
+    public static function brojMesecaSaStavkama(): int
+    {
+        return (int) self::query()->javne()->selectRaw('count(distinct month(otvoreno_do)) as broj')->value('broj');
+    }
+
     /** @return list<Grupa> */
     public function izabraneGrupe(): array
     {

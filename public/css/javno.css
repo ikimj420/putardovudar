@@ -11,6 +11,8 @@
   --bobica: #891f5d;
   --bobica-svetla: #b83c7e;
   --ljubicasta-svetla: #7d36e0;
+  --narandzasta-tamna: #c85a14;
+  --zlato-tamno: #9a6e05;
   --zlato-meko: #f5d98a;
   --papir: #fbfafd;
   --pesak: #f2f0f6;
@@ -627,6 +629,95 @@ html {
   gap: 12px;
 }
 
+.plocice {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+
+/* Pločica je veza na svoju stranu i u njenoj je boji; broj je krupan (veliki tekst), a boje su tamnije nijanse narandžaste i zlatne. */
+.plocica {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 18px;
+  background: var(--card-bg);
+  border: 1px solid rgba(26, 26, 28, 0.06);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.plocica:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-velika);
+}
+
+.plocica b {
+  display: block;
+  font-family: var(--font-naslov);
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.plocica span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plocica::after {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  opacity: 0.16;
+}
+
+.plocica[data-strana="prilike"] b {
+  color: var(--narandzasta-tamna);
+}
+
+.plocica[data-strana="prilike"]::after {
+  background: var(--narandzasta);
+}
+
+.plocica[data-strana="vodici"] b {
+  color: var(--ljubicasta);
+}
+
+.plocica[data-strana="vodici"]::after {
+  background: var(--ljubicasta);
+}
+
+.plocica[data-strana="organizacije"] b {
+  color: var(--bobica);
+}
+
+.plocica[data-strana="organizacije"]::after {
+  background: var(--bobica);
+}
+
+.plocica[data-strana="kalendar"] b {
+  color: var(--zlato-tamno);
+}
+
+.plocica[data-strana="kalendar"]::after {
+  background: var(--zlato);
+}
+
 .hero-vise {
   margin-top: 22px;
 }
@@ -1115,6 +1206,10 @@ h1.prazno {
 }
 
 @media (min-width: 900px) {
+  .plocice {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
   .hero {
     padding: 170px 0 100px;
   }

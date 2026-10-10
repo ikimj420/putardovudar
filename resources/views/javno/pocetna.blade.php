@@ -41,6 +41,12 @@
 @endsection
 
 @section('sadrzaj')
+    <ul class="plocice" aria-label="{{ \App\Support\PrikazPocetne::PLOCICE_NAZIV }}">
+        @foreach ($plocice as $plocica)
+            <li><a class="plocica" data-strana="{{ $plocica['strana'] }}" href="{{ $plocica['adresa'] }}"><b>{{ $plocica['broj'] }}</b> <span>{{ $plocica['tekst'] }}</span></a></li>
+        @endforeach
+    </ul>
+
     <section aria-labelledby="prilike-naslov">
         <h2 class="naslov-izvora" id="prilike-naslov">{{ \App\Support\PrikazPocetne::PRILIKE }}</h2>
         @forelse ($prilike as $prilika)

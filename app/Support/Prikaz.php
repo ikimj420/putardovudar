@@ -25,6 +25,20 @@ final class Prikaz
         return self::MESECI[$broj] ?? '';
     }
 
+    // Oblik reči uz broj: jedan i dvadeset jedan (jednina), dva do četiri osim dvanaest do četrnaest (dva oblika), ostalo (množina).
+    /** @param  array{0: string, 1: string, 2: string}  $oblici  uz 1, uz 2, uz 5 */
+    public static function oblik(int $broj, array $oblici): string
+    {
+        $posleDesetice = $broj % 10;
+        $posleStotine = $broj % 100;
+
+        return match (true) {
+            $posleDesetice === 1 && $posleStotine !== 11 => $oblici[0],
+            $posleDesetice >= 2 && $posleDesetice <= 4 && ($posleStotine < 12 || $posleStotine > 14) => $oblici[1],
+            default => $oblici[2],
+        };
+    }
+
     public static function broj(int|float $broj, int $decimale): string
     {
         return number_format($broj, $decimale, ',', '');
