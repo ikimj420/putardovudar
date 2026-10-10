@@ -72,6 +72,7 @@
   --strana-slova: #ffffff;
   --strana-krug: linear-gradient(135deg, var(--narandzasta), var(--zlato));
   --strana-ikona: var(--noc);
+  --strana-nad: var(--ljubicasta);
 
   --font-tekst: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-naslov: "Plus Jakarta Sans", Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -84,6 +85,7 @@ body[data-strana="prilike"] {
   --strana-slova: var(--noc);
   --strana-krug: rgba(39, 15, 67, 0.12);
   --strana-ikona: var(--noc);
+  --strana-nad: var(--noc);
 }
 
 body[data-strana="vodici"] {
@@ -92,6 +94,7 @@ body[data-strana="vodici"] {
   --strana-slova: #ffffff;
   --strana-krug: rgba(255, 255, 255, 0.22);
   --strana-ikona: #ffffff;
+  --strana-nad: var(--noc);
 }
 
 body[data-strana="organizacije"] {
@@ -100,6 +103,7 @@ body[data-strana="organizacije"] {
   --strana-slova: #ffffff;
   --strana-krug: rgba(255, 255, 255, 0.22);
   --strana-ikona: #ffffff;
+  --strana-nad: var(--noc);
 }
 
 body[data-strana="kalendar"] {
@@ -108,6 +112,7 @@ body[data-strana="kalendar"] {
   --strana-slova: var(--noc);
   --strana-krug: rgba(39, 15, 67, 0.12);
   --strana-ikona: var(--noc);
+  --strana-nad: var(--noc);
 }
 
 /* Inter je lokalni fajl (public/fonts/javno, licenca uz njega); nijedna spoljna adresa. */
@@ -1164,8 +1169,8 @@ h1.prazno {
   min-height: 44px;
   padding: 0 24px;
   border-radius: 999px;
-  background: var(--button-dark-bg);
-  color: var(--button-dark-text);
+  background: var(--strana-pozadina);
+  color: var(--strana-slova);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
@@ -1174,8 +1179,9 @@ h1.prazno {
     color 0.2s ease;
 }
 
+/* Dugmad „Pozovi", „Viber" i ostala su u boji strane; na dodir postaju noć (a na početnoj i pomoćniku, koji su već noć, ljubičasta). */
 .dugme-veza:hover {
-  background: var(--ljubicasta);
+  background: var(--strana-nad);
   color: #fff;
 }
 

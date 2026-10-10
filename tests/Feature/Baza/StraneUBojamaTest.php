@@ -126,6 +126,14 @@ class StraneUBojamaTest extends BazaTestCase
         $this->assertStringContainsString('radial-gradient(80% 80% at 95% 0%, var(--sjaj-2), transparent 58%)', $stil);
         $this->assertMatchesRegularExpression('/\n\.meni a\[aria-current="page"\] \{\s*background: var\(--strana-pozadina\);\s*color: var\(--strana-slova\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.plutajuci-dugme \{[^}]*background: var\(--strana-pozadina\);[^}]*color: var\(--strana-slova\);/', $stil);
+        // Dugmad „Pozovi", „Viber" i ostala (.dugme-veza) su u boji strane, a na dodir noć (ljubičasta tamo gde je podloga već noć).
+        $this->assertMatchesRegularExpression('/\n\.dugme-veza \{[^}]*background: var\(--strana-pozadina\);[^}]*color: var\(--strana-slova\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.dugme-veza:hover \{\s*background: var\(--strana-nad\);\s*color: #fff;/', $stil);
+        $this->assertStringContainsString('--strana-nad: var(--ljubicasta);', $stil);
+        foreach (['prilike', 'vodici', 'organizacije', 'kalendar'] as $strana) {
+            preg_match('/\nbody\[data-strana="'.$strana.'"\] \{([^}]*)\}/', $stil, $blok);
+            $this->assertStringContainsString('--strana-nad: var(--noc);', $blok[1], $strana);
+        }
         $this->assertMatchesRegularExpression('/\n\.plutajuci-krug \{[^}]*background: var\(--strana-krug\);[^}]*color: var\(--strana-ikona\);/', $stil);
         // Ogledalo: bela slova na narandžastoj podlozi (kako je u predlogu) ne bi prošla, pa narandžasta i kalendar nose tamna slova.
         $this->assertLessThan(4.5, $this->kontrast('#ffffff', $this->hex('narandzasta')));
