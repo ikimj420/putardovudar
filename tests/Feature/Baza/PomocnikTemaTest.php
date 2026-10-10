@@ -115,11 +115,14 @@ class PomocnikTemaTest extends BazaTestCase
     #[Test]
     public function formular_sklopljen_u_kodu_koristi_iste_reci_za_sve(): void
     {
+        // Zapisi koji bi se našli po „CV" u naslovu (vodič) i usluzi (organizacija), da se vidi da pretraga radi sa istim rečima.
+        Vodic::factory()->objavljen()->create(['naslov' => 'Kako napisati prvi CV']);
+        Organizacija::factory()->objavljena()->create(['naziv' => 'Nacionalna služba za zapošljavanje', 'usluge' => ['CV podrška']]);
         $formular = new Formular(kljucneReci: ['CV']);
 
         $this->assertSame(['CV'], $formular->sveKljucneReci);
         $this->assertSame(['CV'], $formular->reciZa('vodic'));
-        $this->assertCount(0, app(PretragaVodica::class)->pronadji($formular));
-        $this->assertCount(0, app(PretragaOrganizacija::class)->pronadji($formular));
+        $this->assertCount(1, app(PretragaVodica::class)->pronadji($formular));
+        $this->assertCount(1, app(PretragaOrganizacija::class)->pronadji($formular));
     }
 }

@@ -49,11 +49,29 @@ TEXT;
         return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano));
     }
 
-    // Vrsta je izrečena samo kad pitanje kaže njen naziv (u bilo kom padežu). Inače je model nagađa („radionica" je „obuka"),
-    // pa se ne sme tvrdo primenjivati. „Drugo" je ostatak i nikad nije izrečeno.
+    // Oblici reči kojima pitanje kaže vrstu, cele reči (ne stabla: „posle" nije „posao", „obuće" nije „obuka"). „Poso" je čest
+    // pogrešan zapis. „Drugo" je ostatak i nikad nije izrečeno.
+    private const OBLICI_VRSTE = [
+        'posao' => '/^(?:posao|posla|poslu|poslom|poslovi|poslova|poslovima|poslove|poso)$/',
+        'praksa' => '/^(?:praksa|prakse|praksi|praksu|praksom)$/',
+        'stipendija' => '/^stipendij\w*$/',
+        'konkurs' => '/^konkurs\w*$/',
+        'obuka' => '/^(?:obuk\w*|obuci)$/',
+    ];
+
+    // Vrsta je izrečena samo kad pitanje kaže njenu reč (u bilo kom padežu). Inače je model nagađa („radionica" je „obuka"),
+    // pa se ne sme tvrdo primenjivati.
     private function vrstaJePomenuta(?VrstaPrilike $vrsta, string $pitanjeNormalizovano): bool
     {
-        return $vrsta !== null && $vrsta !== VrstaPrilike::Drugo && PoredjenjeTeksta::sadrziIzraz($pitanjeNormalizovano, PoredjenjeTeksta::normalizuj($vrsta->getLabel()));
+        $oblici = $vrsta === null ? null : (self::OBLICI_VRSTE[$vrsta->value] ?? null);
+
+        foreach (explode(' ', $pitanjeNormalizovano) as $rec) {
+            if ($oblici !== null && preg_match($oblici, $rec) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // Grad mora da se pominje u pitanju (u bilo kom padežu). Ako postoji u objavljenim prilikama, uzima se kako piše u bazi;

@@ -42,10 +42,15 @@ class PomocnikVrstaTest extends BazaTestCase
         ], ...$dopuna]);
     }
 
+    /** @var array<string, mixed> */
+    private array $forma = [];
+
     /** @param  array<string, mixed>  $forma */
     private function pitaj(string $pitanje, array $forma): RezultatPretrage
     {
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], JSON_UNESCAPED_UNICODE)]])]);
+        // Jedan lažni model za ceo test (drugi Http::fake za isti URL se ne računa), pa se menja samo ono što on vraća.
+        $this->forma = $forma;
+        Http::fake([self::OLLAMA => fn () => Http::response(['message' => ['content' => json_encode($this->forma + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], JSON_UNESCAPED_UNICODE)]])]);
 
         return app(Pomocnik::class)->pretrazi($pitanje);
     }
@@ -106,6 +111,13 @@ class PomocnikVrstaTest extends BazaTestCase
             'takmičenje nije konkurs' => ['takmicenje za srednju skolu', 'konkurs', false],
             'radim nije posao' => ['hoću da radim', 'posao', false],
             'greška u pisanju' => ['stpendija', 'stipendija', false],
+            // Cela reč, ne tri slova: „poštovani", „posle", „konkretno", „obuće" i „praktičnih" nisu vrste.
+            'poštovani nije posao' => ['Poštovani, ima li slobodnih radnih mesta u Nišu?', 'posao', false],
+            'posle nije posao' => ['Šta mogu da radim posle srednje škole?', 'posao', false],
+            'konkretno nije konkurs' => ['Ima li konkretnih ponuda?', 'konkurs', false],
+            'obuće nije obuka' => ['Ima li radionica za izradu obuće u Nišu?', 'obuka', false],
+            'praktičnih nije praksa' => ['Ima li praktičnih programa?', 'praksa', false],
+            'stipend bez nastavka nije stipendija' => ['Ima li stipend programa?', 'stipendija', false],
             'drugo nikad nije izrečeno' => ['Ima li drugih prilika, drugo?', 'drugo', false],
         ];
     }
@@ -117,10 +129,35 @@ class PomocnikVrstaTest extends BazaTestCase
         $this->assertSame($ocekivano, $this->pitaj($pitanje, ['vrsta' => $vrsta])->formular->vrstaJePomenuta, $pitanje);
     }
 
+    // Svaki oblik reči kojim se vrsta kaže ima primer; spisak oblika je u testu doslovno, a kod mora da ga zna.
+    #[Test]
+    public function svaki_oblik_reci_vrste_je_pomenuta_vrsta(): void
+    {
+        $oblici = [
+            'posao' => ['posao', 'posla', 'poslu', 'poslom', 'poslovi', 'poslova', 'poslovima', 'poslove', 'poso'],
+            'praksa' => ['praksa', 'prakse', 'praksi', 'praksu', 'praksom'],
+            'stipendija' => ['stipendija', 'stipendije', 'stipendiju', 'stipendijom', 'stipendijama'],
+            'konkurs' => ['konkurs', 'konkursa', 'konkursu', 'konkurse', 'konkursi', 'konkursom'],
+            'obuka' => ['obuka', 'obuke', 'obuku', 'obuci', 'obukom', 'obukama'],
+        ];
+        $proverenih = 0;
+
+        foreach ($oblici as $vrsta => $reci) {
+            foreach ($reci as $rec) {
+                $proverenih++;
+                $this->assertTrue($this->pitaj("Tražim {$rec} u Nišu", ['vrsta' => $vrsta])->formular->vrstaJePomenuta, "{$vrsta}: {$rec}");
+            }
+        }
+
+        $this->assertGreaterThan(25, $proverenih);
+    }
+
     // Prazan formular je tvrd po podrazumevanju, a prazan odgovor modela ostaje prazan formular.
     #[Test]
     public function bez_vrste_u_formularu_nema_ni_pomenute_vrste(): void
     {
+        // Jedna objavljena prilika postoji, pa prazan formular koji bi vratio „sve" ne bi prošao nezapaženo.
+        $this->prilika();
         $this->assertTrue((new Formular)->vrstaJePomenuta);
         $this->assertTrue($this->pitaj('Ima li nečega?', [])->nemaPodatak());
     }

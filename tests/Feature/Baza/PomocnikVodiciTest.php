@@ -224,8 +224,7 @@ class PomocnikVodiciTest extends BazaTestCase
         foreach ([['vodič', 'CV'], ['vodiči', 'CV'], ['vodiča', 'CV'], ['vodičima', 'CV'], ['Vodič CV'], ['vodic', 'cv']] as $reci) {
             $this->assertCount(1, $pretraga->pronadji(new Formular(kljucneReci: $reci)), implode(' + ', $reci));
         }
-        // Ogledalo: ostale reči i dalje sužavaju. Od paketa 27 sama reč „vodič" izlistava vodiče (vidi test ispod),
-        // pa tvrdnja „sama reč nije pretraga" više ne važi i prepisana je u tu.
+        // Ogledalo: ostale reči i dalje sužavaju; sama reč „vodič" izlistava vodiče (test ispod).
         $this->assertCount(0, $pretraga->pronadji(new Formular(kljucneReci: ['vodič', 'knjigovođa'])));
     }
 
