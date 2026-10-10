@@ -176,17 +176,18 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
         $this->assertStringNotContainsString('Nacrt organizacija', $this->get(route('organizacije.index'))->getContent());
     }
 
-    // Prototipske vrednosti izgleda su zaključane u stilu: tesan razmak slova i debljina naslova, pilule, tamno dugme.
+    // Vrednosti izgleda iz odobrenog predloga (paket 57) su zaključane u stilu: debljina i razmak naslova, pilule, dugme, noć sa sjajevima u naslovnom delu.
     #[Test]
-    public function stil_nosi_prototipske_vrednosti_naslova_pilula_i_dugmeta(): void
+    public function stil_nosi_vrednosti_naslova_pilula_i_dugmeta_iz_predloga(): void
     {
         $stil = $this->stilBezUpita();
 
-        $this->assertMatchesRegularExpression('/\.naslovna-traka h1 \{[^}]*letter-spacing: -0\.07em;[^}]*font-weight: 950;/s', $stil);
-        $this->assertMatchesRegularExpression('/\.kartica h2,\s*\.kartica h3 \{[^}]*letter-spacing: -0\.06em;[^}]*font-weight: 950;/s', $stil);
+        $this->assertMatchesRegularExpression('/\.naslovna-traka h1 \{[^}]*letter-spacing: -0\.02em;[^}]*font-weight: 800;/s', $stil);
+        $this->assertMatchesRegularExpression('/\.kartica h2,\s*\.kartica h3 \{[^}]*font-size: 21px;[^}]*letter-spacing: -0\.02em;[^}]*font-weight: 800;/s', $stil);
         $this->assertMatchesRegularExpression('/\.meta-stavka \{[^}]*border-radius: 999px;/s', $stil);
-        $this->assertMatchesRegularExpression('/\.oznaka \{[^}]*border-radius: 999px;[^}]*background: var\(--input-bg\);/s', $stil);
-        $this->assertMatchesRegularExpression('/\.pitanje button \{[^}]*background: var\(--button-dark-bg\);[^}]*color: var\(--button-dark-text\);/s', $stil);
-        $this->assertMatchesRegularExpression('/\.naslovna-traka \{[^}]*radial-gradient\(circle at 72% 24%/s', $stil);
+        $this->assertMatchesRegularExpression('/\.oznaka \{[^}]*border-radius: 999px;[^}]*background: var\(--pesak\);/s', $stil);
+        $this->assertMatchesRegularExpression('/\.pitanje button \{[^}]*border-radius: 999px;[^}]*background: var\(--button-dark-bg\);[^}]*color: var\(--button-dark-text\);/s', $stil);
+        $this->assertMatchesRegularExpression('/\n\.kartica \{[^}]*border-radius: var\(--radius\);[^}]*box-shadow: var\(--shadow\);/s', $stil);
+        $this->assertMatchesRegularExpression('/\.naslovna-traka \{[^}]*radial-gradient\(90% 70% at 14% -10%[^}]*var\(--noc\);/s', $stil);
     }
 }

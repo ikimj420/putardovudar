@@ -46,8 +46,8 @@ class PristupacnostJavnihStranaTest extends TestCase
     /** @return array<string, array{0: string, 1: string}> tekst, pozadina */
     public static function tekstoviNaPozadinama(): array
     {
-        $pozadine = ['page' => '--page', 'card-bg' => '--card-bg', 'input-bg' => '--input-bg'];
-        $tekstovi = ['text' => '--text', 'muted' => '--muted', 'blue-text' => '--blue-text'];
+        $pozadine = ['page' => '--page', 'card-bg' => '--card-bg', 'input-bg' => '--input-bg', 'soft' => '--soft'];
+        $tekstovi = ['text' => '--text', 'muted' => '--muted', 'akcent' => '--akcent'];
         $skup = [];
 
         foreach ($tekstovi as $tekst => $x) {
@@ -68,22 +68,41 @@ class PristupacnostJavnihStranaTest extends TestCase
         $this->assertGreaterThanOrEqual(4.5, $this->kontrast($this->boja($tekst), $this->boja($pozadina)), "$tekst na $pozadina");
     }
 
-    // Ogledalo: merilo vidi lošu boju. Prototipska --blue-hover (#347ed3) ne ispunjava AA za tekst, zato tekst koristi --blue-text.
+    // Ogledalo: merilo vidi preslabu boju. Bela slova na narandžastoj (predlog) imaju oko 3,2 : 1, a narandžasta na papiru isto toliko,
+    // zato dugmad na narandžastom nose tamna slova (noć), a narandžasta nikad ne boji tekst. Zlato i lila na papiru su još slabiji.
     #[Test]
-    public function merilo_kontrasta_prepoznaje_prototipsku_plavu_kao_preslabu_za_tekst(): void
+    public function merilo_kontrasta_prepoznaje_narandzastu_kao_preslabu_za_beli_tekst_i_za_tekst_na_papiru(): void
     {
-        $this->assertLessThan(4.5, $this->kontrast($this->boja('blue-hover'), $this->boja('page')));
-        $this->assertLessThan(4.5, $this->kontrast($this->boja('blue-hover'), $this->boja('card-bg')));
-        $this->assertGreaterThan(4.5, $this->kontrast($this->boja('blue-text'), $this->boja('page')));
+        $this->assertLessThan(4.5, $this->kontrast('#ffffff', $this->boja('narandzasta')));
+        $this->assertLessThan(4.5, $this->kontrast($this->boja('narandzasta'), $this->boja('page')));
+        $this->assertLessThan(4.5, $this->kontrast($this->boja('zlato'), $this->boja('page')));
+        $this->assertLessThan(4.5, $this->kontrast($this->boja('lila'), $this->boja('page')));
+        $this->assertGreaterThan(4.5, $this->kontrast($this->boja('noc'), $this->boja('narandzasta')));
+        $this->assertGreaterThan(4.5, $this->kontrast($this->boja('noc'), $this->boja('zlato')));
         $this->assertEqualsWithDelta(21.0, $this->kontrast('#000000', '#ffffff'), 0.001);
     }
 
+    // Tamne površine (naslovni deo, aktivna pilula, dugmad): slova na njima su svetla, a svaki par je izmeren.
     #[Test]
-    public function tekst_na_aktivnoj_pilula_i_beli_broj_na_plavom_imaju_kontrast_najmanje_cetiri_i_po(): void
+    public function slova_na_tamnim_povrsinama_imaju_kontrast_najmanje_cetiri_i_po(): void
     {
-        $this->assertGreaterThanOrEqual(4.5, $this->kontrast($this->boja('dark'), $this->boja('blue')));
-        $this->assertGreaterThanOrEqual(4.5, $this->kontrast('#ffffff', $this->boja('blue-text')));
-        $this->assertGreaterThanOrEqual(4.5, $this->kontrast($this->boja('button-dark-text'), $this->boja('button-dark-bg')));
+        $parovi = [
+            'bela na noći (naslovni deo, aktivna pilula)' => ['#ffffff', $this->boja('noc')],
+            'svetla ljubičasta na noći (putanja)' => ['#d9cfe8', $this->boja('noc')],
+            'svetla ljubičasta na noći (opis)' => ['#dcd2ea', $this->boja('noc')],
+            'bela na ljubičastoj (dugme, redni broj koraka)' => ['#ffffff', $this->boja('akcent')],
+            'bela na bobici' => ['#ffffff', $this->boja('bobica')],
+            'dugme' => [$this->boja('button-dark-text'), $this->boja('button-dark-bg')],
+            'noć na narandžastoj' => [$this->boja('noc'), $this->boja('narandzasta')],
+            'noć na zlatu' => [$this->boja('noc'), $this->boja('zlato')],
+        ];
+
+        $this->assertNotSame([], $parovi);
+        foreach ($parovi as $naziv => [$tekst, $pozadina]) {
+            $this->assertNotSame('', $tekst, $naziv);
+            $this->assertNotSame('', $pozadina, $naziv);
+            $this->assertGreaterThanOrEqual(4.5, $this->kontrast($tekst, $pozadina), $naziv);
+        }
     }
 
     #[Test]
@@ -106,14 +125,19 @@ class PristupacnostJavnihStranaTest extends TestCase
     {
         $stil = $this->stil();
 
-        $this->assertMatchesRegularExpression('/\n:focus-visible \{\s*outline: 3px solid var\(--blue-hover\);\s*outline-offset: 2px;\s*\}/', $stil);
+        $this->assertMatchesRegularExpression('/\n:focus-visible \{\s*outline: 3px solid var\(--fokus\);\s*outline-offset: 2px;\s*\}/', $stil);
+        // Boja obrisa se vidi na papiru i na svetlim površinama (WCAG 1.4.11: 3 : 1); na tamnim površinama ga menja zlato.
+        foreach (['page', 'card-bg', 'soft'] as $podloga) {
+            $this->assertGreaterThanOrEqual(3.0, $this->kontrast($this->boja('fokus'), $this->boja($podloga)), $podloga);
+        }
+        $this->assertGreaterThanOrEqual(3.0, $this->kontrast($this->boja('zlato'), $this->boja('noc')));
         // Nijedno pravilo ne gasi obris fokusa, ma kako da je napisano.
         $this->assertDoesNotMatchRegularExpression(self::GASI_OBRIS, $stil);
         // Ogledalo: merilo vidi sve načine da se obris ugasi, a ne vidi običan obris.
         foreach (['outline: none;', 'outline: 0;', 'outline: 0px;', 'outline: transparent;', 'outline: 3px solid transparent;', 'outline-style: none;', 'outline-width: 0;', 'outline-width: 0px;', 'outline-color: transparent;'] as $ugasen) {
             $this->assertSame(1, preg_match(self::GASI_OBRIS, ".x:focus { $ugasen }"), $ugasen);
         }
-        $this->assertSame(0, preg_match(self::GASI_OBRIS, '.x:focus { outline: 3px solid var(--blue-hover); outline-offset: 2px; }'));
+        $this->assertSame(0, preg_match(self::GASI_OBRIS, '.x:focus { outline: 3px solid var(--fokus); outline-offset: 2px; }'));
     }
 
     // Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu (WCAG 2.4.11): visina izmerena u pregledaču je 57 px, a bez skripta na telefonu 146 px (pet veza, dva reda; sa četiri veze bilo je 101 px).
@@ -129,21 +153,21 @@ class PristupacnostJavnihStranaTest extends TestCase
         $this->assertGreaterThanOrEqual(146 + 16, (int) ($bezSkripta[1] ?? 0));
     }
 
-    // Boja teksta je --blue-text, a prototipska --blue-hover (preslaba za tekst) služi samo za obris; test čita upotrebu, ne samo definicije.
+    // Boja teksta je --akcent (ljubičasta); narandžasta, zlato i lila na papiru nemaju kontrast za tekst, pa nijedno pravilo njima ne boji tekst.
     #[Test]
-    public function tekst_i_brojevi_koriste_blue_text_a_nijedno_pravilo_ne_boji_tekst_prototipskom_plavom(): void
+    public function tekst_i_brojevi_koriste_akcent_a_nijedno_pravilo_ne_boji_tekst_slabom_bojom(): void
     {
         $stil = $this->stil();
-        $bojaTeksta = '/(?<![\w-])color:\s*var\(--blue-hover\)/';
+        $bojaTeksta = '/(?<![\w-])color:\s*var\(--(?:narandzasta|narandzasta-meka|zlato|lila|bobica-svetla)\)/';
 
         $this->assertDoesNotMatchRegularExpression($bojaTeksta, $stil);
-        $this->assertMatchesRegularExpression('/\n\.izvor a \{[^}]*(?<![\w-])color: var\(--blue-text\);/', $stil);
-        $this->assertMatchesRegularExpression('/\n\.meni-sredina a:hover \{\s*color: var\(--blue-text\);/', $stil);
-        $this->assertMatchesRegularExpression('/\n\.koraci li::before \{[^}]*background: var\(--blue-text\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.izvor a \{[^}]*(?<![\w-])color: var\(--akcent\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.meni-sredina a:hover \{\s*color: var\(--akcent\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.koraci li::before \{[^}]*background: var\(--akcent\);/', $stil);
 
         // Ogledalo: merilo vidi boju teksta, a ne vidi boju pozadine ili okvira.
-        $this->assertSame(1, preg_match($bojaTeksta, '.x { color: var(--blue-hover); }'));
-        $this->assertSame(0, preg_match($bojaTeksta, '.x { background-color: var(--blue-hover); border-color: var(--blue-hover); }'));
+        $this->assertSame(1, preg_match($bojaTeksta, '.x { color: var(--narandzasta); }'));
+        $this->assertSame(0, preg_match($bojaTeksta, '.x { background-color: var(--narandzasta); border-color: var(--zlato); }'));
     }
 
     // Okvir polja za pitanje se razlikuje od pozadine bar 3 : 1 (WCAG 1.4.11); prototipska --border je providna i jedva se vidi.

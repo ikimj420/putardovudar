@@ -108,26 +108,95 @@ class JavnoZaglavljeTest extends BazaTestCase
         }
     }
 
-    // Boje, zaobljenje i senka su iz prototipa (promenljive na početku njegovog app.css), pod prototipskim nazivima; stari nazivi ne postoje.
+    // Boje, zaobljenje i senka su iz odobrenog predloga (Dokumentacija/izgled-predlog.html, paket 57); stari prototipski nazivi plave, zelene i crvene ne postoje.
     #[Test]
-    public function stil_nosi_prototipske_boje_pod_prototipskim_nazivima(): void
+    public function stil_nosi_boje_i_oblik_odobrenog_predloga(): void
     {
         $stil = $this->stilBezUpita();
-        $prototip = [
-            'page' => '#eef5f1', 'soft' => '#f4f6f3', 'soft-2' => '#e7eee9', 'text' => '#071012', 'muted' => '#59635f', 'dark' => '#071012',
-            'blue' => '#4d98ee', 'blue-hover' => '#347ed3', 'green' => '#55d8b2', 'green-hover' => '#3fc49e', 'red' => '#ff4a4a', 'red-hover' => '#e73939',
-            'white' => '#ffffff', 'border' => 'rgba(7, 16, 18, 0.12)', 'surface-border' => 'rgba(7, 16, 18, 0.08)', 'surface-border-strong' => 'rgba(7, 16, 18, 0.12)',
-            'shadow' => '0 12px 28px rgba(7, 16, 18, 0.08)', 'radius' => '8px', 'header-bg' => 'rgba(238, 245, 241, 0.94)', 'card-bg' => '#f4f6f3',
-            'input-bg' => '#ffffff', 'input-text' => '#071012', 'button-dark-bg' => '#071012', 'button-dark-text' => '#ffffff',
+        $predlog = [
+            'noc' => '#270f43', 'noc-duboka' => '#1b0a30', 'ljubicasta' => '#651fc7', 'lila' => '#a85ff2', 'narandzasta' => '#e07229', 'narandzasta-meka' => '#f0994c',
+            'zlato' => '#e7b53c', 'bobica' => '#891f5d', 'bobica-svetla' => '#b83c7e', 'papir' => '#fbfafd', 'pesak' => '#f2f0f6', 'mastilo' => '#1a1a1c',
+            'page' => '#fbfafd', 'soft' => '#f2f0f6', 'text' => '#1a1a1c', 'dark' => '#270f43', 'card-bg' => '#ffffff', 'input-bg' => '#ffffff',
+            'button-dark-bg' => '#270f43', 'button-dark-text' => '#ffffff', 'akcent' => '#651fc7', 'fokus' => '#651fc7', 'radius' => '22px', 'radius-polje' => '14px',
         ];
 
-        foreach ($prototip as $naziv => $vrednost) {
+        foreach ($predlog as $naziv => $vrednost) {
             $this->assertStringContainsString('--'.$naziv.': '.$vrednost.';', $stil, $naziv);
         }
+        $this->assertSame(24, count($predlog));
 
-        // Ogledalo: nazivi koji su pre prototipa postojali u našem stilu više se ne koriste.
+        // Ogledalo: nazivi iz prototipa (plava, zelena, crvena) i nazivi pre prototipa ne postoje.
+        $this->assertDoesNotMatchRegularExpression('/--(?:blue|green|red)[a-z-]*:|var\(--(?:blue|green|red)[a-z-]*\)/', $stil);
         $this->assertDoesNotMatchRegularExpression('/--(?:strana|kartica|tekst|prigusen|granica|plava|zelena|senka|polumer)\b/', $stil);
-        $this->assertSame(24, count($prototip));
+    }
+
+    // Bez plave, zelene i crvene: nijedna boja u stilu nema ton plave, zelene, tirkizne ni crvene. Ljubičasta, ruža, narandžasta i zlato su dozvoljeni;
+    // sive i skoro bele (papir) nemaju ton.
+    #[Test]
+    public function nijedna_boja_u_stilu_nije_plava_zelena_ni_crvena(): void
+    {
+        $boje = $this->bojeIzStila($this->stilBezKomentara());
+
+        // Merilo mora da obiđe skup: stil ima više od dvadeset boja, a među njima i one sa tonom.
+        $this->assertGreaterThan(25, count($boje));
+        $saTonom = array_filter($boje, fn (array $hsl) => $hsl[1] > 0.25);
+        $this->assertGreaterThan(10, count($saTonom));
+
+        foreach ($boje as $naziv => [$ton, $zasicenje]) {
+            $this->assertFalse($this->jePlavaZelenaIliCrvena($ton, $zasicenje), $naziv.' ima ton '.round($ton).'°');
+        }
+
+        // Ogledalo: merilo vidi prototipske boje (plava, zelena, crvena) i ne vidi ljubičastu, ružu, narandžastu, zlato ni sivu.
+        foreach (['#4d98ee' => true, '#55d8b2' => true, '#ff4a4a' => true, '#2563b8' => true, '#651fc7' => false, '#891f5d' => false, '#e07229' => false, '#e7b53c' => false, '#5d5866' => false, '#fbfafd' => false] as $boja => $ocekivano) {
+            [$ton, $zasicenje] = $this->tonISasicenje($boja);
+
+            $this->assertSame($ocekivano, $this->jePlavaZelenaIliCrvena($ton, $zasicenje), $boja);
+        }
+    }
+
+    private function jePlavaZelenaIliCrvena(float $ton, float $zasicenje): bool
+    {
+        return $zasicenje > 0.25 && ($ton >= 75 && $ton < 255 || $ton >= 345 || $ton < 15);
+    }
+
+    /** @return array<string, array{0: float, 1: float}> boja kako je u stilu → [ton u stepenima, zasićenje] */
+    private function bojeIzStila(string $stil): array
+    {
+        $boje = [];
+
+        preg_match_all('/#(?:[0-9a-f]{6}|[0-9a-f]{3})\b/i', $stil, $hex);
+        foreach ($hex[0] as $boja) {
+            $boje[strtolower($boja)] = $this->tonISasicenje($boja);
+        }
+
+        preg_match_all('/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/', $stil, $rgb, PREG_SET_ORDER);
+        foreach ($rgb as [$ceo, $r, $g, $b]) {
+            $boje[$ceo] = $this->tonISasicenje(sprintf('#%02x%02x%02x', $r, $g, $b));
+        }
+
+        return $boje;
+    }
+
+    /** @return array{0: float, 1: float} */
+    private function tonISasicenje(string $boja): array
+    {
+        $boja = ltrim($boja, '#');
+        $boja = strlen($boja) === 3 ? $boja[0].$boja[0].$boja[1].$boja[1].$boja[2].$boja[2] : $boja;
+        [$r, $g, $b] = array_map(fn (string $c) => hexdec($c) / 255.0, str_split($boja, 2));
+        $najvise = max($r, $g, $b);
+        $najmanje = min($r, $g, $b);
+        $razlika = $najvise - $najmanje;
+        $svetlost = ($najvise + $najmanje) / 2;
+        $zasicenje = $razlika === 0.0 ? 0.0 : $razlika / (1 - abs(2 * $svetlost - 1));
+
+        $ton = match (true) {
+            $razlika === 0.0 => 0.0,
+            $najvise === $r => 60 * fmod(($g - $b) / $razlika, 6),
+            $najvise === $g => 60 * (($b - $r) / $razlika + 2),
+            default => 60 * (($r - $g) / $razlika + 4),
+        };
+
+        return [$ton < 0 ? $ton + 360 : $ton, $zasicenje];
     }
 
     #[Test]

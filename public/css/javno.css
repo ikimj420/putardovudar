@@ -1,45 +1,74 @@
-/* Javne strane. Boje, font i oblik kartica su iz prototipa u nasleđu; običan CSS, bez build koraka. */
+/* Javne strane. Izgled je iz odobrenog predloga (Dokumentacija/izgled-predlog.html); običan CSS, bez build koraka. */
 :root {
-  /* Boje, zaobljenje i senka iz prototipa (Dokumentacija/NASLEDJE/dizajn/prototip/app.css, promenljive na početku); nazivi su prototipski. */
-  --page: #eef5f1;
-  --soft: #f4f6f3;
-  --soft-2: #e7eee9;
+  /* Boje, slova i oblik su iz odobrenog predloga (Dokumentacija/izgled-predlog.html). Nema plave, zelene ni crvene. */
+  --noc: #270f43;
+  --noc-duboka: #1b0a30;
+  --ljubicasta: #651fc7;
+  --lila: #a85ff2;
+  --narandzasta: #e07229;
+  --narandzasta-meka: #f0994c;
+  --zlato: #e7b53c;
+  --bobica: #891f5d;
+  --bobica-svetla: #b83c7e;
+  --papir: #fbfafd;
+  --pesak: #f2f0f6;
+  --mastilo: #1a1a1c;
 
-  --text: #071012;
-  --muted: #59635f;
-  --dark: #071012;
+  /* Nazivi koje stil već koristi, sa bojama predloga. */
+  --page: #fbfafd;
+  --soft: #f2f0f6;
+  --soft-2: #e8e4f0;
 
-  --blue: #4d98ee;
-  --blue-hover: #347ed3;
-  --green: #55d8b2;
-  --green-hover: #3fc49e;
-  --red: #ff4a4a;
-  --red-hover: #e73939;
+  --text: #1a1a1c;
+  --muted: #5d5866;
+  --dark: #270f43;
 
   --white: #ffffff;
-  --border: rgba(7, 16, 18, 0.12);
-  --surface-border: rgba(7, 16, 18, 0.08);
-  --surface-border-strong: rgba(7, 16, 18, 0.12);
+  --border: rgba(26, 26, 28, 0.12);
+  --surface-border: rgba(26, 26, 28, 0.08);
+  --surface-border-strong: rgba(26, 26, 28, 0.12);
 
-  --shadow: 0 12px 28px rgba(7, 16, 18, 0.08);
-  --radius: 8px;
+  --shadow: 0 6px 24px -10px rgba(20, 20, 28, 0.16), 0 2px 8px -4px rgba(20, 20, 28, 0.08);
+  --shadow-velika: 0 40px 90px -38px rgba(39, 15, 67, 0.45), 0 18px 40px -28px rgba(20, 20, 28, 0.2);
+  --radius: 22px;
+  --radius-polje: 14px;
 
-  --header-bg: rgba(238, 245, 241, 0.94);
-  --card-bg: #f4f6f3;
+  --header-bg: rgba(251, 250, 253, 0.94);
+  --card-bg: #ffffff;
   --input-bg: #ffffff;
-  --input-text: #071012;
+  --input-text: #1a1a1c;
 
-  --button-dark-bg: #071012;
+  --button-dark-bg: #270f43;
   --button-dark-text: #ffffff;
 
-  /* Izvedeno iz prototipske zelene: pozadina oznake. */
-  --green-soft: rgba(85, 216, 178, 0.28);
+  /* Boja veza, aktivnih stavki i okvira fokusa; na papiru ima kontrast 7,8 : 1. */
+  --akcent: #651fc7;
+  --fokus: #651fc7;
 
-  /* Tamnija plava za tekst i brojeve: prototipska --blue-hover (3,8 : 1) ne ispunjava WCAG AA (4,5 : 1) na svetloj pozadini. */
-  --blue-text: #2563b8;
+  /* Okvir polja mora da se razlikuje od pozadine bar 3 : 1 (WCAG 1.4.11). */
+  --input-border: #7b7488;
 
-  /* Okvir polja mora da se razlikuje od pozadine bar 3 : 1 (WCAG 1.4.11); prototipska --border je oko 1,3 : 1. */
-  --input-border: #6f7a76;
+  --font-tekst: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-naslov: "Plus Jakarta Sans", Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Inter je lokalni fajl (public/fonts/javno, licenca uz njega); nijedna spoljna adresa. */
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/javno/inter-latin-ext-wght-normal.woff2") format("woff2");
+  unicode-range: U+0100-02ba, U+02bd-02c5, U+02c7-02cc, U+02ce-02d7, U+02dd-02ff, U+0304, U+0308, U+0329, U+1d00-1dbf, U+1e00-1e9f, U+1ef2-1eff, U+2020, U+20a0-20ab, U+20ad-20c0, U+2113, U+2c60-2c7f, U+a720-a7ff;
+}
+
+@font-face {
+  font-family: Inter;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../fonts/javno/inter-latin-wght-normal.woff2") format("woff2");
+  unicode-range: U+0000-00ff, U+0131, U+0152-0153, U+02bb-02bc, U+02c6, U+02da, U+02dc, U+0304, U+0308, U+0329, U+2000-206f, U+20ac, U+2122, U+2191, U+2193, U+2212, U+2215, U+feff, U+fffd;
 }
 
 * {
@@ -49,11 +78,20 @@
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-tekst);
+  font-size: 17px;
   background: var(--page);
   color: var(--text);
-  line-height: 1.45;
+  line-height: 1.55;
   overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-naslov);
+  font-weight: 800;
 }
 
 a {
@@ -73,7 +111,7 @@ html {
 
 /* Vidljiv fokus na svemu što se fokusira, ne samo na vezama. */
 :focus-visible {
-  outline: 3px solid var(--blue-hover);
+  outline: 3px solid var(--fokus);
   outline-offset: 2px;
 }
 
@@ -112,7 +150,7 @@ html {
 .logo {
   padding: 8px 0;
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   line-height: 1;
@@ -164,7 +202,7 @@ html {
 }
 
 .meni-sredina a:hover {
-  color: var(--blue-text);
+  color: var(--akcent);
 }
 
 /* „Pomoćnik": pilula sa prelivom po ivici, kao u prototipu */
@@ -185,7 +223,7 @@ html {
   inset: 0;
   z-index: -2;
   border-radius: inherit;
-  background: linear-gradient(110deg, var(--blue), var(--green), var(--blue));
+  background: linear-gradient(110deg, var(--ljubicasta), var(--narandzasta), var(--ljubicasta));
 }
 
 .asistent::after {
@@ -317,12 +355,15 @@ html {
 }
 
 .naslovna-traka {
+  position: relative;
+  overflow: hidden;
   padding: 42px 0 34px;
+  color: #fff;
   background:
-    radial-gradient(circle at 72% 24%, rgba(77, 152, 238, 0.28), transparent 28%),
-    radial-gradient(circle at 18% 76%, rgba(85, 216, 178, 0.25), transparent 30%),
-    var(--page);
-  border-bottom: 1px solid var(--surface-border);
+    radial-gradient(90% 70% at 14% -10%, rgba(168, 95, 242, 0.45), transparent 60%),
+    radial-gradient(80% 80% at 95% 0%, rgba(240, 153, 76, 0.28), transparent 58%),
+    radial-gradient(120% 100% at 80% 115%, rgba(137, 31, 93, 0.75), transparent 62%),
+    var(--noc);
 }
 
 .mrvice {
@@ -331,9 +372,9 @@ html {
   align-items: center;
   gap: 4px;
   margin-bottom: 8px;
-  color: var(--muted);
+  color: #d9cfe8;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mrvice a {
@@ -342,7 +383,7 @@ html {
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
-  color: var(--text);
+  color: #fff;
   text-decoration: none;
 }
 
@@ -353,23 +394,24 @@ html {
 .naslovna-traka h1 {
   max-width: 1120px;
   margin-bottom: 18px;
-  font-size: clamp(36px, 9.5vw, 104px);
-  line-height: 0.95;
-  letter-spacing: -0.07em;
-  font-weight: 950;
+  color: #fff;
+  font-size: clamp(34px, 8.5vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .naslovna-traka .kratko {
   max-width: 720px;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.38;
-  font-weight: 700;
+  color: #dcd2ea;
+  font-size: 17px;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .prazno {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 h1.prazno {
@@ -392,22 +434,23 @@ h1.prazno {
   min-height: 44px;
   padding: 0 16px;
   border-radius: 999px;
-  background: var(--soft);
-  border: 1px solid var(--surface-border-strong);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--surface-border);
+  box-shadow: 0 1px 2px rgba(20, 20, 28, 0.04);
   color: var(--text);
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 600;
   text-decoration: none;
 }
 
 .filter-pilula:hover {
-  background: var(--soft-2);
+  background: var(--soft);
 }
 
 .filter-pilula.aktivno {
-  background: var(--blue);
-  border-color: var(--blue);
-  color: var(--dark);
+  background: var(--noc);
+  border-color: var(--noc);
+  color: #fff;
 }
 
 /* Oznake i podaci u pilulama; na telefonu jedan podatak po redu (pravilo ekrana), od 720 px jedna do druge. */
@@ -436,12 +479,13 @@ h1.prazno {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
-  padding: 0 10px;
+  padding: 0 12px;
   border-radius: 999px;
-  background: var(--input-bg);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 900;
+  background: var(--pesak);
+  color: #3b2a52;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .meta-stavka {
@@ -450,12 +494,23 @@ h1.prazno {
   /* Pilula je flex: razmak između teksta i veze (E-pošta: adresa) bez ovoga nestaje. */
   gap: 0.3em;
   min-height: 34px;
-  padding: 0 12px;
+  padding: 0 14px;
   border-radius: 999px;
-  background: var(--input-bg);
-  color: var(--muted);
+  background: var(--pesak);
+  color: #3b2a52;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
+}
+
+/* U naslovnom delu, na tamnoj pozadini, podaci su stakleni. */
+.naslovna-traka .meta-stavka {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.naslovna-traka .meta-stavka a {
+  color: #fff;
 }
 
 /* Spisak: jedna kolona na telefonu, pa dve, a vodiči i tri */
@@ -470,13 +525,14 @@ h1.prazno {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 26px;
+  padding: 22px;
   background: var(--card-bg);
-  border: 1px solid var(--surface-border);
+  border: 1px solid rgba(26, 26, 28, 0.06);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 /* Cela kartica je veza: jedina veza (naslov) se razvlači preko kartice, pa čitač ekrana čuje je jednom; ostale veze u kartici ostaju iznad nje. */
@@ -487,7 +543,7 @@ h1.prazno {
   border-radius: var(--radius);
 }
 .kartica-veza:focus-visible::after {
-  outline: 3px solid var(--blue-hover);
+  outline: 3px solid var(--fokus);
   outline-offset: 2px;
 }
 .kartica a:not(.kartica-veza) {
@@ -495,16 +551,16 @@ h1.prazno {
   z-index: 1;
 }
 .kartica:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-velika);
 }
 
 .kartica h2,
 .kartica h3 {
-  font-size: clamp(30px, 8.4vw, 52px);
-  line-height: 0.98;
-  letter-spacing: -0.06em;
-  font-weight: 950;
+  font-size: 21px;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .kartica h2 a,
@@ -525,8 +581,8 @@ h1.prazno {
   max-width: 680px;
   color: var(--muted);
   font-size: 16px;
-  line-height: 1.42;
-  font-weight: 700;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
 .redosled .oznake {
@@ -559,7 +615,7 @@ h1.prazno {
 
 .red {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* Strana jedne prilike, vodiča ili organizacije: glavni sadržaj i bočna kartica */
@@ -579,25 +635,26 @@ h1.prazno {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 26px;
+  padding: 22px;
   background: var(--card-bg);
-  border: 1px solid var(--surface-border);
+  border: 1px solid rgba(26, 26, 28, 0.06);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .ploca h2 {
-  font-size: clamp(30px, 8.4vw, 58px);
-  line-height: 1;
-  letter-spacing: -0.06em;
-  font-weight: 950;
+  font-size: clamp(24px, 6vw, 30px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .sadrzaj-opis {
   max-width: 880px;
   color: var(--muted);
   font-size: 17px;
-  line-height: 1.5;
-  font-weight: 700;
+  line-height: 1.55;
+  font-weight: 500;
 }
 
 /* Zvanični izvor i sajt: bočna kartica sa linkom i upozorenjem */
@@ -605,24 +662,25 @@ h1.prazno {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 26px;
+  padding: 22px;
   background: var(--card-bg);
-  border: 1px solid var(--surface-border);
+  border: 1px solid rgba(26, 26, 28, 0.06);
   border-radius: var(--radius);
-  font-weight: 700;
+  box-shadow: var(--shadow);
+  font-weight: 600;
 }
 
 .izvor a {
-  color: var(--blue-text);
-  font-weight: 900;
+  color: var(--akcent);
+  font-weight: 700;
 }
 
 .izvor-upozorenje {
   padding: 14px;
-  border-radius: var(--radius);
-  background: rgba(255, 74, 74, 0.12);
+  border-radius: var(--radius-polje);
+  background: #fdebdd;
   color: var(--text);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* „Pošalji komšiji" i „Pozovi": velika dugmad koja su obične veze; na telefonu preko cele širine, od 720 px jedno do drugog. */
@@ -635,8 +693,8 @@ h1.prazno {
 
 .deljenje-naslov {
   color: var(--text);
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .dugme-veza {
@@ -645,17 +703,20 @@ h1.prazno {
   justify-content: center;
   min-height: 44px;
   padding: 0 24px;
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--button-dark-bg);
   color: var(--button-dark-text);
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 700;
   text-decoration: none;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .dugme-veza:hover {
-  background: var(--blue);
-  color: var(--dark);
+  background: var(--ljubicasta);
+  color: #fff;
 }
 
 /* Jedno veliko dugme u svom redu iznad „Pošalji komšiji" („Pozovi", „Dodaj rok u telefon"). */
@@ -692,10 +753,10 @@ h1.prazno {
 
 .naslov-izvora {
   margin: 8px 0 14px;
-  font-size: clamp(26px, 6vw, 40px);
-  line-height: 1.05;
-  letter-spacing: -0.05em;
-  font-weight: 950;
+  font-size: clamp(24px, 6vw, 30px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 /* Odeljak (mesec u kalendaru) posle spiska kartica ne sme da se lepi uz poslednju karticu. */
@@ -718,10 +779,10 @@ h1.prazno {
   position: relative;
   padding: 18px 18px 18px 58px;
   min-height: 64px;
-  border-radius: var(--radius);
-  background: var(--input-bg);
-  font-weight: 700;
-  line-height: 1.45;
+  border-radius: var(--radius-polje);
+  background: var(--soft);
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .koraci li::before {
@@ -736,10 +797,10 @@ h1.prazno {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--blue-text);
+  background: var(--akcent);
   color: #fff;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .usluge li::before {
@@ -750,7 +811,7 @@ h1.prazno {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--green);
+  background: var(--bobica-svetla);
 }
 
 @media (min-width: 720px) {
@@ -771,16 +832,12 @@ h1.prazno {
   }
 
   .kartica {
-    padding: 34px;
-  }
-
-  .redosled {
-    min-height: 300px;
+    padding: 22px;
   }
 
   .ploca,
   .izvor {
-    padding: 34px;
+    padding: 26px;
   }
 }
 
@@ -793,29 +850,17 @@ h1.prazno {
     grid-template-columns: 1fr 380px;
   }
 
-  .kartica h2,
-  .kartica h3 {
-    font-size: clamp(34px, 3.4vw, 52px);
-  }
-
-  .spisak.tri .kartica h2 {
-    font-size: clamp(30px, 3.2vw, 44px);
-  }
-
-  .ploca h2 {
-    font-size: clamp(34px, 4vw, 58px);
-  }
 
   .naslovna-traka h1 {
-    font-size: clamp(52px, 7vw, 104px);
+    font-size: clamp(44px, 5vw, 64px);
   }
 }
 
 /* Pomoćnik: polje i dugme kao u prototipu (tamno dugme, belo polje), odgovor i izvori su kartice */
 .uvod {
   max-width: 720px;
-  color: var(--muted);
-  font-weight: 700;
+  color: #dcd2ea;
+  font-weight: 500;
 }
 
 .pitanje {
@@ -826,7 +871,7 @@ h1.prazno {
 }
 
 .pitanje label {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .pitanje textarea {
@@ -834,7 +879,7 @@ h1.prazno {
   font: inherit;
   padding: 14px;
   border: 1px solid var(--input-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-polje);
   background: var(--input-bg);
   color: var(--input-text);
   resize: vertical;
@@ -845,12 +890,12 @@ h1.prazno {
   min-height: 44px;
   padding: 0 24px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--button-dark-bg);
   color: var(--button-dark-text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
   transition:
     background 0.2s ease,
@@ -858,12 +903,12 @@ h1.prazno {
 }
 
 .pitanje button:hover {
-  background: var(--blue);
-  color: var(--dark);
+  background: var(--ljubicasta);
+  color: #fff;
 }
 
 .greska {
-  color: #a4161a;
+  color: var(--bobica);
   font-weight: 700;
 }
 
@@ -871,10 +916,9 @@ h1.prazno {
   margin-bottom: 24px;
 }
 
-.odgovor h2,
-.kartica h3 {
-  font-size: clamp(26px, 6vw, 34px);
-  line-height: 1.05;
+.odgovor h2 {
+  font-size: clamp(24px, 6vw, 30px);
+  line-height: 1.1;
 }
 
 .spisak + .izvor-upozorenje {
@@ -909,15 +953,15 @@ h1.prazno {
   border-radius: 999px;
   background: var(--button-dark-bg);
   color: var(--button-dark-text);
-  font-size: 14px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 700;
   text-decoration: none;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-velika);
 }
 
 .plutajuci-dugme:hover {
-  background: var(--blue);
-  color: var(--dark);
+  background: var(--ljubicasta);
+  color: #fff;
 }
 
 .plutajuci-prozor {
@@ -933,7 +977,7 @@ h1.prazno {
   background: var(--page);
   border: 1px solid var(--surface-border-strong);
   border-radius: var(--radius);
-  box-shadow: 0 18px 48px rgba(7, 16, 18, 0.28);
+  box-shadow: var(--shadow-velika);
 }
 
 .plutajuci-prozor[hidden] {
@@ -952,8 +996,8 @@ h1.prazno {
 .plutajuci-glava h2 {
   font-size: 22px;
   line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 950;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .plutajuci-zatvori {
@@ -961,12 +1005,12 @@ h1.prazno {
   min-height: 44px;
   padding: 0 16px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--white);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -981,7 +1025,7 @@ h1.prazno {
 
 .plutajuci-uvod {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .plutajuci-rezultat:empty {
@@ -995,8 +1039,8 @@ h1.prazno {
 .plutajuci-sablon {
   font-size: 20px;
   line-height: 1.1;
-  letter-spacing: -0.03em;
-  font-weight: 950;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
 .plutajuci-rezultat .obrazac {
@@ -1043,18 +1087,18 @@ h1.prazno {
   min-height: 44px;
   padding: 0 24px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--button-dark-bg);
   color: var(--button-dark-text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .dugme-kopiraj:hover {
-  background: var(--blue);
-  color: var(--dark);
+  background: var(--ljubicasta);
+  color: #fff;
 }
 
 .dugme-kopiraj[hidden] {
@@ -1077,13 +1121,13 @@ h1.prazno {
 }
 
 .polje label {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .polje-objasnjenje {
   color: var(--muted);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .polje input,
@@ -1093,7 +1137,7 @@ h1.prazno {
   font: inherit;
   padding: 12px 14px;
   border: 1px solid var(--input-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-polje);
   background: var(--input-bg);
   color: var(--input-text);
 }
@@ -1107,12 +1151,12 @@ h1.prazno {
   min-height: 44px;
   padding: 0 24px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 999px;
   background: var(--button-dark-bg);
   color: var(--button-dark-text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
   transition:
     background 0.2s ease,
@@ -1120,8 +1164,8 @@ h1.prazno {
 }
 
 .obrazac button:hover {
-  background: var(--blue);
-  color: var(--dark);
+  background: var(--ljubicasta);
+  color: #fff;
 }
 
 .sklopljen {
@@ -1130,14 +1174,14 @@ h1.prazno {
 
 .uputstvo {
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .sklopljen-tekst,
 .primer-tekst {
   padding: 18px;
-  border-radius: var(--radius);
-  background: var(--input-bg);
+  border-radius: var(--radius-polje);
+  background: var(--soft);
   font-size: 16px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -1147,6 +1191,17 @@ h1.prazno {
   .obrazac button {
     align-self: flex-start;
     min-width: 150px;
+  }
+}
+
+/* Ko traži manje kretanja ne dobija prelaze ni pomeranje (WCAG 2.3.3). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
   }
 }
 

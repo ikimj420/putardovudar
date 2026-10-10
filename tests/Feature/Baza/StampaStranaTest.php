@@ -165,8 +165,8 @@ class StampaStranaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\.koraci li::before \{[^}]*counter-increment: koraci;[^}]*content: counter\(koraci\);/', $stil);
         $this->assertMatchesRegularExpression('/\.koraci li::before \{[^}]*border: 1px solid #000;[^}]*color: #000;/', $stampa);
         $this->assertDoesNotMatchRegularExpression('/\.koraci li::before \{[^}]*(?:display: none|content: none)/', $stampa);
-        // Broj je beo na plavoj podlozi u običnom stilu; u štampi bez boje bio bi nevidljiv, pa mora da bude crn.
-        $this->assertMatchesRegularExpression('/\.koraci li::before \{[^}]*background: var\(--blue-text\);[^}]*color: #fff;/', $stil);
+        // Broj je beo na ljubičastoj podlozi u običnom stilu; u štampi bez boje bio bi nevidljiv, pa mora da bude crn.
+        $this->assertMatchesRegularExpression('/\.koraci li::before \{[^}]*background: var\(--akcent\);[^}]*color: #fff;/', $stil);
 
         $this->assertSame(2, preg_match_all('#<li>#', explode('<ol class="koraci">', $this->strane()['vodič'])[1] ?? ''));
     }
