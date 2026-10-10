@@ -13,6 +13,7 @@
             <nav class="meni">
                 <a href="{{ route('prilike.index') }}">Prilike</a>
                 <a href="{{ route('vodici.index') }}">{{ \App\Support\PrikazVodica::NASLOV }}</a>
+                <a href="{{ route('organizacije.index') }}">{{ \App\Support\PrikazOrganizacija::NASLOV }}</a>
                 <a href="{{ route('pomocnik.index') }}">{{ \App\Support\PrikazPomocnika::NASLOV }}</a>
             </nav>
         </div>

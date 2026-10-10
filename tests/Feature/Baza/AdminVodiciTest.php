@@ -82,6 +82,18 @@ class AdminVodiciTest extends AdminBazaTestCase
         $this->assertSame(StatusObjave::Nacrt, $vodic->status);
     }
 
+    // Ogledalo prethodnog: vodič bez koraka se snima (prazan red koraka nije podrazumevan).
+    #[Test]
+    public function vodic_bez_koraka_se_snima(): void
+    {
+        Livewire::test(CreateVodic::class)
+            ->fillForm(['naslov' => 'Bez koraka', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.'])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertEmpty(Vodic::query()->sole()->koraci);
+    }
+
     #[Test]
     public function naslov_kratak_opis_i_tekst_su_obavezni(): void
     {

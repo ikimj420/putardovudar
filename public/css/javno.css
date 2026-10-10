@@ -290,3 +290,12 @@ a:focus-visible {
   padding-left: 24px;
   line-height: 1.5;
 }
+
+/* Organizacije: usluge su spisak unutar kartice */
+.usluge {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 24px;
+  line-height: 1.5;
+}

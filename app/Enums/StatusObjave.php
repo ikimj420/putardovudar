@@ -11,6 +11,12 @@ enum StatusObjave: string implements HasColor, HasLabel
     case Nacrt = 'nacrt';
     case Objavljeno = 'objavljeno';
 
+    // Jedino mesto koje kaže koji status znači „vidi se na sajtu"; forma i model pitaju ovde.
+    public function jeJavno(): bool
+    {
+        return $this === self::Objavljeno;
+    }
+
     public function getColor(): string
     {
         return match ($this) {

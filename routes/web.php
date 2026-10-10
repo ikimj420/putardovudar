@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\JavneOrganizacijeController;
 use App\Http\Controllers\JavnePrilikeController;
 use App\Http\Controllers\JavniVodiciController;
 use App\Http\Controllers\PomocnikController;
@@ -10,5 +11,7 @@ Route::get('/prilike', [JavnePrilikeController::class, 'index'])->name('prilike.
 Route::get('/prilike/{slug}', [JavnePrilikeController::class, 'show'])->name('prilike.show');
 Route::get('/vodici', [JavniVodiciController::class, 'index'])->name('vodici.index');
 Route::get('/vodici/{slug}', [JavniVodiciController::class, 'show'])->name('vodici.show');
+Route::get('/organizacije', [JavneOrganizacijeController::class, 'index'])->name('organizacije.index');
+Route::get('/organizacije/{slug}', [JavneOrganizacijeController::class, 'show'])->name('organizacije.show');
 Route::get('/pomocnik', [PomocnikController::class, 'index'])->name('pomocnik.index');
 Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->name('pomocnik.pitaj');

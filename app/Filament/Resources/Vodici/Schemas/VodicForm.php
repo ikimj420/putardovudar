@@ -43,6 +43,7 @@ class VodicForm
                     ->helperText('Spisak koraka redom, jedan korak po redu, npr. „Napiši kontakt podatke.“')
                     ->simple(Textarea::make('korak')->rows(1)->autosize()->required()->maxLength(500))
                     ->addActionLabel('Dodaj korak')
+                    ->defaultItems(0)
                     ->reorderable()
                     ->columnSpanFull(),
                 Textarea::make('beleska')
