@@ -27,16 +27,19 @@ class PomocnikController extends Controller
         ]);
         $pitanje = is_string($request->input('pitanje')) ? $request->input('pitanje') : '';
 
+        // Isto pitanje, ista pravila i ista provera: plutajući prozor samo traži odgovor bez okvira strane (X-Requested-With).
+        $pogled = $request->ajax() ? 'javno.pomocnik-fragment' : 'javno.pomocnik';
+
         if ($validator->fails()) {
-            return response()->view('javno.pomocnik', ['pitanje' => $pitanje, 'greska' => $validator->errors()->first('pitanje')], 422);
+            return response()->view($pogled, ['pitanje' => $pitanje, 'greska' => $validator->errors()->first('pitanje')], 422);
         }
 
         try {
             $odgovor = $pomocnik->odgovori($pitanje);
         } catch (OllamaNedostupna) {
-            return view('javno.pomocnik', ['pitanje' => $pitanje, 'nijeDostupan' => true]);
+            return view($pogled, ['pitanje' => $pitanje, 'nijeDostupan' => true]);
         }
 
-        return view('javno.pomocnik', ['pitanje' => $pitanje, 'odgovor' => $odgovor]);
+        return view($pogled, ['pitanje' => $pitanje, 'odgovor' => $odgovor]);
     }
 }

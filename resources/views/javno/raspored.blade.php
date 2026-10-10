@@ -22,7 +22,7 @@
                     <a href="{{ route('sabloni.index') }}">{{ \App\Support\PrikazSablona::NASLOV }}</a>
                 </div>
                 <div class="meni-desno">
-                    <a class="asistent" href="{{ route('pomocnik.index') }}">{{ \App\Support\PrikazPomocnika::NASLOV }}</a>
+                    <a class="asistent" href="{{ route('pomocnik.index') }}"@unless (request()->routeIs('pomocnik.*')) data-pomocnik-otvori aria-controls="pomocnik-prozor"@endunless>{{ \App\Support\PrikazPomocnika::NASLOV }}</a>
                 </div>
             </div>
         </nav>
@@ -39,5 +39,8 @@
             @yield('sadrzaj')
         </div>
     </main>
+    @unless (request()->routeIs('pomocnik.*'))
+        @include('javno.pomocnik-prozor')
+    @endunless
 </body>
 </html>

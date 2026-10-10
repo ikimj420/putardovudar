@@ -76,20 +76,28 @@ class PomocnikStranaTest extends BazaTestCase
         Http::assertNothingSent();
     }
 
-    // Od paketa 18 link ka pomoćniku stoji u meniju zaglavlja (Ivanova odluka), a ne u telu spiska.
+    // Od paketa 18 link ka pomoćniku stoji u meniju zaglavlja (Ivanova odluka). Od paketa 55 je u telu samo plutajuće dugme (obična veza ka
+    // strani pomoćnika, a skript ga pretvara u prozor); na samoj strani pomoćnika u telu nema nijedne veze ka njoj.
     #[Test]
-    public function link_ka_pomocniku_je_u_meniju_zaglavlja_na_svakoj_strani_a_ne_u_telu(): void
+    public function link_ka_pomocniku_je_u_meniju_zaglavlja_a_u_telu_samo_plutajuce_dugme(): void
     {
         $prilika = $this->prilika();
+        $adresaPomocnika = route('pomocnik.index');
 
-        foreach ([route('pocetna'), route('prilike.index'), route('prilike.show', $prilika->slug), route('pomocnik.index')] as $adresa) {
+        foreach ([route('pocetna'), route('prilike.index'), route('prilike.show', $prilika->slug), $adresaPomocnika] as $adresa) {
             $html = $this->get($adresa)->assertOk()->getContent();
             preg_match('#<header class="zaglavlje">(.*?)</header>#s', $html, $zaglavlje);
             $telo = (string) preg_replace('#<header class="zaglavlje">.*?</header>#s', '', $html);
+            $telo = str_replace('action="'.route('pomocnik.pitaj').'"', '', $telo);
+            $naStraniPomocnika = $adresa === $adresaPomocnika;
 
-            // Od paketa 32 je to pilula „Pomoćnik" desno u traci, kao u prototipu.
-            $this->assertStringContainsString('<a class="asistent" href="'.route('pomocnik.index').'">'.PrikazPomocnika::NASLOV.'</a>', $zaglavlje[1] ?? '', $adresa);
-            $this->assertStringNotContainsString('href="'.route('pomocnik.index').'"', str_replace('action="'.route('pomocnik.pitaj').'"', '', $telo), $adresa);
+            // Od paketa 32 je to pilula „Pomoćnik" desno u traci, kao u prototipu; uz plutajući prozor otvara ga (data-pomocnik-otvori).
+            $ocekivano = $naStraniPomocnika
+                ? '<a class="asistent" href="'.$adresaPomocnika.'">'.PrikazPomocnika::NASLOV.'</a>'
+                : '<a class="asistent" href="'.$adresaPomocnika.'" data-pomocnik-otvori aria-controls="pomocnik-prozor">'.PrikazPomocnika::NASLOV.'</a>';
+            $this->assertStringContainsString($ocekivano, $zaglavlje[1] ?? '', $adresa);
+            $this->assertSame($naStraniPomocnika ? 0 : 1, substr_count($telo, 'href="'.$adresaPomocnika.'"'), $adresa);
+            $this->assertSame($naStraniPomocnika ? 0 : 1, substr_count($telo, '<a class="plutajuci-dugme" href="'.$adresaPomocnika.'"'), $adresa);
         }
     }
 

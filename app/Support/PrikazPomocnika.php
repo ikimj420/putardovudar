@@ -26,4 +26,9 @@ final class PrikazPomocnika
     public const GRESKA_DUGACKO = 'Pitanje može imati najviše 300 znakova.';
 
     public const PREVISE_PITANJA = 'Pitanja stižu prebrzo. Probaj ponovo za minut.';
+
+    // Plutajući prozor (paket 55); tekstovi su predlog, Ivan odobrava (PITANJA-55-56.md).
+    public const ZATVORI = 'Zatvori';
+
+    public const TRAZIM = 'Tražim odgovor…';
 }
