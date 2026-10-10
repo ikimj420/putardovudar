@@ -33,7 +33,7 @@ class NepostojecaStranaVodicaIOrganizacijaTest extends BazaTestCase
     #[Test]
     public function nepostojeci_vodic_dobija_svoj_tekst_bez_price_o_prilici(): void
     {
-        $tekst = $this->tekstStrane('/vodici/nema-ga');
+        $tekst = $this->tekstStrane(route('vodici.show', 'nema-ga'));
 
         $this->assertStringContainsString(PrikazVodica::NEMA_STRANE, $tekst);
         $this->assertStringNotContainsStringIgnoringCase('prilik', $tekst);
@@ -45,14 +45,14 @@ class NepostojecaStranaVodicaIOrganizacijaTest extends BazaTestCase
     {
         Vodic::factory()->create(['slug' => 'u-nacrtu', 'status' => StatusObjave::Nacrt]);
 
-        $this->assertSame($this->tekstStrane('/vodici/nema-ga'), $this->tekstStrane('/vodici/u-nacrtu'));
-        $this->assertStringNotContainsStringIgnoringCase('nacrt', $this->tekstStrane('/vodici/u-nacrtu'));
+        $this->assertSame($this->tekstStrane(route('vodici.show', 'nema-ga')), $this->tekstStrane(route('vodici.show', 'u-nacrtu')));
+        $this->assertStringNotContainsStringIgnoringCase('nacrt', $this->tekstStrane(route('vodici.show', 'u-nacrtu')));
     }
 
     #[Test]
     public function nepostojeca_organizacija_dobija_svoj_tekst_bez_price_o_prilici(): void
     {
-        $tekst = $this->tekstStrane('/organizacije/nema-je');
+        $tekst = $this->tekstStrane(route('organizacije.show', 'nema-je'));
 
         $this->assertStringContainsString(PrikazOrganizacija::NEMA_STRANE, $tekst);
         $this->assertStringNotContainsStringIgnoringCase('prilik', $tekst);
@@ -64,8 +64,8 @@ class NepostojecaStranaVodicaIOrganizacijaTest extends BazaTestCase
     {
         Organizacija::factory()->create(['slug' => 'u-nacrtu', 'status' => StatusObjave::Nacrt]);
 
-        $this->assertSame($this->tekstStrane('/organizacije/nema-je'), $this->tekstStrane('/organizacije/u-nacrtu'));
-        $this->assertStringNotContainsStringIgnoringCase('nacrt', $this->tekstStrane('/organizacije/u-nacrtu'));
+        $this->assertSame($this->tekstStrane(route('organizacije.show', 'nema-je')), $this->tekstStrane(route('organizacije.show', 'u-nacrtu')));
+        $this->assertStringNotContainsStringIgnoringCase('nacrt', $this->tekstStrane(route('organizacije.show', 'u-nacrtu')));
     }
 
     // Ogledalo: za prilike i za adrese bez strane tekst o prilici ostaje, a nov se ne pojavljuje.
@@ -74,7 +74,7 @@ class NepostojecaStranaVodicaIOrganizacijaTest extends BazaTestCase
     {
         Prilika::factory()->create(['slug' => 'u-nacrtu', 'status' => 'nacrt']);
 
-        foreach (['/prilike/nema-je', '/prilike/u-nacrtu', '/nema-ove-strane'] as $adresa) {
+        foreach ([route('prilike.show', 'nema-je'), route('prilike.show', 'u-nacrtu'), '/nema-ove-strane'] as $adresa) {
             $tekst = $this->tekstStrane($adresa);
 
             $this->assertStringContainsString(PrikazPrilike::NEMA_STRANE, $tekst, $adresa);
@@ -90,7 +90,7 @@ class NepostojecaStranaVodicaIOrganizacijaTest extends BazaTestCase
         Vodic::factory()->objavljen()->create(['slug' => 'objavljen']);
         Organizacija::factory()->create(['slug' => 'objavljena', 'status' => StatusObjave::Objavljeno, 'sajt' => 'https://primer.rs']);
 
-        $this->get('/vodici/objavljen')->assertOk();
-        $this->get('/organizacije/objavljena')->assertOk();
+        $this->get(route('vodici.show', 'objavljen'))->assertOk();
+        $this->get(route('organizacije.show', 'objavljena'))->assertOk();
     }
 }
