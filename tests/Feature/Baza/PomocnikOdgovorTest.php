@@ -206,6 +206,19 @@ class PomocnikOdgovorTest extends BazaTestCase
             'informacije' => ['Nemam informacija o tome.'],
             'ćirilica' => ['Немам податак о томе.'],
             'bez dijakritika' => ['Nemas podatak.'],
+            // Paket 28: oblici koje paket 23 nije hvatao.
+            'nisam našao' => ['Nisam našao podatak o tome.'],
+            'nisam našla' => ['Nisam našla nikakav podatak o tome.'],
+            'nismo pronašli' => ['Nismo pronašli podatak o roku.'],
+            'nisam pronašao informaciju' => ['Nisam pronašao nijednu informaciju o tome.'],
+            'nisam uspeo da nađem' => ['Nisam uspeo da nađem podatak o tome.'],
+            'podatka nema' => ['Podatka nema.'],
+            'podatka o tome nema' => ['Podatka o tome nema u zapisima.'],
+            'informacija nema' => ['Informacija o tome nema.'],
+            'nema nikakvih informacija' => ['Nema nikakvih informacija o tome.'],
+            'nema dostupnih detaljnih informacija' => ['Nema dostupnih detaljnih informacija o roku.'],
+            'nema se specifična informacija' => ['Beograd je mesto, ali nema se specifična informacija o njemu.'],
+            'ćirilica: nisam našao' => ['Нисам нашао податак о томе.'],
         ];
     }
 
@@ -240,6 +253,20 @@ class PomocnikOdgovorTest extends BazaTestCase
             'nema roka pa zarez' => ['Nema roka, podatak o poslu u skladištu postoji.'],
             'nema ograničenja pa podaci' => ['Nema ograničenja. Podatke možete poslati poštom.'],
             'reč koja samo sadrži nema' => ['Firma Renema daje podatak o poslu u Nišu.'],
+            // Paket 28: „Nema roka, ali ..." prolazi i bez zareza, a „nisam" i „podatak" bez glagola traženja nisu „nema podatka".
+            'nema roka ali, bez zareza' => ['Nema roka ali podatak o poslu u skladištu postoji.'],
+            'nema roka pa podatak' => ['Nema roka pa podatak o poslu u skladištu postoji.'],
+            'nisam našao drugi posao ali podatak postoji' => ['Nisam našao drugi posao, ali podatak o skladištu postoji.'],
+            'nisam siguran' => ['Nisam siguran da je podatak o roku tačan.'],
+            'nema, pa mnogo reči do podatka' => ['Nema više mesta u Nišu zato podatak o roku stoji u opisu.'],
+            'podatak, pa mnogo reči do nema' => ['Podatak o roku za prijavu je naveden u opisu nema potrebe da ga tražiš.'],
+            'podatak postoji a nema roka' => ['Podatak postoji a nema roka za prijavu.'],
+            'nema roka no podatak postoji' => ['Nema roka no podatak postoji.'],
+            'nema roka nego podatak postoji' => ['Nema roka nego podatak o poslu postoji.'],
+            'nema roka jer podatak postoji' => ['Nema roka jer podatak o poslu postoji.'],
+            'nema roka dok podatak postoji' => ['Nema roka dok podatak o poslu postoji.'],
+            'podatak pa nema drugih' => ['Podatak o roku postoji a nema drugih poslova u Nišu.'],
+            'podatak je naveden' => ['Podatak o roku je naveden u opisu, nema potrebe da ga tražiš.'],
             'nemam vremena' => ['Nemam vremena za duge opise, ali posao u Nišu postoji.'],
             'nema u drugim gradovima' => ['U drugim gradovima nema ništa osim posla u Nišu.'],
         ];

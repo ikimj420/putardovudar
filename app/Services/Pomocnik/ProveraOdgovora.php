@@ -15,9 +15,19 @@ final class ProveraOdgovora
 {
     public const NAJVISE_ZNAKOVA = 700;
 
-    // „Nemam / nemaš / nema / nemamo ... podatak" u bilo kom licu i padežu, sa najviše jednom rečju između; poređenje je nad
-    // normalizovanim tekstom (bez dijakritika, bez ćirilice). „Ni maš" je razdvojen oblik koji model ume da napiše.
-    private const NEMA_PODATKA = '/\b(?:nem|ni ?m)(?:amo|ate|aju|am|as|a)\s+(?:\w+\s+)?(?:podat|informacij)/';
+    // Oblici „nema podatka", poređeni nad normalizovanim tekstom (bez dijakritika, bez ćirilice), jedna rečenica ili deo posle
+    // zareza odjednom. Između su najviše dve reči, ali nikad veznik: „nema roka ali podatak postoji" nije „nema podatka".
+    // „Ni maš" je razdvojen oblik koji model ume da napiše.
+    private const BEZ_VEZNIKA = '(?:(?!ali\b|pa\b|a\b|no\b|nego\b|jer\b|dok\b)\w+\s+)';
+
+    private const NEMA_PODATKA = [
+        // „Nemam / nemaš / nema / nemamo ... podatak ili informacija" u bilo kom licu i padežu.
+        '/\b(?:nem|ni ?m)(?:amo|ate|aju|am|as|a)\s+'.self::BEZ_VEZNIKA.'{0,2}(?:podat|informacij)/',
+        // „Nisam našao/la ... podatak", „nismo pronašli ...", „nisam uspeo da nađem ...".
+        '/\bnis(?:am|i|mo|te|u)\s+(?:uspe\w+\s+da\s+(?:pro)?nad\w*|(?:pro)?nas(?:ao|la|li|le|lo))\s+'.self::BEZ_VEZNIKA.'{0,2}(?:podat|informacij)/',
+        // „Podatka nema", „podatka o tome nema".
+        '/\b(?:podat|informacij)\w*\s+'.self::BEZ_VEZNIKA.'{0,3}nem(?:a|am|amo|aju)\b/',
+    ];
 
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 
@@ -59,8 +69,12 @@ final class ProveraOdgovora
     private function kazeDaNemaPodatka(string $odgovor): bool
     {
         foreach (preg_split('/[.,;:!?()\n\r–—]+/u', $odgovor) ?: [] as $deo) {
-            if (preg_match(self::NEMA_PODATKA, PoredjenjeTeksta::normalizuj($deo)) === 1) {
-                return true;
+            $tekst = PoredjenjeTeksta::normalizuj($deo);
+
+            foreach (self::NEMA_PODATKA as $oblik) {
+                if (preg_match($oblik, $tekst) === 1) {
+                    return true;
+                }
             }
         }
 
