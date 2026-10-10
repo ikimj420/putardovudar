@@ -897,6 +897,94 @@ h1.prazno {
   }
 }
 
+/* Šabloni za pisanje: obrazac sa poljima i sklopljen tekst koji liči na dopis (novi redovi ostaju). */
+.obrazac {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+  margin-bottom: 24px;
+}
+
+.polje {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.polje label {
+  font-weight: 800;
+}
+
+.polje-objasnjenje {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.polje input,
+.polje textarea {
+  width: 100%;
+  min-height: 44px;
+  font: inherit;
+  padding: 12px 14px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  color: var(--input-text);
+}
+
+.polje textarea {
+  resize: vertical;
+}
+
+.obrazac button {
+  align-self: stretch;
+  min-height: 44px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--button-dark-bg);
+  color: var(--button-dark-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.obrazac button:hover {
+  background: var(--blue);
+  color: var(--dark);
+}
+
+.sklopljen {
+  margin-bottom: 24px;
+}
+
+.uputstvo {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.sklopljen-tekst {
+  padding: 18px;
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  font-size: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (min-width: 720px) {
+  .obrazac button {
+    align-self: flex-start;
+    min-width: 150px;
+  }
+}
+
 /* Štampa prilike, vodiča i organizacije: samo sadržaj, crno na belom; bez zaglavlja, putanje i dugmadi, a veze ispisane kao adresa.
    Pozadine se ne štampaju, pa brojevi koraka i tačke dobijaju okvir umesto boje. */
 @media print {
@@ -914,7 +1002,9 @@ h1.prazno {
   .mrvice,
   .deljenje,
   .dugme-red,
-  .dugme-veza {
+  .dugme-veza,
+  .obrazac,
+  .uputstvo {
     display: none;
   }
 
@@ -937,6 +1027,7 @@ h1.prazno {
   .ploca,
   .izvor,
   .izvor-upozorenje,
+  .sklopljen-tekst,
   .koraci li,
   .usluge li,
   .oznake .oznaka,

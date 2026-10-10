@@ -4,6 +4,7 @@ namespace Tests\Feature\Baza;
 
 use App\Models\Organizacija;
 use App\Models\Prilika;
+use App\Models\Sablon;
 use App\Models\Vodic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -12,7 +13,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\StilJavnihStrana;
 
-// Paket 50: strana prilike, vodiča i organizacije se lepo štampa. Izgled u štampi se meri u pregledaču (PDF u Dokumentacija/slike/);
+// Paket 50: strana prilike, vodiča i organizacije se lepo štampa; paket 51 dodaje stranu šablona (štampa se samo sklopljen tekst). Izgled u štampi se meri u pregledaču (PDF u Dokumentacija/slike/);
 // ovde se čuva ono što se ne vidi iz PDF-a: da pravila postoje, da pogađaju elemente koji stvarno postoje i da ne sakrivaju sadržaj.
 #[Group('baza')]
 class StampaStranaTest extends BazaTestCase
@@ -28,7 +29,10 @@ class StampaStranaTest extends BazaTestCase
         $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.']]);
         $organizacija = Organizacija::factory()->objavljena()->create(['telefon' => '011/123-456', 'sajt' => 'https://primer.rs/', 'usluge' => ['Savetovanje']]);
 
+        $sablon = Sablon::factory()->objavljen()->create();
+
         return [
+            'šablon' => $this->post(route('sabloni.sklopi', $sablon->slug), ['ime' => 'Ana'])->assertOk()->getContent(),
             'prilika' => $this->get(route('prilike.show', $prilika->slug))->assertOk()->getContent(),
             'vodič' => $this->get(route('vodici.show', $vodic->slug))->assertOk()->getContent(),
             'organizacija' => $this->get(route('organizacije.show', $organizacija->slug))->assertOk()->getContent(),
@@ -75,13 +79,13 @@ class StampaStranaTest extends BazaTestCase
         $sakriveno = $this->selektoriSa($this->stampa(), 'display: none');
         $stranice = $this->strane();
 
-        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza'], $sakriveno);
+        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo'], $sakriveno);
 
         foreach ($sakriveno as $selektor) {
             $klasa = ltrim($selektor, '.');
             $naStranama = array_filter($stranice, fn (string $html) => preg_match('/class="[^"]*\b'.preg_quote($klasa, '/').'\b/', $html) === 1);
 
-            $this->assertNotEmpty($naStranama, $selektor.' ne pogađa nijedan element na stranama prilike, vodiča i organizacije');
+            $this->assertNotEmpty($naStranama, $selektor.' ne pogađa nijedan element na stranama prilike, vodiča, organizacije i šablona');
         }
     }
 

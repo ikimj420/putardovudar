@@ -8,10 +8,10 @@ use PHPUnit\Framework\TestCase;
 class PravilaJavnogJeNaJednomMestuTest extends TestCase
 {
     // Svaka vrsta sadržaja ima jedno mesto za „javno": model sa opsegom i svoj status. Paket 18 je dodao vodiče, paket 20 organizacije,
-    // paket 44 stavke kalendara.
+    // paket 44 stavke kalendara, paket 51 šabloni.
     private const SMEJU = [
         'Models/Prilika.php', 'Enums/StatusPrilike.php',
-        'Models/Vodic.php', 'Models/Organizacija.php', 'Models/KalendarStavka.php', 'Enums/StatusObjave.php',
+        'Models/Vodic.php', 'Models/Organizacija.php', 'Models/KalendarStavka.php', 'Models/Sablon.php', 'Enums/StatusObjave.php',
     ];
 
     #[Test]
