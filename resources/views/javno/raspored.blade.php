@@ -10,7 +10,11 @@
     <header class="zaglavlje">
         <div class="sirina">
             <a class="logo" href="{{ route('pocetna') }}">{{ config('app.name') }}</a>
-            <nav class="meni"><a href="{{ route('prilike.index') }}">Prilike</a></nav>
+            <nav class="meni">
+                <a href="{{ route('prilike.index') }}">Prilike</a>
+                <a href="{{ route('vodici.index') }}">{{ \App\Support\PrikazVodica::NASLOV }}</a>
+                <a href="{{ route('pomocnik.index') }}">{{ \App\Support\PrikazPomocnika::NASLOV }}</a>
+            </nav>
         </div>
     </header>
     <main class="sirina sadrzaj">

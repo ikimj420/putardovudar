@@ -24,8 +24,4 @@ final class PrikazPomocnika
     public const GRESKA_PRAZNO = 'Upiši pitanje.';
 
     public const GRESKA_DUGACKO = 'Pitanje može imati najviše 300 znakova.';
-
-    public const LINK_SA_POCETNE = 'Pitaj pomoćnika';
-
-    public const UVOD_LINKA = 'Ne nalaziš šta tražiš?';
 }

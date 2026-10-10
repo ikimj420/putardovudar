@@ -76,16 +76,20 @@ class PomocnikStranaTest extends BazaTestCase
         Http::assertNothingSent();
     }
 
+    // Od paketa 18 link ka pomoćniku stoji u meniju zaglavlja (Ivanova odluka), a ne u telu spiska.
     #[Test]
-    public function pocetna_ima_link_ka_pomocniku_a_zaglavlje_ostaje_isto(): void
+    public function link_ka_pomocniku_je_u_meniju_zaglavlja_na_svakoj_strani_a_ne_u_telu(): void
     {
-        $html = $this->get(route('pocetna'))->assertOk()->getContent();
+        $prilika = $this->prilika();
 
-        $this->assertStringContainsString('<a href="'.route('pomocnik.index').'">'.PrikazPomocnika::LINK_SA_POCETNE.'</a>', $html);
+        foreach ([route('pocetna'), route('prilike.index'), route('prilike.show', $prilika->slug), route('pomocnik.index')] as $adresa) {
+            $html = $this->get($adresa)->assertOk()->getContent();
+            preg_match('#<header class="zaglavlje">(.*?)</header>#s', $html, $zaglavlje);
+            $telo = (string) preg_replace('#<header class="zaglavlje">.*?</header>#s', '', $html);
 
-        // Ogledalo: zaglavlje i dalje nosi samo ime sajta i link Prilike.
-        preg_match('#<header class="zaglavlje">(.*?)</header>#s', $html, $zaglavlje);
-        $this->assertStringNotContainsString(route('pomocnik.index'), $zaglavlje[1] ?? '');
+            $this->assertStringContainsString('<a href="'.route('pomocnik.index').'">'.PrikazPomocnika::NASLOV.'</a>', $zaglavlje[1] ?? '', $adresa);
+            $this->assertStringNotContainsString('href="'.route('pomocnik.index').'"', str_replace('action="'.route('pomocnik.pitaj').'"', '', $telo), $adresa);
+        }
     }
 
     #[Test]

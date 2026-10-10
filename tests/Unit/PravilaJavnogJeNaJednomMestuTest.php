@@ -7,10 +7,14 @@ use PHPUnit\Framework\TestCase;
 
 class PravilaJavnogJeNaJednomMestuTest extends TestCase
 {
-    private const SMEJU = ['Models/Prilika.php', 'Enums/StatusPrilike.php'];
+    // Svaka vrsta sadržaja ima jedno mesto za „javno": model sa opsegom i svoj status. Paket 18 je dodao vodiče, paket 20 organizacije.
+    private const SMEJU = [
+        'Models/Prilika.php', 'Enums/StatusPrilike.php',
+        'Models/Vodic.php', 'Enums/StatusObjave.php',
+    ];
 
     #[Test]
-    public function samo_model_i_status_znaju_za_objavljeno(): void
+    public function samo_modeli_i_njihovi_statusi_znaju_za_objavljeno(): void
     {
         $nadjeno = [];
         $obidjeno = 0;
@@ -27,8 +31,9 @@ class PravilaJavnogJeNaJednomMestuTest extends TestCase
 
         $this->assertGreaterThan(0, $obidjeno);
         // Dokaz da merilo vidi: oba dozvoljena mesta moraju da se nađu.
-        $this->assertContains('app/Models/Prilika.php', $nadjeno);
-        $this->assertContains('app/Enums/StatusPrilike.php', $nadjeno);
+        foreach (self::SMEJU as $dozvoljeno) {
+            $this->assertContains('app/'.$dozvoljeno, $nadjeno);
+        }
 
         $tudja = array_values(array_filter($nadjeno, fn (string $fajl) => ! in_array(substr($fajl, 4), self::SMEJU, true)));
 

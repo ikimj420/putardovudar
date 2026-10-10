@@ -14,7 +14,7 @@ class JavnoZaglavljeTest extends BazaTestCase
     use RefreshDatabase;
 
     #[Test]
-    public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_link_prilike(): void
+    public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_meni_prilike_vodici_pomocnik(): void
     {
         $adrese = [route('prilike.index')];
         $this->assertStringContainsString('Trenutno nema otvorenih prilika.', $this->get($adrese[0])->getContent());
@@ -26,18 +26,23 @@ class JavnoZaglavljeTest extends BazaTestCase
         foreach ($adrese as $adresa) {
             $html = $this->get($adresa)->assertOk()->getContent();
 
-            $this->assertMatchesRegularExpression('#<header class="zaglavlje">.*?<a class="logo" href="'.preg_quote(route('pocetna'), '#').'">Putardo Vudar</a>.*?<a href="'.preg_quote(route('prilike.index'), '#').'">Prilike</a>.*?</header>#s', $html, $adresa);
+            $this->assertMatchesRegularExpression('#<header class="zaglavlje">.*?<a class="logo" href="'.preg_quote(route('pocetna'), '#').'">Putardo Vudar</a>.*?<a href="'.preg_quote(route('prilike.index'), '#').'">Prilike</a>\s*<a href="'.preg_quote(route('vodici.index'), '#').'">Vodiči</a>\s*<a href="'.preg_quote(route('pomocnik.index'), '#').'">Pomoćnik</a>.*?</header>#s', $html, $adresa);
         }
     }
 
-    // Ogledalo: zaglavlje je samo ime sajta i jedan link, bez ostalih stavki menija.
+    // Ogledalo: zaglavlje je ime sajta i tačno ovaj meni, bez drugih stavki. Do paketa 18 bio je jedan link (Prilike);
+    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, Pomoćnik (Organizacije posle paketa 20).
     #[Test]
-    public function zaglavlje_nema_drugih_linkova(): void
+    public function zaglavlje_nema_drugih_linkova_osim_menija(): void
     {
         $html = $this->get(route('prilike.index'))->getContent();
         preg_match('#<header class="zaglavlje">(.*?)</header>#s', $html, $zaglavlje);
+        preg_match_all('#<a\b[^>]*href="([^"]*)"#', $zaglavlje[1] ?? '', $adrese);
 
-        $this->assertSame(2, preg_match_all('#<a\b#', $zaglavlje[1] ?? ''));
+        $this->assertSame(
+            [route('pocetna'), route('prilike.index'), route('vodici.index'), route('pomocnik.index')],
+            $adrese[1],
+        );
     }
 
     #[Test]
