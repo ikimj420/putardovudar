@@ -4,41 +4,33 @@ namespace App\Services\Pomocnik;
 
 use App\Support\PoredjenjeTeksta;
 
-// Pitanja o prevari i lažiranju ne idu ni do modela ni do pretrage; spisak je iz starog projekta (VudarAssistantService::isUnsafe).
+// Odbija se namera (kako da JA lažiram, hakujem, prevarim), ne reč: pitanje žrtve i obične reči sa istim početkom prolaze.
+// Stabla se ovde ne koriste, jer bi „hack" hvatao i „hackathon". Pismo i dijakritici se ne računaju, kao u ostalom poređenju.
 final class OpasnaPitanja
 {
-    // „zaobiđem" i „zaobidjem" se razlikuju i posle normalizacije (đ postaje d), pa su oba u spisku.
-    private const IZRAZI = [
-        'laziram dokument',
-        'lazna dokumenta',
-        'lazni dokument',
-        'lazna prijava',
-        'fake documents',
-        'falsifikujem',
-        'falsifik',
-        'falsifikat',
-        'prevarim konkurs',
-        'prevara',
-        'fraud',
-        'hakujem',
-        'hakovanje',
-        'hacking',
-        'hack',
-        'varanje',
-        'cheat',
-        'namesti konkurs',
-        'namestim konkurs',
-        'zaobiđem uslove',
-        'zaobidjem uslove',
+    // Oblici namere: infinitiv i prvo lice (jednina i množina). Trećeg lica, prošlog vremena, glagolskih imenica i trpnog
+    // prideva nema namerno („prevario me je poslodavac", „zaštita od hakovanja", „hakovan nalog" pitaju žrtve).
+    // „Namesti konkurs" i „zaobiđem uslove" traže i predmet, jer samo glagol ne govori ništa.
+    private const OBLICI = [
+        '\blazir(?:ati|am|amo)\b',
+        '\bfalsifik(?:ovati|ujem|ujemo)\b',
+        '\bhak(?:ovati|ujem|ujemo)\b',
+        '\bprevar(?:iti|im|imo)\b',
+        '\bvar(?:ati|am|amo)\b',
+        '\bnamest(?:iti|im|imo|ati|am|amo)\b(?:\s+\w+){0,3}?\s+konkurs\w*',
+        '\bzaobi(?:ci|dem|djem|demo|djemo)\b(?:\s+\w+){0,3}?\s+uslov\w*',
+        // Engleski se ne obrađuje, ali stari spisak ga je imao; samo izrazi sa glagolom ili imenicom koja traži krivotvorenje.
+        '\bto (?:hack|cheat|forge)\b',
+        '\bto commit fraud\b',
+        '\bfake documents?\b',
     ];
 
-    // Izraz mora da počne na početku reči („falsifik" hvata i „falsifikat"), a ne usred nje; pismo i dijakritici se ne računaju.
     public function jeOpasno(string $pitanje): bool
     {
-        $tekst = ' '.PoredjenjeTeksta::normalizuj($pitanje);
+        $tekst = PoredjenjeTeksta::normalizuj($pitanje);
 
-        foreach (self::IZRAZI as $izraz) {
-            if (str_contains($tekst, ' '.PoredjenjeTeksta::normalizuj($izraz))) {
+        foreach (self::OBLICI as $oblik) {
+            if (preg_match('/'.$oblik.'/', $tekst) === 1) {
                 return true;
             }
         }

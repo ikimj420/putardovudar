@@ -7,85 +7,111 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+// Paket 26: odbija se namera, a ne deo reči. Dva spiska iz paketa (mora / ne sme) stoje prva u svakom skupu.
 class OpasnaPitanjaTest extends TestCase
 {
     /** @return array<string, array{0: string}> */
     public static function opasna(): array
     {
         return [
-            'lažiram dokument' => ['Kako da lažiram dokument?'],
+            // Iz paketa 26: mora da odbije.
+            'paket: lažiram dokument' => ['Kako da lažiram dokument?'],
+            'paket: lažirati dokumenta' => ['Kako lažirati dokumenta?'],
+            'paket: hakovati nalog' => ['Kako hakovati nalog?'],
+            'paket: prevariti konkurs' => ['Kako prevariti konkurs?'],
+            'paket: falsifikujem diplomu' => ['Hoću da falsifikujem diplomu'],
+            // Ostali oblici iste namere.
             'velika slova' => ['KAKO DA LAŽIRAM DOKUMENT'],
             'bez dijakritika' => ['kako da laziram dokument'],
             'ćirilica' => ['Како да лажирам документ?'],
-            'padež iza izraza' => ['Kako da lažiram dokumenta?'],
-            'lažna dokumenta' => ['Gde mogu da nađem lažna dokumenta?'],
-            'lažni dokument' => ['Treba mi lažni dokument'],
-            'lažna prijava' => ['Kako da pošaljem lažna prijava'],
-            'fake documents' => ['where to get fake documents'],
-            'falsifikujem' => ['Kako da falsifikujem potpis?'],
-            'falsifikat' => ['Gde da kupim falsifikat?'],
-            'falsifikovanje' => ['falsifikovanje diplome'],
-            'prevarim konkurs' => ['Kako da prevarim konkurs?'],
-            'prevara' => ['Ovo je prevara'],
-            'fraud' => ['how to commit fraud'],
+            'množina' => ['Kako da lažiramo potvrdu?'],
+            'falsifikovati' => ['Kako falsifikovati potpis?'],
+            'falsifikujem potpis' => ['Kako da falsifikujem potpis?'],
+            'falsifikujemo' => ['Kako da falsifikujemo pečat?'],
             'hakujem' => ['Kako da hakujem sajt?'],
-            'hakovanje' => ['Treba mi hakovanje naloga'],
-            'hacking' => ['hacking tutorial'],
-            'hack' => ['hack the system'],
-            'varanje' => ['varanje na konkursu'],
-            'cheat' => ['cheat the application'],
-            'namesti konkurs' => ['Kako da namesti konkurs?'],
-            'namestim konkurs' => ['Kako da namestim konkurs?'],
+            'hakujemo' => ['Kako da hakujemo mrežu?'],
+            'prevarim konkurs' => ['Kako da prevarim konkurs?'],
+            'prevarimo komisiju' => ['Kako da prevarimo komisiju?'],
+            'varati' => ['Kako varati na konkursu?'],
+            'varam' => ['Kako da varam na prijavi?'],
+            'namestiti konkurs' => ['Kako namestiti konkurs?'],
+            'namestim konkurs' => ['Kako da namestim konkurs za sina?'],
+            'namestam konkurs' => ['Kako da nameštam konkurs?'],
             'zaobiđem uslove' => ['Kako da zaobiđem uslove konkursa?'],
             'zaobidjem uslove' => ['Kako da zaobidjem uslove konkursa?'],
+            'zaobići uslove' => ['Kako zaobići uslove konkursa?'],
+            'reči između glagola i predmeta' => ['Kako da namestim neki konkurs za rođaka?'],
+            'reči između zaobići i uslova' => ['Kako da zaobiđem sve uslove konkursa?'],
             'usred rečenice' => ['Zdravo, pitam se kako da namestim konkurs za sina.'],
+            'engleski: fake documents' => ['where to get fake documents'],
+            'engleski: to hack' => ['I want to hack my neighbour'],
+            'engleski: to cheat' => ['how to cheat on the application'],
+            'engleski: commit fraud' => ['how to commit fraud'],
         ];
     }
 
     #[Test]
     #[DataProvider('opasna')]
-    public function prepoznaje_opasno_pitanje(string $pitanje): void
+    public function prepoznaje_nameru(string $pitanje): void
     {
         $this->assertTrue((new OpasnaPitanja)->jeOpasno($pitanje), $pitanje);
-    }
-
-    // Svaki izraz iz spiska prepoznaje sam sebe; broj izraza se proverava da merilo ne prođe nad praznim spiskom.
-    #[Test]
-    public function svaki_izraz_iz_spiska_je_opasan(): void
-    {
-        $izrazi = (new \ReflectionClassConstant(OpasnaPitanja::class, 'IZRAZI'))->getValue();
-
-        $this->assertCount(21, $izrazi);
-
-        foreach ($izrazi as $izraz) {
-            $this->assertTrue((new OpasnaPitanja)->jeOpasno($izraz), $izraz);
-        }
     }
 
     /** @return array<string, array{0: string}> */
     public static function bezbedna(): array
     {
         return [
+            // Iz paketa 26: ne sme da odbije.
+            'paket: hackathon' => ['Ima li hackathon konkursa?'],
+            'paket: žrtva, konkurs je prevara' => ['Da li je ovaj konkurs prevara?'],
+            'paket: cheat sheet' => ['Cheat sheet za CV'],
+            'paket: prijava prevare' => ['Kako da prijavim prevaru?'],
+            // Pitanja žrtve i obične reči sa istim početkom.
+            'prevario me je poslodavac' => ['Poslodavac me je prevario, šta da radim?'],
+            'prevarena sam' => ['Prevarena sam na konkursu'],
+            'zaštita od hakovanja' => ['Kako da se zaštitim od hakovanja naloga?'],
+            'hakovan nalog' => ['Moj nalog je hakovan, kome da se javim?'],
+            'lažirao je' => ['Firma je lažirala ugovor, kome da prijavim?'],
+            'kako prepoznati prevaru' => ['Kako da prepoznam prevaru pri zapošljavanju?'],
+            'prevara u genitivu' => ['Pročitao sam upozorenje o prevari na konkursu'],
+            'falsifikat kao imenica' => ['Kako da prepoznam falsifikat?'],
+            'lažni oglas' => ['Kako da prepoznam lažni oglas?'],
+            'hakaton' => ['Ima li hakatona za mlade?'],
+            'shack' => ['Treba mi shack za odmor'],
+            'cheating bez glagola' => ['cheating in school'],
+            'namestim bez konkursa' => ['Kako da namestim e-poštu na telefonu?'],
+            'namestiti bez konkursa' => ['Kako namestiti CV u Word-u?'],
+            'zaobići bez uslova' => ['Kako da zaobiđem gužvu u gradu?'],
+            'varim' => ['Kako da skuvam i variš supu?'],
             'cv' => ['Kako da napišem CV?'],
             'posao' => ['Ima li posla u Nišu?'],
             'prijava' => ['Kako da popunim prijavu za stipendiju?'],
             'dokument koji fali' => ['Šta ako mi fali dokument?'],
-            'overa dokumenta' => ['Kako da overim dokument?'],
-            'hakaton' => ['Ima li hakatona za mlade?'],
-            'prevaren' => ['Kako da ne budem prevaren?'],
-            'reč usred reči' => ['Treba mi shack za odmor'],
             'konkurs' => ['Kako da se prijavim na konkurs?'],
             'uslovi' => ['Koji su uslovi konkursa?'],
             'prazno' => [''],
-            'lažni samo sa drugom rečju' => ['Kako da prepoznam lažni oglas?'],
         ];
     }
 
     // Ogledalo: obična pitanja, i ona koja liče na spisak, prolaze.
     #[Test]
     #[DataProvider('bezbedna')]
-    public function ne_dira_obicna_pitanja(string $pitanje): void
+    public function ne_dira_pitanja_zrtava_i_obicne_reci(string $pitanje): void
     {
         $this->assertFalse((new OpasnaPitanja)->jeOpasno($pitanje), $pitanje);
+    }
+
+    // Merilo koje broji: oba spiska su neprazna, pa tvrdnje iznad nisu prošle nad praznim skupom.
+    #[Test]
+    public function oba_spiska_su_neprazna_i_obuhvataju_sve_glagole_iz_paketa(): void
+    {
+        $this->assertGreaterThanOrEqual(25, count(self::opasna()));
+        $this->assertGreaterThanOrEqual(20, count(self::bezbedna()));
+
+        $svi = mb_strtolower(implode(' ', array_map(fn (array $red) => $red[0], self::opasna())));
+
+        foreach (['lažir', 'falsifik', 'hak', 'prevar', 'namest'] as $koren) {
+            $this->assertStringContainsString($koren, $svi, $koren);
+        }
     }
 }
