@@ -26,10 +26,10 @@ class UvozObradi extends Command
             ->whereIn('naziv_izvora', [...array_column(config('uvoz.izvori'), 'ime'), config('jooble.ime')])
             ->orderBy('id');
 
-        // Običan prolaz uzima neobrađene; --ponovo uzima obrađene po starom pravilu (u predlogu nema verzije pravila), ali samo
+        // Običan prolaz uzima neobrađene; --ponovo uzima obrađene po starom pravilu (u predlogu nema verzije pravila ili je manja od tekuće), ali samo
         // dok ih niko nije menjao: Ivanova izmena posle obrade pomera vreme izmene, a obrada ga postavlja u istom trenutku.
         $nacrti = $this->option('ponovo')
-            ? $upit->whereNotNull('obradeno_at')->whereNull('predlog->pravilo')->get()
+            ? $upit->whereNotNull('obradeno_at')->where(fn ($staro) => $staro->whereNull('predlog->pravilo')->orWhere('predlog->pravilo', '<', ObradaNacrta::PRAVILO))->get()
                 ->filter(fn (Prilika $nacrt) => $nacrt->updated_at !== null && $nacrt->obradeno_at !== null && $nacrt->updated_at->lessThanOrEqualTo($nacrt->obradeno_at->copy()->addMinute()))
                 ->values()
             : $upit->whereNull('obradeno_at')->get();

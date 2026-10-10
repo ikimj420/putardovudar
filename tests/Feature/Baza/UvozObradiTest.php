@@ -337,15 +337,33 @@ class UvozObradiTest extends BazaTestCase
         $this->assertStringNotContainsStringIgnoringCase('srbij', (string) $nacrt->fresh()->predlog['grupe'][0]['citat']);
     }
 
-    // Ogledalo: citat koji doslovno piše na strani, ali nema reč grupe, ostaje nacrt i kad na strani ima rečenica sa rečju grupe (kod traži
-    // samo kad citata modela uopšte nema na strani).
+    // Paket 59/T3: citat modela koji doslovno piše na strani, ali nema reč grupe, ne odbija grupu: kod traži na strani rečenicu sa rečju grupe (kao kad
+    // citata nema na strani) i nju čuva kao citat. Izvor citata je „kod", a model samo predlaže.
     #[Test]
     #[DataProvider('grupeSaCitatom')]
-    public function citat_bez_reci_grupe_ostaje_nacrt_i_kad_strana_ima_recenicu_sa_recju_grupe(string $grupa, string $citat): void
+    public function citat_modela_bez_reci_grupe_koji_pise_na_strani_menja_kod_recenicom_sa_recju_grupe(string $grupa, string $citat): void
     {
         $nacrt = $this->nacrt();
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p><p>Konkurs je otvoren za sve građane.</p>';
         Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => 'Konkurs je otvoren za sve građane']]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status, $grupa);
+        $this->assertSame([$grupa], $prilika->grupe);
+        $this->assertSame([['grupa' => $grupa, 'citat' => $citat.'.', 'izvor_citata' => 'kod']], $prilika->predlog['grupe']);
+        $this->assertSame([$grupa], $prilika->predlog['prihvacene_grupe']);
+        $this->assertNull($prilika->predlog['odbijeno']);
+    }
+
+    // Ogledalo: bez rečenice sa rečju grupe na strani citat bez reči grupe i dalje ne prolazi; kod ne izmišlja grupu iz ničega.
+    #[Test]
+    public function citat_modela_bez_reci_grupe_a_bez_recenice_grupe_na_strani_ostaje_nacrt(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Konkurs je otvoren za sve građane.</p>'), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Konkurs je otvoren za sve građane']]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -538,7 +556,7 @@ class UvozObradiTest extends BazaTestCase
         $this->assertFalse(Prilika::javne()->whereKey($prilika->id)->exists());
     }
 
-    // Provera pravila je prva posle „pravilo ne važi": nepotkrepljeno pravilo se prijavljuje i kad je i rok loš.
+    // Posle „pravilo ne važi" i vrste dolazi grupa: nepotkrepljeno pravilo se prijavljuje i kad je i rok loš.
     #[Test]
     public function nepotkrepljeno_pravilo_se_prijavljuje_pre_greske_u_roku(): void
     {
@@ -546,6 +564,162 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([self::STRANA => $this->strana(saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno.']], 'rok' => '2026-10-04'])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
+    }
+
+    /** @return array<string, array{0: string, 1: bool}> vrsta koju model predlaže, da li prolazi bez grupe */
+    public static function vrsteBezGrupe(): array
+    {
+        return [
+            'posao' => ['posao', true], 'konkurs' => ['konkurs', false], 'stipendija' => ['stipendija', false], 'praksa' => ['praksa', false], 'obuka' => ['obuka', false],
+        ];
+    }
+
+    // Paket 59/T1: oglas za posao (vrsta dokazana rečju sa strane) važi i bez grupe; sve ostale vrste bez grupe i dalje ostaju nacrt. Strana ima reči svih vrsta.
+    #[Test]
+    #[DataProvider('vrsteBezGrupe')]
+    public function samo_oglas_za_posao_se_objavljuje_bez_grupe(string $vrsta, bool $prolazi): void
+    {
+        $nacrt = $this->nacrt();
+        $strana = '<p>Oglas za posao, praksu, stipendiju, konkurs i obuku. Rok za prijavu je 20. oktobra 2026. godine.</p>';
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vrsta' => $vrsta, 'grupe' => [], 'razlog' => 'Oglas.'])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame($prolazi ? StatusPrilike::Objavljeno : StatusPrilike::Nacrt, $prilika->status, $vrsta);
+        $this->assertSame($prolazi ? null : 'pravilo nije potkrepljeno citatom', $prilika->predlog['odbijeno'], $vrsta);
+
+        if ($prolazi) {
+            $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
+            $this->assertSame('2026-10-20', $prilika->rok->toDateString());
+            $this->assertNull($prilika->grupe);
+            $this->assertSame([], $prilika->predlog['prihvacene_grupe']);
+            $this->assertSame(ObradaNacrta::PRAVILO, $prilika->predlog['pravilo']);
+            $this->assertTrue(Prilika::javne()->whereKey($prilika->id)->exists());
+        }
+    }
+
+    /** @return array<string, array{0: string, 1: array<string, mixed>, 2: string}> strana, odgovor modela, razlog zbog kog oglas za posao ostaje nacrt */
+    public static function oglasiZaPosaoKojiOstajuNacrt(): array
+    {
+        $rok = '<p>Rok za prijavu je 20. oktobra 2026. godine.</p>';
+
+        return [
+            'vrsta nije dokazana rečju sa strane' => ['<p>Besplatno predavanje u skladištu.</p>'.$rok, [], 'vrsta nije potkrepljena'],
+            'model ne kaže da je prilika' => ['<p>Oglas za posao.</p>'.$rok, ['vazi_pravilo' => false], 'pravilo za objavu ne važi'],
+            'rok ne piše na strani' => ['<p>Oglas za posao. Prijave su otvorene.</p>', [], 'rok ne piše u tekstu strane'],
+            'rok je prošao' => ['<p>Oglas za posao. Rok za prijavu je 4. oktobra 2026. godine.</p>', ['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'], 'rok je prošao'],
+            'bez roka' => ['<p>Oglas za posao.</p>', ['rok' => null, 'citat' => ''], 'nema ispravnog roka'],
+        ];
+    }
+
+    /** @param  array<string, mixed>  $dopuna */
+    #[Test]
+    #[DataProvider('oglasiZaPosaoKojiOstajuNacrt')]
+    public function oglas_za_posao_bez_grupe_i_dalje_trazi_vrstu_rok_i_prilika_od_modela(string $strana, array $dopuna, string $razlog): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.'): Konkurs za stipendije');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertSame($razlog, $nacrt->fresh()->predlog['odbijeno']);
+    }
+
+    // Grupe se i dalje upisuju kad ih kod nađe: oglas za posao sa grupom koju strana dokazuje nosi i vrstu i grupu; izmišljena grupa se ne upisuje, a oglas prolazi.
+    #[Test]
+    public function oglas_za_posao_upisuje_grupe_koje_kod_nadje_a_izmisljene_ne(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([
+            self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Poziv je namenjen studentima.</p>'),
+            self::OLLAMA => $this->ollama(['vrsta' => 'posao', 'grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je namenjen studentima'], ['grupa' => 'romi', 'citat' => 'Izmišljeno za Rome.']]]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
+        $this->assertSame(['studenti'], $prilika->grupe);
+        $this->assertSame(['studenti'], $prilika->predlog['prihvacene_grupe']);
+    }
+
+    // Paket 59/T1: vrsta se zna pre grupe — nedokazana vrsta se prijavljuje čak i kad grupe nema; dokazana vrsta bez grupe prijavljuje grupu.
+    #[Test]
+    public function vrsta_se_proverava_pre_grupe(): void
+    {
+        $bezVrste = $this->nacrt(['naslov' => 'Bez vrste', 'link_izvora' => 'https://a.test/bez-vrste']);
+        $bezGrupe = $this->nacrt(['naslov' => 'Bez grupe', 'link_izvora' => 'https://a.test/bez-grupe']);
+        $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p>';
+        Http::fake([
+            'https://a.test/bez-vrste' => Http::response($strana),
+            'https://a.test/bez-grupe' => Http::response($strana),
+            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez vrste')
+                ? $this->ollama(['vrsta' => 'obuka', 'grupe' => []])
+                : $this->ollama(['vrsta' => 'konkurs', 'grupe' => []]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame('vrsta nije potkrepljena', $bezVrste->fresh()->predlog['odbijeno']);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $bezGrupe->fresh()->predlog['odbijeno']);
+    }
+
+    // Paket 59/T2: model kaže samo da li je tekst prilika; uputstvo ne traži da navede grupu da bi pravilo važilo, a oglas za posao važi i bez nje.
+    #[Test]
+    public function uputstvo_kaze_da_vazi_pravilo_znaci_samo_da_je_tekst_prilika_i_da_posao_vazi_bez_grupe(): void
+    {
+        $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+
+        $this->artisan('uvoz:obradi');
+
+        Http::assertSent(function (Request $zahtev) {
+            if ($zahtev->url() !== self::OLLAMA) {
+                return false;
+            }
+
+            $uputstvo = $zahtev->data()['messages'][0]['content'];
+
+            return str_contains($uputstvo, 'Oglas za posao u Srbiji važi i bez navedene grupe.')
+                && str_contains($uputstvo, 'vazi_pravilo (true ako je tekst prilika na koju se neko prijavljuje (posao, praksa, stipendija, konkurs ili obuka), a ne rezultat, lista ili vest; da li je grupa dokazana ne ocenjuješ ti, to proverava kod; inače false)')
+                && ! str_contains($uputstvo, 'bar jedna grupa navedena')
+                && str_contains($uputstvo, 'grupe (lista objekata');
+        });
+    }
+
+    // Model ne odlučuje o grupi: vazi_pravilo true bez dokazane grupe ne objavljuje (osim posla), a grupa koju kod dokaže objavljuje i kad model u vazi_pravilo ništa o njoj ne kaže.
+    #[Test]
+    public function vazi_pravilo_true_bez_dokazane_grupe_ne_objavljuje_osim_za_posao(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => []])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $nacrt->fresh()->predlog['odbijeno']);
+    }
+
+    // Paket 59/T4: razmak ispred interpunkcije koji strana ima iz izvlačenja teksta ne sprečava citat (rok i grupa).
+    #[Test]
+    public function razmak_ispred_interpunkcije_na_strani_ne_sprecava_citat_roka_ni_grupe(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([
+            self::STRANA => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine .</p><p>Poziv je namenjen svim studentima ( i đacima ) .</p>'),
+            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je namenjen svim studentima (i đacima).']]]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame(['studenti'], $nacrt->fresh()->grupe);
+        $this->assertSame('2026-10-20', $nacrt->fresh()->rok->toDateString());
     }
 
     // Ogledalo: potkrepljeno pravilo ne pere loš rok, pa i dalje važi „rok je prošao".

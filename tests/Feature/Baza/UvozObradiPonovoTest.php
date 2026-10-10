@@ -78,6 +78,27 @@ class UvozObradiPonovoTest extends BazaTestCase
         $this->assertSame(1, $this->pozivaOllame());
     }
 
+    // Paket 59/T5: verzija pravila je 3; nacrt obrađen verzijom 2 (ili bez verzije) se ponovo obrađuje, a obrađen verzijom 3 ne.
+    #[Test]
+    public function ponovo_obradjuje_i_nacrt_obradjen_prethodnom_verzijom_pravila_a_tekucom_ne(): void
+    {
+        $this->assertSame(3, ObradaNacrta::PRAVILO);
+
+        $dva = $this->starNacrt(['naslov' => 'Verzija dva', 'link_izvora' => 'https://a.test/dva', 'predlog' => ['pravilo' => 2, 'odbijeno' => 'pravilo za objavu ne važi', 'model' => 'qwen2.5:7b']]);
+        $tri = $this->starNacrt(['naslov' => 'Verzija tri', 'link_izvora' => 'https://a.test/tri', 'predlog' => ['pravilo' => 3, 'odbijeno' => 'pravilo za objavu ne važi', 'model' => 'qwen2.5:7b']]);
+        $bez = $this->starNacrt(['naslov' => 'Bez verzije', 'link_izvora' => 'https://a.test/bez']);
+        Http::fake(['https://a.test/dva' => $this->strana(), 'https://a.test/bez' => $this->strana(), self::OLLAMA => $this->ollama()]);
+
+        $this->artisan('uvoz:obradi', ['--ponovo' => true])->assertExitCode(0);
+
+        $this->assertSame(2, $this->pozivaOllame());
+        $this->assertSame(StatusPrilike::Objavljeno, $dva->fresh()->status);
+        $this->assertSame(StatusPrilike::Objavljeno, $bez->fresh()->status);
+        $this->assertSame(ObradaNacrta::PRAVILO, $dva->fresh()->predlog['pravilo']);
+        $this->assertSame(StatusPrilike::Nacrt, $tri->fresh()->status);
+        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === 'https://a.test/tri');
+    }
+
     // Ogledalo: bez --ponovo, obrađeni nacrt se ne uzima ni po starom pravilu.
     #[Test]
     public function bez_zastavice_obradjen_nacrt_se_ne_uzima(): void

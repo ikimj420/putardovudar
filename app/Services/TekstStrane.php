@@ -43,9 +43,14 @@ final class TekstStrane
         return Latinica::izCirilice(trim(preg_replace('/[\s\x{00A0}]+/u', ' ', $tekst) ?? ''));
     }
 
-    // Poređenje citata sa stranom ne zavisi od velikih slova, razmaka i navodnika oko citata.
+    // Poređenje citata sa stranom ne zavisi od velikih slova, razmaka i navodnika oko citata, ni od razmaka ispred interpunkcije koji strana ima iz
+    // izvlačenja teksta („vremenu ." na strani, „vremenu." u citatu) i iza otvorene zagrade.
     public static function normalizuj(string $tekst): string
     {
-        return trim(mb_strtolower(preg_replace('/[\s\x{00A0}]+/u', ' ', $tekst) ?? ''), " \t\n\r\"'„“”‘’");
+        $tekst = preg_replace('/[\s\x{00A0}]+/u', ' ', $tekst) ?? '';
+        $tekst = preg_replace('/ ([.,;:!?)])/u', '$1', $tekst) ?? '';
+        $tekst = preg_replace('/\( /u', '(', $tekst) ?? '';
+
+        return trim(mb_strtolower($tekst), " \t\n\r\"'„“”‘’");
     }
 }
