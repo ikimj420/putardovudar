@@ -56,6 +56,10 @@ TEXT;
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nema tražena polja');
         }
 
+        // Model ponekad izostavi vrstu, rok ili citat (izmereno: stavlja ih u objekat grupe); izostavljeno je isto što i null, a bez njih objave nema.
+        $nedostajala = array_values(array_filter(['vrsta', 'rok', 'citat'], fn (string $kljuc) => ! array_key_exists($kljuc, $forma)));
+        $forma = [...['vrsta' => null, 'rok' => null, 'citat' => null], ...$forma];
+
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
         [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen);
         $predlog = [
@@ -68,6 +72,7 @@ TEXT;
             'grupe' => $grupe,
             'prihvacene_grupe' => array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene),
             'odbijeno' => $odbijeno,
+            'nedostajala_polja' => $nedostajala,
             'model' => $this->ollama->model(),
         ];
 
@@ -107,11 +112,12 @@ TEXT;
             && $this->jeTekstIliNull($forma, 'citat');
     }
 
-    // Kad pravilo ne važi, model vraća null za vrstu, rok i citat (izmereno u probi sa pravom Ollamom).
+    // Kad pravilo ne važi, model vraća null za vrstu, rok i citat (izmereno u probi sa pravom Ollamom); ključ može i da izostane, ali ako piše, mora
+    // da bude tekst ili null.
     /** @param  array<string, mixed>  $forma */
     private function jeTekstIliNull(array $forma, string $kljuc): bool
     {
-        return array_key_exists($kljuc, $forma) && (is_string($forma[$kljuc]) || $forma[$kljuc] === null);
+        return ! array_key_exists($kljuc, $forma) || is_string($forma[$kljuc]) || $forma[$kljuc] === null;
     }
 
     // Model vraća grupe sa citatom za svaku; ostaje samo šta ima oblik {grupa, citat} i grupu sa spiska.

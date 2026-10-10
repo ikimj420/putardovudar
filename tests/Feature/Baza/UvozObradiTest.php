@@ -702,12 +702,74 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Nacrt, $bezCitata->fresh()->status);
     }
 
+    /** @return array<string, array{0: list<string>, 1: string}> izostavljeni ključevi, razlog nacrta */
+    public static function izostavljenaPolja(): array
+    {
+        return [
+            'nema vrste' => [['vrsta'], 'vrsta nije sa spiska'],
+            'nema roka' => [['rok'], 'nema ispravnog roka'],
+            'nema citata roka' => [['citat'], 'rok ne piše u tekstu strane'],
+            'nema ništa od troje' => [['vrsta', 'rok', 'citat'], 'vrsta nije sa spiska'],
+        ];
+    }
+
+    // Paket 53/T4: izostavljena vrsta, rok ili citat roka su isto što i null: odgovor se obrađuje, ali iz nepotpunog odgovora se nikad ne objavljuje.
+    /** @param  list<string>  $izostavi */
+    #[Test]
+    #[DataProvider('izostavljenaPolja')]
+    public function izostavljena_vrsta_rok_ili_citat_ostaju_nacrt_a_obrada_se_belezi(array $izostavi, string $razlog): void
+    {
+        $nacrt = $this->nacrt();
+        $forma = array_diff_key(['vazi_pravilo' => true, 'razlog' => 'Konkurs.', 'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine', 'grupe' => [['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]]], array_flip($izostavi));
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.')');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertNull($prilika->objavio);
+        $this->assertNull($prilika->rok);
+        $this->assertNotNull($prilika->obradeno_at);
+        $this->assertSame($izostavi, $prilika->predlog['nedostajala_polja']);
+        $this->assertFalse(Prilika::javne()->whereKey($prilika->id)->exists());
+    }
+
+    // Ogledalo: potpun odgovor se objavljuje i nema izostavljenih polja.
+    #[Test]
+    public function potpun_odgovor_nema_izostavljenih_polja(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame([], $nacrt->fresh()->predlog['nedostajala_polja']);
+    }
+
+    // Stvaran odgovor za stranu #38 iz probe 41: vrsta i rok su ušli u objekat grupe, grupa „mladi" nije sa spiska, a rok i citat nema na najvišem nivou.
+    #[Test]
+    public function odgovor_sa_vrstom_i_rokom_unutar_grupe_ostaje_nacrt_i_ne_ponavlja_se(): void
+    {
+        $nacrt = $this->nacrt();
+        $odgovor = ['grupe' => [['grupa' => 'mladi', 'citat' => 'Rok je 15. oktobar 2026.', 'vrsta' => 'konkurs', 'rok' => '2026-10-15']], 'vazi_pravilo' => true, 'razlog' => 'Konkurs za mlade.', 'vrsta' => 'konkurs'];
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($odgovor, JSON_UNESCAPED_UNICODE)]])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
+        $this->artisan('uvoz:obradi')->expectsOutput('Nema nacrta iz uvoza za obradu.');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertNull($nacrt->fresh()->rok);
+        $this->assertSame(['rok', 'citat'], $nacrt->fresh()->predlog['nedostajala_polja']);
+        $this->assertSame(1, $this->pozivaOllame());
+    }
+
     /** @return array<string, array{0: array<string, mixed>}> */
     public static function neispravniOblici(): array
     {
         return [
             'nema razloga' => [['vazi_pravilo' => true, 'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'citat' => 'x']],
-            'nema ključa vrste' => [['vazi_pravilo' => true, 'razlog' => 'x', 'rok' => '2026-10-20', 'citat' => 'x']],
             'vrsta je broj' => [['vazi_pravilo' => true, 'razlog' => 'x', 'vrsta' => 5, 'rok' => null, 'citat' => '']],
             'rok je broj' => [['vazi_pravilo' => true, 'razlog' => 'x', 'vrsta' => 'konkurs', 'rok' => 20261020, 'citat' => '']],
             'pravilo je tekst' => [['vazi_pravilo' => 'da', 'razlog' => 'x', 'vrsta' => null, 'rok' => null, 'citat' => null]],
