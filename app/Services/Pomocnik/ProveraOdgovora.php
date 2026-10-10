@@ -5,12 +5,17 @@ namespace App\Services\Pomocnik;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Support\DatumiUTekstu;
+use App\Support\PoredjenjeTeksta;
 use Illuminate\Support\Collection;
 
 // Odgovor modela važi samo ako ne sadrži datum ili link kog nema u zapisima; inače ga menja šablon iz zapisa.
 final class ProveraOdgovora
 {
     public const NAJVISE_ZNAKOVA = 700;
+
+    // „Nemam / nemaš / nema / nemamo ... podatak" u bilo kom licu i padežu, sa najviše jednom rečju između; poređenje je nad
+    // normalizovanim tekstom (bez dijakritika, bez ćirilice). „Ni maš" je razdvojen oblik koji model ume da napiše.
+    private const NEMA_PODATKA = '/\b(?:nem|ni ?m)(?:amo|ate|aju|am|as|a)\s+(?:\w+\s+)?(?:podat|informacij)/';
 
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 
@@ -28,6 +33,11 @@ final class ProveraOdgovora
 
         if (mb_strlen($odgovor) > self::NAJVISE_ZNAKOVA) {
             return 'predug odgovor';
+        }
+
+        // Zapisi postoje, pa odgovor koji kaže da podatka nema protivreči kartici ispod njega.
+        if (($zapisi->isNotEmpty() || $vodici->isNotEmpty()) && preg_match(self::NEMA_PODATKA, PoredjenjeTeksta::normalizuj($odgovor)) === 1) {
+            return 'odgovor kaže da nema podatka';
         }
 
         if (! $this->datumiSuIzZapisa($odgovor, $zapisi, $vodici)) {

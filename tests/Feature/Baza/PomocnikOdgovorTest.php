@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -184,6 +185,83 @@ class PomocnikOdgovorTest extends BazaTestCase
         $this->model($odgovorModela);
 
         $this->assertSame($razlog, $this->pitaj()->razlogSablona);
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function odgovoriKojiKazuDaNemaPodatka(): array
+    {
+        return [
+            'prvo lice' => ['Nemam podatak.'],
+            'drugo lice' => ['Nemaš podatak.'],
+            'treće lice' => ['Nema podatka o tome.'],
+            'množina prvo lice' => ['Nemamo podatak o tome.'],
+            'množina drugo lice' => ['Nemate podataka.'],
+            'množina treće lice' => ['Nemaju podatke o tome.'],
+            'tekst posle rečenice' => ['Nemaš podatak. Prilike i vodiči nisu sadržali informacije o korišćenju CV-a.'],
+            'nema podataka o' => ['Nema podataka o čemu Niš ima. Priloge se odnose na radne ponude u Nišu.'],
+            'razdvojen oblik' => ['Ni maš podatak. Prilike nisu sadržale specifične informacije.'],
+            'velika slova' => ['NEMAM PODATAK'],
+            'između reči' => ['Nemam nikakav podatak o tome.'],
+            'informacije' => ['Nemam informacija o tome.'],
+            'ćirilica' => ['Немам податак о томе.'],
+            'bez dijakritika' => ['Nemas podatak.'],
+        ];
+    }
+
+    // Merenje iz paketa 21: u 17 od 59 odgovora (18 kad se broji i „Ni maš") tekst je tvrdio da nema podatka, a kartice su stajale ispod.
+    #[Test]
+    #[DataProvider('odgovoriKojiKazuDaNemaPodatka')]
+    public function odgovor_koji_kaze_da_nema_podatka_dok_zapisi_postoje_menja_sablon(string $odgovorModela): void
+    {
+        $this->model($odgovorModela);
+
+        $odgovor = $this->pitaj();
+
+        $this->assertSame('odgovor kaže da nema podatka', $odgovor->razlogSablona);
+        $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV, $odgovor->tekst);
+        $this->assertStringContainsString('Radnik u skladištu', $odgovor->tekst);
+        $this->assertCount(1, $odgovor->izvori);
+        $this->assertFalse($odgovor->nemaPodatak);
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function odgovoriKojiNeKazuDaNemaPodatka(): array
+    {
+        return [
+            'posao postoji' => ['U Nišu postoji posao radnika u skladištu.'],
+            'imam podatak' => ['Imam podatak o poslu u Nišu.'],
+            'podatak postoji' => ['Podatak o roku je naveden: 15. novembra 2026.'],
+            'nema drugih' => ['Nema drugih poslova u Nišu, samo ovaj u skladištu.'],
+            'nema roka' => ['Posao u skladištu, prijave stalno otvorene.'],
+            'nema roka ali podatak postoji' => ['Nema roka, ali podatak o poslu u skladištu postoji.'],
+            'reč koja samo sadrži nema' => ['Firma Renema daje podatak o poslu u Nišu.'],
+            'nemam vremena' => ['Nemam vremena za duge opise, ali posao u Nišu postoji.'],
+            'nema u drugim gradovima' => ['U drugim gradovima nema ništa osim posla u Nišu.'],
+        ];
+    }
+
+    // Ogledalo: odgovor koji ne tvrdi da podatka nema ostaje, i to uz isti zapis.
+    #[Test]
+    #[DataProvider('odgovoriKojiNeKazuDaNemaPodatka')]
+    public function odgovor_koji_ne_kaze_da_nema_podatka_ostaje(string $odgovorModela): void
+    {
+        $this->model($odgovorModela);
+
+        $odgovor = $this->pitaj();
+
+        $this->assertNull($odgovor->razlogSablona);
+        $this->assertSame($odgovorModela, $odgovor->tekst);
+        $this->assertCount(1, $odgovor->izvori);
+    }
+
+    // Ogledalo: bez zapisa „nemam podatak" nije tvrdnja protiv zapisa, pa ga provera ne odbija (a Pomocnik ga ni ne pita).
+    #[Test]
+    public function provera_ne_odbija_nemam_podatak_kad_zapisa_nema(): void
+    {
+        $provera = app(ProveraOdgovora::class);
+
+        $this->assertNull($provera->razlogOdbijanja('Nemam podatak.', new Collection, new Collection));
+        $this->assertSame('odgovor kaže da nema podatka', $provera->razlogOdbijanja('Nemam podatak.', new Collection([$this->prilika]), new Collection));
     }
 
     #[Test]
