@@ -6,9 +6,9 @@ use App\Models\Organizacija;
 use App\Support\PoredjenjeTeksta;
 use Illuminate\Support\Collection;
 
-// Organizacije se traže samo po prihvaćenim ključnim rečima u nazivu i uslugama, samo kroz Organizacija::javne().
-// Grad se ne koristi: „mesto" je slobodan tekst (PITANJA-18-22.md, paket 20, tačka 3). Reč „organizacija" ne sužava pretragu,
-// a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljene organizacije po nazivu.
+// Organizacije se traže samo po prihvaćenim ključnim rečima u nazivu i uslugama, samo kroz Organizacija::javne(). Reč „organizacija"
+// ne sužava pretragu, a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljene organizacije po nazivu.
+// Grad sužava: organizacija ulazi kad je online ili kad njeno „mesto" (slobodan tekst) sadrži grad, u bilo kom padežu.
 final class PretragaOrganizacija
 {
     public const NAJVISE_ZAPISA = 3;
@@ -23,7 +23,11 @@ final class PretragaOrganizacija
         $reci = new OpsteReci($formular->kljucneReci);
 
         if ($reci->jeSamoOpste()) {
-            return $reci->sadrzi(OpsteReci::ORGANIZACIJA) ? Organizacija::javne()->orderBy('naziv')->limit(self::NAJVISE_U_SPISKU)->get() : new Collection;
+            if (! $reci->sadrzi(OpsteReci::ORGANIZACIJA)) {
+                return new Collection;
+            }
+
+            return $this->kandidati($formular)->take(self::NAJVISE_U_SPISKU)->values();
         }
 
         $izrazi = $reci->izrazi(OpsteReci::ORGANIZACIJA);
@@ -32,10 +36,29 @@ final class PretragaOrganizacija
             return new Collection;
         }
 
-        return Organizacija::javne()->orderBy('naziv')->limit(self::NAJVISE_KANDIDATA)->get()
+        return $this->kandidati($formular)
             ->filter(fn (Organizacija $organizacija) => $this->sadrziSveIzraze($organizacija, $izrazi))
             ->take(self::NAJVISE_ZAPISA)
             ->values();
+    }
+
+    /** @return Collection<int, Organizacija> */
+    private function kandidati(Formular $formular): Collection
+    {
+        return Organizacija::javne()->orderBy('naziv')->limit(self::NAJVISE_KANDIDATA)->get()
+            ->filter(fn (Organizacija $organizacija) => $formular->grad === null || $this->jeUGradu($organizacija, $formular->grad))
+            ->values();
+    }
+
+    private function jeUGradu(Organizacija $organizacija, string $grad): bool
+    {
+        if ($organizacija->online) {
+            return true;
+        }
+
+        $trazen = PoredjenjeTeksta::normalizuj($grad);
+
+        return $trazen !== '' && PoredjenjeTeksta::sadrziIzraz(PoredjenjeTeksta::normalizuj((string) $organizacija->mesto), $trazen);
     }
 
     /** @param  list<string>  $izrazi */

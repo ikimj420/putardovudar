@@ -58,7 +58,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         return Organizacija::factory()->objavljena()->create([...[
             'naziv' => 'Nacionalna služba za zapošljavanje', 'vrsta' => VrstaOrganizacije::JavnaInstitucija,
             'kratak_opis' => 'Javna služba koja pomaže nezaposlenima; rok za probu je 20. oktobra 2026.',
-            'opis' => 'Dugačak opis organizacije.', 'mesto' => 'Mreža filijala širom Srbije.', 'telefon' => '011/555-777',
+            'opis' => 'Dugačak opis organizacije.', 'mesto' => 'Mreža filijala širom Srbije.', 'online' => true, 'telefon' => '011/555-777',
             'sajt' => 'https://www.nsz.gov.rs/', 'usluge' => ['Podrška za zapošljavanje', 'CV podrška', 'Savetovanje'],
             'beleska' => 'Tajna beleška za admina.',
         ], ...$dopuna]);
@@ -146,18 +146,75 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         $this->assertSame(0, $this->pozivaZaOdgovor());
     }
 
+    // Paket 29 (prepisuje tvrdnju „grad se za organizacije ne koristi" iz paketa 24): organizacija ulazi kad je online
+    // ili kad njeno „mesto" sadrži grad, u bilo kom padežu; ostale ne ulaze.
     #[Test]
-    public function grad_se_za_organizacije_ne_koristi(): void
+    public function grad_sužava_organizacije_online_ili_mesto_sadrzi_grad(): void
     {
-        $this->nsz(['mesto' => 'Beograd, Terazije 39']);
         $pretraga = app(PretragaOrganizacija::class);
+        $trazi = fn (?string $grad) => $pretraga->pronadji(new Formular(grad: $grad, kljucneReci: ['zapošljavanje']))->count();
 
-        // Isti rezultat sa gradom koji se ne pominje u mestu, sa gradom koji se pominje i bez grada.
-        foreach ([null, 'Niš', 'Beograd'] as $grad) {
-            $this->assertCount(1, $pretraga->pronadji(new Formular(grad: $grad, kljucneReci: ['zapošljavanje'])), (string) $grad);
+        $beograd = $this->nsz(['online' => false, 'mesto' => 'Beograd, Terazije 39']);
+        // Bez grada nema sužavanja; grad iz mesta (i u padežu) ulazi; drugi grad ne.
+        // Grad koji posle normalizacije nema nijedno slovo ne znači „svuda".
+        $this->assertSame([1, 1, 1, 0, 0, 0], [$trazi(null), $trazi('Beograd'), $trazi('Beogradu'), $trazi('Niš'), $trazi('Novi Sad'), $trazi('?')]);
+
+        // Online ulazi u svaki grad.
+        $beograd->update(['online' => true]);
+        $this->assertSame([1, 1, 1], [$trazi('Niš'), $trazi('Beograd'), $trazi('Novi Sad')]);
+
+        // Mesto sa drugim gradom, offline: samo taj grad, i u padežu („Nišu" prema „Niš").
+        $beograd->update(['online' => false, 'mesto' => 'Bulevar Nemanjića 5, Niš']);
+        $this->assertSame([1, 1, 0], [$trazi('Niš'), $trazi('Nišu'), $trazi('Beograd')]);
+
+        // Mesto koje nije upisano: offline organizacija ne ulazi ni u jedan grad.
+        Organizacija::query()->whereKey($beograd->id)->update(['mesto' => null]);
+        $this->assertSame([0, 1], [$trazi('Niš'), $trazi(null)]);
+    }
+
+    // Merilo paketa (#89 iz paketa 25): „organizacije u Nišu" ne vraća organizaciju iz Beograda koja nije online.
+    #[Test]
+    public function organizacije_u_nisu_ne_vracaju_beogradsku_koja_nije_online(): void
+    {
+        $this->nsz(['naziv' => 'Beogradska bez interneta', 'online' => false, 'mesto' => 'Beograd, Terazije 39']);
+        $this->nsz(['naziv' => 'Beogradska online', 'online' => true, 'mesto' => 'Beograd, Terazije 39']);
+        $this->nsz(['naziv' => 'Niška bez interneta', 'online' => false, 'mesto' => 'Niš, Vojvode Mišića 7']);
+        $this->model(['grad' => 'Niš', 'kljucne_reci' => ['organizacije']]);
+
+        $odgovor = $this->pitaj('organizacije u Nišu');
+
+        $this->assertSame(['Beogradska online', 'Niška bez interneta'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
+
+        // Ogledalo: isto pitanje bez grada vraća sve tri.
+        $this->model(['kljucne_reci' => ['organizacije']]);
+        $this->assertSame(['Beogradska bez interneta', 'Beogradska online', 'Niška bez interneta'], array_map(fn ($izvor) => $izvor->naslov, $this->pitaj('organizacije')->izvori));
+    }
+
+    // Grad se primenjuje pre ograničenja na 5, ne posle: organizacija iz grada ne sme da ostane iza pet iz drugih gradova.
+    #[Test]
+    public function grad_se_primenjuje_pre_ogranicenja_spiska(): void
+    {
+        foreach (['A', 'B', 'C', 'D', 'E', 'F'] as $slovo) {
+            Organizacija::factory()->objavljena()->create(['naziv' => $slovo.' beogradska', 'online' => false, 'mesto' => 'Beograd']);
         }
-        // Ogledalo: sam grad bez ključnih reči nije pretraga.
-        $this->assertCount(0, $pretraga->pronadji(new Formular(grad: 'Beograd')));
+        Organizacija::factory()->objavljena()->create(['naziv' => 'Z niška', 'online' => false, 'mesto' => 'Niš']);
+
+        $nazivi = app(PretragaOrganizacija::class)->pronadji(new Formular(grad: 'Niš', kljucneReci: ['organizacije']))->pluck('naziv')->all();
+
+        $this->assertSame(['Z niška'], $nazivi);
+    }
+
+    // Nijedna organizacija iz grada i nijedna online: „Nemam podatak", a model se ne zove za odgovor.
+    #[Test]
+    public function bez_organizacije_u_gradu_ni_online_je_nemam_podatak(): void
+    {
+        $this->nsz(['online' => false, 'mesto' => 'Beograd']);
+        $this->model(['grad' => 'Niš', 'kljucne_reci' => ['zapošljavanje']]);
+
+        $odgovor = $this->pitaj('Gde je služba za zapošljavanje u Nišu?');
+
+        $this->assertTrue($odgovor->nemaPodatak);
+        $this->assertSame(0, $this->pozivaZaOdgovor());
     }
 
     #[Test]
