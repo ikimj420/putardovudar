@@ -19,6 +19,15 @@ final class PrikazPocetne
 
     public const PRILIKE = 'Prilike';
 
+    // Traka „Vodiči" (predlog iz izgleda, prilagođen: nema svaki vodič primer; Ivan odobrava).
+    public const TRAKA_NATPIS = 'Vodiči';
+
+    public const TRAKA_NASLOV = 'Napiši pismo, CV ili molbu.';
+
+    public const TRAKA_OPIS = 'Vodiči te vode korak po korak, a neki imaju i gotov primer. Gde piše „Napiši moj", odgovori na par pitanja, a pomoćnik napiše tvoj tekst.';
+
+    public const TRAKA_DUGME = 'Otvori vodiče';
+
     // Pločice sa brojevima iz baze: uz broj 1, uz 2 do 4 i uz 5 ili više (predlog iz izgleda; Ivan odobrava).
     public const PLOCICE_NAZIV = 'Brojevi na sajtu';
 

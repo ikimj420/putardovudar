@@ -25,6 +25,12 @@ final class Prikaz
         return self::MESECI[$broj] ?? '';
     }
 
+    // Koliko je dana od današnjeg (po zoni aplikacije) do datuma; danas je 0, sutra 1, a prošlost je negativna.
+    public static function danaDo(CarbonInterface $datum): int
+    {
+        return (int) today()->diffInDays($datum->copy()->startOfDay(), false);
+    }
+
     // Oblik reči uz broj: jedan i dvadeset jedan (jednina), dva do četiri osim dvanaest do četrnaest (dva oblika), ostalo (množina).
     /** @param  array{0: string, 1: string, 2: string}  $oblici  uz 1, uz 2, uz 5 */
     public static function oblik(int $broj, array $oblici): string

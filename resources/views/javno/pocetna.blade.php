@@ -67,4 +67,13 @@
             <p class="hero-vise"><a class="dugme dugme-glavno" href="{{ route('prilike.index') }}">{{ \App\Support\PrikazPocetne::SVE_PRILIKE_DUGME }}</a></p>
         @endif
     </section>
+
+    @if ($imaVodica)
+        <section class="vodici-traka" aria-labelledby="vodici-traka-naslov">
+            <div class="traka-natpis">{{ \App\Support\PrikazPocetne::TRAKA_NATPIS }}</div>
+            <h2 id="vodici-traka-naslov">{{ \App\Support\PrikazPocetne::TRAKA_NASLOV }}</h2>
+            <p>{{ \App\Support\PrikazPocetne::TRAKA_OPIS }}</p>
+            <a class="dugme dugme-glavno dugme-malo" href="{{ route('vodici.index') }}">{{ \App\Support\PrikazPocetne::TRAKA_DUGME }}</a>
+        </section>
+    @endif
 @endsection

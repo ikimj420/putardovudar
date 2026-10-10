@@ -34,6 +34,13 @@ final class PrikazPrilike
 
     public const STALNO_OTVORENO = 'Prijave stalno otvorene';
 
+    // Oznaka na kartici i strani prilike (paket 57); računa se iz roka, a prilika bez roka i stalno otvorena je nema.
+    public const ZATVARA_SE_DANAS = 'Zatvara se danas';
+
+    public const ZATVARA_SE_ZA = 'Zatvara se za ';
+
+    public const DAN = ['dan', 'dana', 'dana'];
+
     // Oznaka na kartici u adminu; sajt je ne piše jer prilike sa prošlim rokom ne prikazuje.
     public const ROK_PROSAO = 'Rok prošao';
 
@@ -55,6 +62,22 @@ final class PrikazPrilike
         }
 
         return $prilika->rok === null ? self::BEZ_ROKA : 'Rok: '.Prikaz::datum($prilika->rok);
+    }
+
+    // „Zatvara se za 5 dana", „Zatvara se za 1 dan", „Zatvara se danas"; bez roka, uz stalno otvorene prijave i kad je rok prošao nema oznake.
+    public static function zatvaraSe(Prilika $prilika): ?string
+    {
+        if ($prilika->rok === null || $prilika->rok_stalno_otvoren) {
+            return null;
+        }
+
+        $dana = Prikaz::danaDo($prilika->rok);
+
+        return match (true) {
+            $dana < 0 => null,
+            $dana === 0 => self::ZATVARA_SE_DANAS,
+            default => self::ZATVARA_SE_ZA.$dana.' '.Prikaz::oblik($dana, self::DAN),
+        };
     }
 
     // Adresa spiska sa izabranom vrstom; bez nje je običan spisak. Grupe se na sajtu ne biraju (paket 54).

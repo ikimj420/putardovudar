@@ -4,7 +4,10 @@
     @include('javno.mrvice', ['delovi' => [[config('app.name'), route('pocetna')], ['Prilike', route('prilike.index')], [$prilika->naslov, null]]])
     <h1>{{ $prilika->naslov }}</h1>
     <div class="oznake">
-        <span class="oznaka">{{ $prilika->vrsta->getLabel() }}</span>
+        <span class="oznaka" data-vrsta="{{ $prilika->vrsta->value }}">{{ $prilika->vrsta->getLabel() }}</span>
+        @if (\App\Support\PrikazPrilike::zatvaraSe($prilika))
+            <span class="oznaka oznaka-rok">{{ \App\Support\PrikazPrilike::zatvaraSe($prilika) }}</span>
+        @endif
         <span class="meta-stavka">{{ \App\Support\PrikazPrilike::rok($prilika) }}</span>
         @if (\App\Support\PrikazPrilike::mesto($prilika))
             <span class="meta-stavka">{{ \App\Support\PrikazPrilike::mesto($prilika) }}</span>

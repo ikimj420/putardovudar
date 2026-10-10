@@ -34,7 +34,7 @@ class JavnaStranaPrilikeTest extends BazaTestCase
         $odgovor = $this->get(route('prilike.show', $prilika->slug))->assertOk();
         $html = $odgovor->getContent();
 
-        $this->assertStringContainsString('Radnik u skladištu Posao Rok: 20.10.2026. Niš Puno radno vreme. Dodaj rok u telefon Pošalji komšiji Viber WhatsApp Prvi red opisa.', $this->vidljivTekst($html));
+        $this->assertStringContainsString('Radnik u skladištu Posao Zatvara se za 15 dana Rok: 20.10.2026. Niš Puno radno vreme. Dodaj rok u telefon Pošalji komšiji Viber WhatsApp Prvi red opisa.', $this->vidljivTekst($html));
         $this->assertMatchesRegularExpression('#Prvi red opisa\.<br\s*/?>\s*Drugi red opisa\.#', $html);
         $this->assertMatchesRegularExpression('#Zvanični izvor:\s*<a href="https://primer\.rs/konkurs"[^>]*>Nacionalna služba za zapošljavanje</a>#', $html);
         $odgovor->assertSeeInOrder(['Zvanični izvor:', 'Nacionalna služba za zapošljavanje', 'Pre prijave proveri podatke na zvaničnom izvoru.']);

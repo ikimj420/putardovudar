@@ -100,7 +100,7 @@ class JavniSpisakPrilikaTest extends BazaTestCase
 
         $tekst = $this->vidljivTekst($this->get(route('prilike.index'))->getContent());
 
-        $this->assertStringContainsString('Radnik u skladištu Posao Rok: 20.10.2026. Niš Puno radno vreme.', $tekst);
+        $this->assertStringContainsString('Radnik u skladištu Posao Zatvara se za 15 dana Rok: 20.10.2026. Niš Puno radno vreme.', $tekst);
         $this->assertStringNotContainsString('2026-10-20', $tekst);
         $this->assertStringNotContainsString('Online', $tekst);
     }

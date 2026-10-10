@@ -115,7 +115,7 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
         Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'mesto' => 'Niš', 'kratak_opis' => 'Puno radno vreme.', 'rok' => '2026-12-15']);
         $html = $this->get(route('prilike.index'))->getContent();
 
-        $this->assertMatchesRegularExpression('#<article class="kartica redosled">\s*<h2><a [^>]*>Radnik u skladištu</a></h2>\s*<div class="oznake"><span class="oznaka">[^<]+</span></div>\s*<div class="meta">\s*<span class="meta-stavka">Rok: 15\.12\.2026\.</span>\s*<span class="meta-stavka">Niš</span>\s*</div>\s*<p class="kratko">Puno radno vreme\.</p>#s', $html);
+        $this->assertMatchesRegularExpression('#<article class="kartica redosled">\s*<h2><a [^>]*>Radnik u skladištu</a></h2>\s*<div class="oznake">\s*<span class="oznaka" data-vrsta="[a-z]+">[^<]+</span>\s*<span class="oznaka oznaka-rok">Zatvara se za 66 dana</span>\s*</div>\s*<div class="meta">\s*<span class="meta-stavka">Rok: 15\.12\.2026\.</span>\s*<span class="meta-stavka">Niš</span>\s*</div>\s*<p class="kratko">Puno radno vreme\.</p>#s', $html);
 
         $stil = $this->stilBezUpita();
 
@@ -125,18 +125,18 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
     }
 
     #[Test]
-    public function spisak_vodica_je_u_tri_kolone_a_prilika_i_organizacija_u_dve(): void
+    public function spisak_vodica_i_prilika_je_u_tri_kolone_a_organizacija_u_dve(): void
     {
         $adrese = $this->adrese();
 
-        $this->assertStringContainsString('<div class="spisak tri">', $this->get($adrese['vodiči'])->getContent());
-
-        foreach (['prilike', 'organizacije'] as $ime) {
-            $html = $this->get($adrese[$ime])->getContent();
-
-            $this->assertStringContainsString('<div class="spisak">', $html, $ime);
-            $this->assertStringNotContainsString('spisak tri', $html, $ime);
+        // Od paketa 57 su i prilike u tri kolone (kao u predlogu).
+        foreach (['vodiči', 'prilike'] as $ime) {
+            $this->assertStringContainsString('<div class="spisak tri">', $this->get($adrese[$ime])->getContent(), $ime);
         }
+
+        $html = $this->get($adrese['organizacije'])->getContent();
+        $this->assertStringContainsString('<div class="spisak">', $html);
+        $this->assertStringNotContainsString('spisak tri', $html);
     }
 
     // Strana prilike: bočna kolona sa izvorom samo kad ima i opis i izvor; inače jedna kolona.

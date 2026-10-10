@@ -18,7 +18,9 @@ class JavnaPocetnaController extends Controller
         return view('javno.pocetna', [
             'vrste' => Prilika::vrsteSaJavnimPrilikama(),
             'prilike' => Prilika::javne()->poRoku()->limit(6)->get(),
-            'plocice' => $this->plocice(),
+            'plocice' => $plocice = $this->plocice(),
+            // Traka „Vodiči" postoji samo kad ima šta da se otvori.
+            'imaVodica' => $plocice[1]['broj'] > 0,
         ]);
     }
 

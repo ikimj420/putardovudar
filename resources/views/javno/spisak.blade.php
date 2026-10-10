@@ -15,7 +15,7 @@
 
     @forelse ($prilike as $prilika)
         @if ($loop->first)
-            <div class="spisak">
+            <div class="spisak tri">
         @endif
 
         @include('javno.kartica', ['prilika' => $prilika])

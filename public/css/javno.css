@@ -13,6 +13,16 @@
   --ljubicasta-svetla: #7d36e0;
   --narandzasta-tamna: #c85a14;
   --zlato-tamno: #9a6e05;
+
+  /* Oznake vrsta: svaka vrsta ima svoju boju (podloga i slova, kontrast najmanje 4,5 : 1); praksa i drugo su pesak. */
+  --konkurs-pozadina: #efe4fd;
+  --konkurs-tekst: #4a12a0;
+  --stipendija-pozadina: #f9e1ec;
+  --stipendija-tekst: #891f5d;
+  --posao-pozadina: #fdebdd;
+  --posao-tekst: #8a3b0b;
+  --obuka-pozadina: #fbf1d6;
+  --obuka-tekst: #7a5a06;
   --zlato-meko: #f5d98a;
   --papir: #fbfafd;
   --pesak: #f2f0f6;
@@ -569,11 +579,11 @@ html {
 }
 
 .tacka[data-vrsta="praksa"] {
-  fill: var(--lila);
+  fill: var(--noc);
 }
 
 .tacka[data-vrsta="drugo"] {
-  fill: var(--narandzasta-meka);
+  fill: var(--noc);
 }
 
 .hero-sadrzaj {
@@ -718,6 +728,49 @@ html {
   background: var(--zlato);
 }
 
+.vodici-traka {
+  position: relative;
+  overflow: hidden;
+  margin: 34px 0 0;
+  padding: 28px 22px;
+  border-radius: 26px;
+  color: #fff;
+  background:
+    radial-gradient(80% 120% at 0% 0%, rgba(168, 95, 242, 0.45), transparent 60%),
+    radial-gradient(70% 120% at 100% 100%, rgba(240, 153, 76, 0.3), transparent 60%),
+    var(--ljubicasta);
+}
+
+.vodici-traka h2 {
+  margin: 6px 0 8px;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.vodici-traka p {
+  max-width: 46ch;
+  margin: 0 0 16px;
+  color: #f3ecff;
+}
+
+.traka-natpis {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffd9b8;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.dugme-malo {
+  min-height: 42px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
 .hero-vise {
   margin-top: 22px;
 }
@@ -860,6 +913,32 @@ h1.prazno {
   color: #3b2a52;
   font-size: 13px;
   font-weight: 600;
+}
+
+.oznaka[data-vrsta="konkurs"] {
+  background: var(--konkurs-pozadina);
+  color: var(--konkurs-tekst);
+}
+
+.oznaka[data-vrsta="stipendija"] {
+  background: var(--stipendija-pozadina);
+  color: var(--stipendija-tekst);
+}
+
+.oznaka[data-vrsta="posao"] {
+  background: var(--posao-pozadina);
+  color: var(--posao-tekst);
+}
+
+.oznaka[data-vrsta="obuka"] {
+  background: var(--obuka-pozadina);
+  color: var(--obuka-tekst);
+}
+
+/* „Zatvara se za N dana": narandžasta oznaka, ista boja kao rok u predlogu. */
+.oznaka-rok {
+  background: var(--posao-pozadina);
+  color: var(--posao-tekst);
 }
 
 /* U naslovnom delu, na tamnoj pozadini, podaci su stakleni. */
@@ -1208,6 +1287,10 @@ h1.prazno {
 @media (min-width: 900px) {
   .plocice {
     grid-template-columns: repeat(4, 1fr);
+  }
+
+  .vodici-traka {
+    padding: 40px 44px;
   }
 
   .hero {
