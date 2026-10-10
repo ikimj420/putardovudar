@@ -31,6 +31,11 @@ final class Pomocnik
     // Predlog teksta; Ivan odobrava (PITANJA-39-45.md, paket 45).
     public const SABLON_NASLOV_KALENDAR = 'Našao sam sledeće iz kalendara:';
 
+    // Predlog tekstova za „napiši mi ..." (paket 56); Ivan odobrava (PITANJA-55-56.md).
+    public const PONUDA_SABLONA = 'Za to imam šablon. Odgovori na nekoliko pitanja, a ja pišem tekst.';
+
+    public const NEMA_SABLONA = 'Za to još nema šablona.';
+
     public const NAJVISE_ZNAKOVA_PITANJA = 300;
 
     public function __construct(
@@ -42,6 +47,7 @@ final class Pomocnik
         private readonly PisanjeOdgovora $pisanje,
         private readonly ProveraOdgovora $provera,
         private readonly OpasnaPitanja $opasnaPitanja,
+        private readonly PrepoznavanjeSablona $sabloni,
     ) {}
 
     /** @throws OllamaNedostupna */
@@ -76,12 +82,23 @@ final class Pomocnik
             return new OdgovorPomocnika(self::NE_MOGU_DA_POMOGNEM, [], false, null, true);
         }
 
+        // Traženje da se nešto napiše sa nazivom objavljenog šablona: nudi se šablon, bez poziva modela.
+        $pisanje = $this->sabloni->jeTrazenjePisanja($pitanje);
+        $ponude = $pisanje ? $this->sabloni->ponude($pitanje) : [];
+
+        if ($ponude !== []) {
+            return new OdgovorPomocnika(self::PONUDA_SABLONA, [], false, null, false, $ponude);
+        }
+
         $ukupno = (int) config('pomocnik.ukupno_za_pitanje');
         $pocetak = now();
         $rezultat = $this->pretrazi($pitanje, intdiv($ukupno, 2));
 
         if ($rezultat->nemaPodatak()) {
-            return new OdgovorPomocnika(self::NEMAM_PODATAK, [], true);
+            // Traženo je da se nešto napiše, a šablona nema: to kaže, uz objavljene vodiče.
+            return $pisanje
+                ? new OdgovorPomocnika(self::NEMA_SABLONA, Vodic::javni()->orderBy('naslov')->limit(PretragaVodica::NAJVISE_U_SPISKU)->get()->map(fn (Vodic $vodic) => $this->izvorVodica($vodic))->all(), true)
+                : new OdgovorPomocnika(self::NEMAM_PODATAK, [], true);
         }
 
         $izvori = [

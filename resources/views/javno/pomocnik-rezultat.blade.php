@@ -8,6 +8,14 @@
         <p>{!! nl2br(e($odgovor->tekst)) !!}</p>
     </section>
 
+    @if (count($odgovor->ponude) > 0)
+        <div class="dugme-red">
+            @foreach ($odgovor->ponude as $ponuda)
+                <a class="dugme-veza" href="{{ $ponuda->adresa }}" data-pomocnik-sablon>{{ \App\Support\PrikazPomocnika::NAPISI_PONUDA }}: {{ $ponuda->naslov }}</a>
+            @endforeach
+        </div>
+    @endif
+
     @if (count($odgovor->izvori) > 0)
         <h2 class="naslov-izvora">{{ \App\Support\PrikazPomocnika::NASLOV_IZVORA }}</h2>
         <div class="spisak">
