@@ -63,6 +63,7 @@ TEXT;
             'Naslov: '.$prilika->naslov,
             'Vrsta: '.$prilika->vrsta->getLabel(),
             PrikazPrilike::mesto($prilika) ? 'Mesto: '.PrikazPrilike::mesto($prilika) : null,
+            PrikazPrilike::grupe($prilika) ? PrikazPrilike::KOME.': '.PrikazPrilike::grupe($prilika) : null,
             'Rok: '.PrikazPrilike::rok($prilika),
             'Kratak opis: '.$prilika->kratak_opis,
         ])))->implode("\n");

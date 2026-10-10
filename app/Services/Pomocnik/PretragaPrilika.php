@@ -4,6 +4,7 @@ namespace App\Services\Pomocnik;
 
 use App\Models\Prilika;
 use App\Support\PoredjenjeTeksta;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 // Pretragu radi kod, samo kroz Prilika::javne() — isteklo i nejavno nikad ne ulazi.
@@ -22,7 +23,7 @@ final class PretragaPrilika
         // Vrsta koju je model samo pogodio („radionica" kao „obuka") ne sme da sakrije priliku: bez nje se traži tek kad
         // sa njom nema ničega (a bez ijednog drugog uslova ne traži se ništa). Izrečena vrsta („stipendija u Kragujevcu") je uvek tvrda.
         if ($rezultat->isEmpty() && $formular->vrsta !== null && ! $formular->vrstaJePomenuta) {
-            return $this->trazi(new Formular(null, $formular->grad, $formular->kome, $formular->kljucneReci));
+            return $this->trazi(new Formular(null, $formular->grad, $formular->kome, $formular->kljucneReci, grupe: $formular->grupe));
         }
 
         return $rezultat;
@@ -46,6 +47,15 @@ final class PretragaPrilika
 
         if ($formular->grad !== null) {
             $upit->where('mesto', $formular->grad);
+        }
+
+        // Grupa iz pitanja se poredi sa grupama prilike (bar jedna od traženih); prilika bez grupa ne ulazi.
+        if ($formular->grupe !== []) {
+            $upit->where(function (Builder $grupe) use ($formular) {
+                foreach ($formular->grupe as $grupa) {
+                    $grupe->orWhereJsonContains('grupe', $grupa->value);
+                }
+            });
         }
 
         $izrazi = array_filter([$formular->kome, ...$formular->kljucneReci]);

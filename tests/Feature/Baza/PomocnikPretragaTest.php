@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Baza;
 
+use App\Enums\Grupa;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
@@ -131,16 +132,18 @@ class PomocnikPretragaTest extends BazaTestCase
         $this->assertTrue($rezultat->nemaPodatak());
     }
 
-    // Ogledalo: iste vrednosti koje piše u pitanju i postoje u bazi prolaze.
+    // Ogledalo: iste vrednosti koje piše u pitanju i postoje u bazi prolaze. „Rome" je grupa (paket 43), pa se poredi sa grupama prilike.
     #[Test]
     public function iste_vrednosti_prolaze_kad_pisu_u_pitanju_i_postoje_u_bazi(): void
     {
-        $nis = $this->prilika(['opis' => 'Rad u skladištu. Konkurs je otvoren za Rome.']);
+        $nis = $this->prilika(['grupe' => ['romi']]);
+        $this->prilika(['naslov' => 'Radnik u magacinu', 'opis' => 'Rad u skladištu. Konkurs je otvoren za Rome.']);
         $this->model(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => 'Rome', 'kljucne_reci' => ['skladištu']]);
 
         $rezultat = $this->pitaj('Ima li posla u Nišu za Rome u skladištu?');
 
-        $this->assertSame('Rome', $rezultat->formular->kome);
+        $this->assertNull($rezultat->formular->kome);
+        $this->assertSame([Grupa::Romi], $rezultat->formular->grupe);
         $this->assertSame(['skladištu'], $rezultat->formular->kljucneReci);
         $this->assertSame([$nis->id], $rezultat->zapisi->pluck('id')->all());
     }
@@ -231,14 +234,31 @@ class PomocnikPretragaTest extends BazaTestCase
         $this->assertTrue($this->pitaj('Ima li posla u Nišu za knjigovođa?')->nemaPodatak());
     }
 
+    // Paket 43: „kome" koje je grupa poredi se sa grupama prilike, ne kao reč u tekstu; prilika koja samo pominje reč nije za tu grupu.
     #[Test]
-    public function kome_se_trazi_kao_rec_u_tekstu_prilike(): void
+    public function kome_koje_je_grupa_se_poredi_sa_grupama_a_ne_kao_rec_u_tekstu_prilike(): void
     {
         $this->prilika(['naslov' => 'Za sve', 'opis' => 'Otvoreno za sve.']);
-        $namenjena = $this->prilika(['naslov' => 'Za Rome', 'opis' => 'Prijave Roma su dobrodošle.']);
+        $this->prilika(['naslov' => 'Samo pominje Rome', 'opis' => 'Prijave Roma su dobrodošle.']);
+        $namenjena = $this->prilika(['naslov' => 'Za grupu Romi', 'opis' => 'Otvoreno za sve.', 'grupe' => ['romi']]);
         $this->model(['vrsta' => 'posao', 'grad' => null, 'kome' => 'Romi', 'kljucne_reci' => []]);
 
         $this->assertSame([$namenjena->id], $this->pitaj('Ima li posla za Romi?')->zapisi->pluck('id')->all());
+    }
+
+    // Ogledalo: „kome" koje nije grupa (žene) ostaje reč u tekstu prilike, kao ranije.
+    #[Test]
+    public function kome_koje_nije_grupa_ostaje_rec_u_tekstu_prilike(): void
+    {
+        $this->prilika(['naslov' => 'Za sve', 'opis' => 'Otvoreno za sve.']);
+        $namenjena = $this->prilika(['naslov' => 'Za žene', 'opis' => 'Prijave žena su dobrodošle.']);
+        $this->model(['vrsta' => 'posao', 'grad' => null, 'kome' => 'žene', 'kljucne_reci' => []]);
+
+        $rezultat = $this->pitaj('Ima li posla za žene?');
+
+        $this->assertSame('žene', $rezultat->formular->kome);
+        $this->assertSame([], $rezultat->formular->grupe);
+        $this->assertSame([$namenjena->id], $rezultat->zapisi->pluck('id')->all());
     }
 
     #[Test]

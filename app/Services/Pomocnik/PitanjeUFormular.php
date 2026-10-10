@@ -2,6 +2,7 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Enums\Grupa;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Services\Ollama\OdgovorNijeJson;
@@ -46,7 +47,13 @@ TEXT;
         $reci = $this->kljucneReci($forma['kljucne_reci'] ?? null, $pitanjeNormalizovano, [$vrsta?->value, $vrsta?->getLabel(), $grad, $kome]);
         $sveReci = $this->kljucneReci($forma['kljucne_reci'] ?? null, $pitanjeNormalizovano, [$grad]);
 
-        return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano));
+        // „Kome je namenjeno" je grupa kad pitanje kaže reč grupe („Ja sam student", „za Rome"): tada se poredi sa grupama prilike,
+        // a ni „kome" ni reči koje su ime grupe ne idu u reči koje prilika mora da ima u tekstu. Drugo „kome" (žene, mladi) ostaje reč.
+        $grupe = Grupa::izTeksta($pitanje);
+        $kome = $kome !== null && Grupa::izTeksta($kome) !== [] ? null : $kome;
+        $reci = array_values(array_filter($reci, fn (string $rec) => Grupa::izTeksta($rec) === []));
+
+        return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano), $grupe);
     }
 
     // Oblici reči kojima pitanje kaže vrstu, cele reči (ne stabla: „posle" nije „posao", „obuće" nije „obuka"). „Poso" je čest

@@ -2,6 +2,7 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Enums\Grupa;
 use App\Enums\VrstaPrilike;
 
 // Vrednosti koje je kod prihvatio iz modelovog formulara; šta ne prođe proveru, ovde nikad ne stiže.
@@ -14,6 +15,7 @@ final readonly class Formular
      * @param  list<string>  $kljucneReci  reči za prilike: bez onih koje samo ponavljaju vrstu, grad ili „kome" (to rade kolone)
      * @param  list<string>|null  $sveKljucneReci  sve prihvaćene reči osim onih koje ponavljaju grad; null znači iste kao $kljucneReci
      * @param  bool  $vrstaJePomenuta  pitanje samo kaže vrstu (posao, stipendija...); inače je vrsta nagađanje modela
+     * @param  list<Grupa>  $grupe  grupe čije reči stoje u pitanju (ja sam student, za Rome...); porede se sa grupama prilike, ne kao reči
      */
     public function __construct(
         public ?VrstaPrilike $vrsta = null,
@@ -22,13 +24,14 @@ final readonly class Formular
         public array $kljucneReci = [],
         ?array $sveKljucneReci = null,
         public bool $vrstaJePomenuta = true,
+        public array $grupe = [],
     ) {
         $this->sveKljucneReci = $sveKljucneReci ?? $kljucneReci;
     }
 
     public function jePrazan(): bool
     {
-        return $this->vrsta === null && $this->grad === null && $this->kome === null && $this->kljucneReci === [];
+        return $this->vrsta === null && $this->grad === null && $this->kome === null && $this->kljucneReci === [] && $this->grupe === [];
     }
 
     // Vodiči i organizacije nemaju vrstu ni „kome": kad pitanje traži baš njih („vodič za konkurse"), reči koje su ponavljale
