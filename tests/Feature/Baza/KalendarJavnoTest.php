@@ -141,7 +141,7 @@ class KalendarJavnoTest extends BazaTestCase
     }
 
     #[Test]
-    public function kartica_pise_prosli_put_ko_daje_grupe_napomenu_i_zvanicni_izvor(): void
+    public function kartica_pise_prosli_put_ko_daje_napomenu_i_zvanicni_izvor_ali_ne_grupe(): void
     {
         $this->stavka('Stipendija Dositeja', '2026-01-26', [
             'ko_daje' => 'Fond za mlade talente', 'napomena' => 'Prijave su išle preko eUprave.', 'link_izvora' => 'https://fondzamladetalente.gov.rs/dositeja/',
@@ -153,7 +153,8 @@ class KalendarJavnoTest extends BazaTestCase
 
         $this->assertStringContainsString('Prošli put: do 26.01.2026.', $tekst);
         $this->assertStringContainsString('Fond za mlade talente', $tekst);
-        $this->assertStringContainsString('Kome je namenjeno: Studenti, Master i doktorski studenti', $tekst);
+        $this->assertStringNotContainsString('Kome je namenjeno', $tekst);
+        $this->assertStringNotContainsString('Master i doktorski studenti', $tekst);
         $this->assertStringContainsString('Prijave su išle preko eUprave.', $tekst);
         $this->assertStringContainsString('Zvanični izvor: ', $tekst);
         $this->assertStringContainsString('<a href="https://fondzamladetalente.gov.rs/dositeja/" rel="noopener noreferrer nofollow" target="_blank">fondzamladetalente.gov.rs</a>', $html);
@@ -291,13 +292,5 @@ class KalendarJavnoTest extends BazaTestCase
     public function naslov_meseca_posle_spiska_ima_razmak_odozgo(): void
     {
         $this->assertMatchesRegularExpression('/\n\.spisak \+ \.naslov-izvora \{\s*margin-top: 30px;\s*\}/', $this->stilBezUpita());
-    }
-
-    #[Test]
-    public function grupe_stavke_su_u_redosledu_enuma(): void
-    {
-        $this->stavka('Sa grupama', '2026-01-26', ['grupe' => [Grupa::Romi->value, Grupa::Osnovci->value]]);
-
-        $this->assertStringContainsString('Kome je namenjeno: Osnovci, Romi i Romkinje', $this->vidljivTekst($this->strana()));
     }
 }

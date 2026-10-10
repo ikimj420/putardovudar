@@ -19,9 +19,6 @@
                         @if (filled($stavka->ko_daje))
                             <span class="meta-stavka">{{ $stavka->ko_daje }}</span>
                         @endif
-                        @if (\App\Support\PrikazPrilike::nazivi($stavka->izabraneGrupe()))
-                            <span class="meta-stavka grupe">{{ \App\Support\PrikazPrilike::KOME }}: {{ \App\Support\PrikazPrilike::nazivi($stavka->izabraneGrupe()) }}</span>
-                        @endif
                     </div>
                     @if (filled($stavka->napomena))
                         <p class="kratko">{{ $stavka->napomena }}</p>

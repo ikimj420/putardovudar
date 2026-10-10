@@ -158,25 +158,24 @@ class PrilikaGrupeTest extends AdminBazaTestCase
         Livewire::test(ListPrilike::class)->assertSee('Bez grupa')->assertDontSee('Kome je namenjeno');
     }
 
+    // Paket 54: sajt ne piše grupe ni na kartici ni na strani prilike (ranije je pisao „Kome je namenjeno: …"); admin ih i dalje piše.
     #[Test]
-    public function sajt_pise_grupe_na_kartici_i_na_strani_prilike(): void
+    public function sajt_ne_pise_grupe_na_kartici_ni_na_strani_prilike(): void
     {
         $prilika = Prilika::factory()->objavljena()->zaGrupe(Grupa::MasterDoktorski, Grupa::Povratnici)->create(['naslov' => 'Za magistre']);
 
         $spisak = $this->vidljivTekst((string) $this->get(route('prilike.index'))->assertOk()->getContent());
         $strana = $this->vidljivTekst((string) $this->get(route('prilike.show', $prilika->slug))->assertOk()->getContent());
 
-        $this->assertStringContainsString('Kome je namenjeno: Master i doktorski studenti, Povratnici iz inostranstva', $spisak);
-        $this->assertStringContainsString('Kome je namenjeno: Master i doktorski studenti, Povratnici iz inostranstva', $strana);
-        $this->assertSame('Master i doktorski studenti, Povratnici iz inostranstva', PrikazPrilike::grupe($prilika));
-
-        // Pilula nosi klasu koja je u stilu (prelama se u redove), i na kartici i na strani.
-        foreach ([route('prilike.index'), route('prilike.show', $prilika->slug)] as $adresa) {
-            $this->assertStringContainsString('<span class="meta-stavka grupe">Kome je namenjeno: Master i doktorski studenti, Povratnici iz inostranstva</span>', (string) $this->get($adresa)->getContent());
+        $this->assertStringContainsString('Za magistre', $spisak);
+        $this->assertStringContainsString('Za magistre', $strana);
+        foreach ([$spisak, $strana] as $tekst) {
+            $this->assertStringNotContainsString('Kome je namenjeno', $tekst);
+            $this->assertStringNotContainsString('Master i doktorski studenti', $tekst);
         }
+        $this->assertSame('Master i doktorski studenti, Povratnici iz inostranstva', PrikazPrilike::grupe($prilika));
     }
 
-    // Ogledalo: prilika bez grupa ne piše ništa o grupama ni na kartici ni na strani.
     #[Test]
     public function sajt_bez_grupa_ne_pise_nista_o_grupama(): void
     {

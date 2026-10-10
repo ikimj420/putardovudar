@@ -11,16 +11,10 @@ final class PrikazPrilike
 {
     public const NEMA_PRILIKA = 'Trenutno nema otvorenih prilika.';
 
-    // Kad izabrana vrsta i grupa nemaju zajedničku priliku, a prilike inače ima; predlog je u PITANJA-39-45.md.
-    public const NEMA_PRILIKA_ZA_IZBOR = 'Nema otvorenih prilika za ovaj izbor.';
-
     public const SVE_PRILIKE = 'Sve prilike';
 
     // Naziv grupe dugmadi za filter, čita ga čitač ekrana; predlog je u PITANJA-26-38.md.
     public const FILTERI = 'Brzi filteri';
-
-    // Natpis reda dugmadi sa grupama na spisku; tekst je iz paketa 42.
-    public const JA_SAM = 'Ja sam…';
 
     public const NEMA_STRANE = 'Ta strana ne postoji ili prilika više nije otvorena.';
 
@@ -58,10 +52,10 @@ final class PrikazPrilike
         return $prilika->rok === null ? self::BEZ_ROKA : 'Rok: '.Prikaz::datum($prilika->rok);
     }
 
-    // Adresa spiska sa izabranom vrstom i/ili grupom; bez ijedne je običan spisak. Vrsta ide pre grupe, uvek istim redom.
-    public static function adresaSpiska(?VrstaPrilike $vrsta = null, ?Grupa $grupa = null): string
+    // Adresa spiska sa izabranom vrstom; bez nje je običan spisak. Grupe se na sajtu ne biraju (paket 54).
+    public static function adresaSpiska(?VrstaPrilike $vrsta = null): string
     {
-        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value, 'grupa' => $grupa?->value]));
+        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value]));
     }
 
     // Nazivi grupa jednim redom, ili null kad nema nijedne (tada se ništa ne piše); isto za priliku i za stavku kalendara.
