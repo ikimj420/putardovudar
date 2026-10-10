@@ -28,13 +28,20 @@ class JavnePrilikeController extends Controller
         $upisano = $zahtev->query('q');
         $pretraga = is_string($upisano) ? trim(mb_substr($upisano, 0, Prilika::NAJVISE_ZNAKOVA_U_PRETRAZI)) : '';
 
+        // „Zatvara se uskoro" (paket 61): uključeno samo za ?uskoro=1, pa ide zajedno sa vrstom i pretragom; sve drugo je isključeno.
+        $uskoro = $zahtev->query('uskoro') === '1';
+
         $prilike = Prilika::javne()
             ->when($izabrana, fn ($upit, VrstaPrilike $vrsta) => $upit->where('vrsta', $vrsta))
+            ->when($uskoro, fn ($upit) => $upit->rokUskoro())
             ->pretraga($pretraga)
             ->poRoku()
             ->get();
 
-        return view('javno.spisak', ['prilike' => $prilike, 'vrste' => $vrste, 'izabrana' => $izabrana, 'pretraga' => $pretraga]);
+        // Izbor postoji samo kad vodi do nečega (kao dugme vrste), a uključen ostaje vidljiv da se može isključiti.
+        $imaUskoro = $uskoro || Prilika::javne()->rokUskoro()->exists();
+
+        return view('javno.spisak', ['prilike' => $prilike, 'vrste' => $vrste, 'izabrana' => $izabrana, 'pretraga' => $pretraga, 'uskoro' => $uskoro, 'imaUskoro' => $imaUskoro]);
     }
 
     // Nejavna prilika je za posetioca isto što i nepostojeća: 404, jer bi 403 potvrdio da zapis postoji.
