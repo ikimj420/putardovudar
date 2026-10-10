@@ -10,4 +10,7 @@ final class PrikazZaglavlja
 
     // Naziv putanje (ime sajta / odeljak / naslov) iznad naslova strane; čita ga čitač ekrana.
     public const PUTANJA = 'Putanja';
+
+    // Ispod imena sajta (paket 57, tekst iz paketa).
+    public const SLOGAN = 'Otvorena vrata';
 }

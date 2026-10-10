@@ -33,7 +33,7 @@ class JavnoZaglavljeTest extends BazaTestCase
             $nazivi = array_map(fn (array $veza) => trim((string) preg_replace('/\s+/', ' ', strip_tags($veza[3]))), $veze);
 
             // Ime sajta (u dva reda, pa u dva dela) vodi na početnu, pa meni tim redom, svaka veza tačno jednom.
-            $this->assertSame(['Putardo Vudar', 'Prilike', 'Vodiči', 'Organizacije', 'Kalendar', 'Pomoćnik'], $nazivi, $adresa);
+            $this->assertSame(['Putardo Vudar Otvorena vrata', 'Prilike', 'Vodiči', 'Organizacije', 'Kalendar', 'Pomoćnik'], $nazivi, $adresa);
             $this->assertSame([route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
             $this->assertStringContainsString('class="logo"', $veze[0][1]);
             $this->assertStringContainsString('class="asistent"', $veze[5][1]);
