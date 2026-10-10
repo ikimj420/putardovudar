@@ -24,12 +24,17 @@ class JavnePrilikeController extends Controller
 
         // Grupe se na sajtu ne biraju (paket 54): ?grupa= iz starih veza se ne čita, pa daje isto što i adresa bez njega.
 
+        // Pretraga (paket 57): jedno polje, po naslovu i kratkom opisu, zajedno sa izabranom vrstom; predugačak upit se skraćuje.
+        $upisano = $zahtev->query('q');
+        $pretraga = is_string($upisano) ? trim(mb_substr($upisano, 0, Prilika::NAJVISE_ZNAKOVA_U_PRETRAZI)) : '';
+
         $prilike = Prilika::javne()
             ->when($izabrana, fn ($upit, VrstaPrilike $vrsta) => $upit->where('vrsta', $vrsta))
+            ->pretraga($pretraga)
             ->poRoku()
             ->get();
 
-        return view('javno.spisak', ['prilike' => $prilike, 'vrste' => $vrste, 'izabrana' => $izabrana]);
+        return view('javno.spisak', ['prilike' => $prilike, 'vrste' => $vrste, 'izabrana' => $izabrana, 'pretraga' => $pretraga]);
     }
 
     // Nejavna prilika je za posetioca isto što i nepostojeća: 404, jer bi 403 potvrdio da zapis postoji.

@@ -154,11 +154,14 @@ class GrupeSeNeVidePoSajtuTest extends BazaTestCase
     }
 
     #[Test]
-    public function adresa_spiska_ima_samo_vrstu_a_bez_nje_je_obican_spisak(): void
+    public function adresa_spiska_ima_vrstu_i_pretragu_ali_ne_grupu_a_bez_njih_je_obican_spisak(): void
     {
         $this->assertSame(route('prilike.index'), PrikazPrilike::adresaSpiska());
         $this->assertSame(route('prilike.index', ['vrsta' => 'posao']), PrikazPrilike::adresaSpiska(VrstaPrilike::Posao));
-        $this->assertSame([], (new \ReflectionMethod(PrikazPrilike::class, 'adresaSpiska'))->getNumberOfParameters() > 1 ? ['prima grupu'] : []);
+        $this->assertSame(route('prilike.index', ['q' => 'niš']), PrikazPrilike::adresaSpiska(null, 'niš'));
+        $this->assertSame(route('prilike.index', ['vrsta' => 'posao', 'q' => 'niš']), PrikazPrilike::adresaSpiska(VrstaPrilike::Posao, 'niš'));
+        // Grupe se na sajtu ne biraju: ni vrsta ni pretraga nisu grupa, a drugih parametara nema.
+        $this->assertSame(['vrsta', 'upit'], array_map(fn (\ReflectionParameter $parametar) => $parametar->getName(), (new \ReflectionMethod(PrikazPrilike::class, 'adresaSpiska'))->getParameters()));
     }
 
     // Stil za red „Ja sam…" i za pilulu sa grupama više ne postoji (ostao bi mrtav, bez ijedne greške u ispisu).

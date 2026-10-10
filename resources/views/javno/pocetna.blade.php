@@ -37,6 +37,7 @@
             <a class="dugme dugme-glavno" href="{{ route('prilike.index') }}">{{ \App\Support\PrikazPocetne::PRILIKE_DUGME }}</a>
             <a class="dugme dugme-staklo" href="{{ route('pomocnik.index') }}" data-pomocnik-otvori aria-controls="pomocnik-prozor">{{ \App\Support\PrikazPomocnika::PITAJ_VUDAR }}</a>
         </div>
+        @include('javno.pretraga')
     </div>
 @endsection
 

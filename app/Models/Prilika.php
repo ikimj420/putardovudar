@@ -6,6 +6,7 @@ use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
+use App\Support\PoredjenjeTeksta;
 use Database\Factories\PrilikaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -100,6 +101,10 @@ class Prilika extends Model
 
     // Jedino mesto gde se odlučuje da li je rok prošao: ima rok, prijave nisu stalno otvorene, a rok je pre današnjeg dana
     // (rok „danas" nije prošao). „Danas" je po zoni aplikacije (Europe/Belgrade). Javne prilike i oznaka u adminu pitaju ovde.
+    public const NAJVISE_ZNAKOVA_U_PRETRAZI = 100;
+
+    private const NAJVISE_RECI_U_PRETRAZI = 8;
+
     private const ROK_PROSAO = 'prilike.rok_stalno_otvoren = 0 and prilike.rok is not null and prilike.rok < ?';
 
     /** @param  Builder<Prilika>  $upit */
@@ -145,6 +150,25 @@ class Prilika extends Model
     protected function poRoku(Builder $upit): void
     {
         $upit->orderByRaw('rok IS NULL OR rok_stalno_otvoren')->orderBy('rok')->orderBy('id');
+    }
+
+    // Pretraga sajta (paket 57): svaka reč iz upita mora da stoji u naslovu ili kratkom opisu. Reči se porede bez dijakritika i velikih slova (kolacija baze),
+    // po početku reči (padeži: „Nišu" nalazi „Niš"), a reči od jednog slova se ne računaju; upit bez ijedne reči ne sužava ništa.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function pretraga(Builder $upit, ?string $tekst): void
+    {
+        foreach (self::reciZaPretragu($tekst) as $rec) {
+            $upit->where(fn (Builder $uslov) => $uslov->where('naslov', 'like', '%'.$rec.'%')->orWhere('kratak_opis', 'like', '%'.$rec.'%'));
+        }
+    }
+
+    /** @return list<string> normalizovane reči (samo slova i cifre, pa nema džokera za LIKE), najviše osam */
+    public static function reciZaPretragu(?string $tekst): array
+    {
+        $reci = array_filter(explode(' ', PoredjenjeTeksta::normalizuj((string) $tekst)), fn (string $rec) => strlen($rec) >= 2);
+
+        return array_slice(array_values(array_unique(array_map(PoredjenjeTeksta::stablo(...), $reci))), 0, self::NAJVISE_RECI_U_PRETRAZI);
     }
 
     // Vrste koje imaju bar jednu javnu priliku, redom kojim su nabrojane u VrstaPrilike; dugme i oznaka postoje samo za njih.

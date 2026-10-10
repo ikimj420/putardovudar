@@ -11,6 +11,15 @@ final class PrikazPrilike
 {
     public const NEMA_PRILIKA = 'Trenutno nema otvorenih prilika.';
 
+    // Pretraga (paket 57): tekstovi su iz predloga izgleda; Ivan odobrava (PITANJA-57.md).
+    public const PRETRAGA_NAZIV = 'Pretraga';
+
+    public const PRETRAGA_PRIMER = 'Šta tražiš? Npr. stipendija, posao u Nišu…';
+
+    public const PRETRAGA_DUGME = 'Traži';
+
+    public const NEMA_REZULTATA = 'Nema prilika za tu pretragu.';
+
     // Nazivi vrsta u množini, za natpis iznad naslova na početnoj (paket 57); „Drugo" nema množinu, pa se tamo ne piše.
     public const VRSTE_U_MNOZINI = [
         'posao' => 'Poslovi', 'praksa' => 'Prakse', 'stipendija' => 'Stipendije', 'konkurs' => 'Konkursi', 'obuka' => 'Obuke',
@@ -80,10 +89,10 @@ final class PrikazPrilike
         };
     }
 
-    // Adresa spiska sa izabranom vrstom; bez nje je običan spisak. Grupe se na sajtu ne biraju (paket 54).
-    public static function adresaSpiska(?VrstaPrilike $vrsta = null): string
+    // Adresa spiska sa izabranom vrstom i upisanom pretragom; bez njih je običan spisak. Grupe se na sajtu ne biraju (paket 54).
+    public static function adresaSpiska(?VrstaPrilike $vrsta = null, ?string $upit = null): string
     {
-        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value]));
+        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value, 'q' => $upit]));
     }
 
     // Nazivi grupa jednim redom, ili null kad nema nijedne (tada se ništa ne piše); isto za priliku i za stavku kalendara.
