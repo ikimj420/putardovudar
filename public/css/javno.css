@@ -896,3 +896,103 @@ h1.prazno {
     min-width: 150px;
   }
 }
+
+/* Štampa prilike, vodiča i organizacije: samo sadržaj, crno na belom; bez zaglavlja, putanje i dugmadi, a veze ispisane kao adresa.
+   Pozadine se ne štampaju, pa brojevi koraka i tačke dobijaju okvir umesto boje. */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 12pt;
+  }
+
+  .zaglavlje,
+  .mrvice,
+  .deljenje,
+  .dugme-red,
+  .dugme-veza {
+    display: none;
+  }
+
+  .naslovna-traka {
+    padding: 0 0 12pt;
+    background: none;
+    border-bottom: 1px solid #000;
+  }
+
+  .naslovna-traka h1 {
+    font-size: 26pt;
+    letter-spacing: normal;
+  }
+
+  .sadrzaj {
+    padding-top: 12pt;
+    padding-bottom: 0;
+  }
+
+  .ploca,
+  .izvor,
+  .izvor-upozorenje,
+  .koraci li,
+  .usluge li,
+  .oznake .oznaka,
+  .oznake .meta-stavka {
+    background: none;
+    border: 1px solid #666;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .ploca h2 {
+    font-size: 18pt;
+    letter-spacing: normal;
+  }
+
+  .ploca,
+  .izvor {
+    padding: 12pt;
+  }
+
+  .koraci li,
+  .usluge li {
+    min-height: 0;
+    padding: 8pt 8pt 8pt 44px;
+  }
+
+  .koraci li::before {
+    top: 7pt;
+    background: none;
+    border: 1px solid #000;
+    color: #000;
+  }
+
+  .usluge li {
+    padding-left: 52px;
+  }
+
+  .usluge li::before {
+    top: 11pt;
+    background: none;
+    border: 3px solid #000;
+  }
+
+  a,
+  .izvor a {
+    color: #000;
+  }
+
+  .sadrzaj-opis,
+  .naslovna-traka .kratko {
+    color: #000;
+  }
+
+  main a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-weight: 400;
+    overflow-wrap: anywhere;
+  }
+}
