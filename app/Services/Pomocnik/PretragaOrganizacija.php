@@ -20,7 +20,7 @@ final class PretragaOrganizacija
     /** @return Collection<int, Organizacija> */
     public function pronadji(Formular $formular): Collection
     {
-        $reci = new OpsteReci($formular->kljucneReci);
+        $reci = new OpsteReci($formular->reciZa(OpsteReci::ORGANIZACIJA));
 
         if ($reci->jeSamoOpste()) {
             if (! $reci->sadrzi(OpsteReci::ORGANIZACIJA)) {

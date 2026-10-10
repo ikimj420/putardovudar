@@ -19,7 +19,7 @@ final class PretragaVodica
     /** @return Collection<int, Vodic> */
     public function pronadji(Formular $formular): Collection
     {
-        $reci = new OpsteReci($formular->kljucneReci);
+        $reci = new OpsteReci($formular->reciZa(OpsteReci::VODIC));
 
         if ($reci->jeSamoOpste()) {
             return $reci->sadrzi(OpsteReci::VODIC) ? Vodic::javni()->orderBy('naslov')->limit(self::NAJVISE_U_SPISKU)->get() : new Collection;

@@ -17,6 +17,20 @@ final class PretragaPrilika
     /** @return Collection<int, Prilika> */
     public function pronadji(Formular $formular): Collection
     {
+        $rezultat = $this->trazi($formular);
+
+        // Vrsta koju je model samo pogodio („radionica" kao „obuka") ne sme da sakrije priliku: bez nje se traži tek kad
+        // sa njom nema ničega (a bez ijednog drugog uslova ne traži se ništa). Izrečena vrsta („stipendija u Kragujevcu") je uvek tvrda.
+        if ($rezultat->isEmpty() && $formular->vrsta !== null && ! $formular->vrstaJePomenuta) {
+            return $this->trazi(new Formular(null, $formular->grad, $formular->kome, $formular->kljucneReci));
+        }
+
+        return $rezultat;
+    }
+
+    /** @return Collection<int, Prilika> */
+    private function trazi(Formular $formular): Collection
+    {
         if ($formular->jePrazan()) {
             return new Collection;
         }

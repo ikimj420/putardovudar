@@ -44,8 +44,16 @@ TEXT;
         $grad = $this->grad($forma['grad'] ?? null, $pitanjeNormalizovano);
         $kome = $this->rec($forma['kome'] ?? null, $pitanjeNormalizovano);
         $reci = $this->kljucneReci($forma['kljucne_reci'] ?? null, $pitanjeNormalizovano, [$vrsta?->value, $vrsta?->getLabel(), $grad, $kome]);
+        $sveReci = $this->kljucneReci($forma['kljucne_reci'] ?? null, $pitanjeNormalizovano, [$grad]);
 
-        return new Formular($vrsta, $grad, $kome, $reci);
+        return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano));
+    }
+
+    // Vrsta je izrečena samo kad pitanje kaže njen naziv (u bilo kom padežu). Inače je model nagađa („radionica" je „obuka"),
+    // pa se ne sme tvrdo primenjivati. „Drugo" je ostatak i nikad nije izrečeno.
+    private function vrstaJePomenuta(?VrstaPrilike $vrsta, string $pitanjeNormalizovano): bool
+    {
+        return $vrsta !== null && $vrsta !== VrstaPrilike::Drugo && PoredjenjeTeksta::sadrziIzraz($pitanjeNormalizovano, PoredjenjeTeksta::normalizuj($vrsta->getLabel()));
     }
 
     // Grad mora da se pominje u pitanju (u bilo kom padežu). Ako postoji u objavljenim prilikama, uzima se kako piše u bazi;
