@@ -79,9 +79,10 @@ class AdminJeNaSrpskomLatinicomTest extends AdminBazaTestCase
         $tekst = $this->vidljivTekst($this->strane()['spisak']);
 
         $this->assertStringContainsString('Preskoči na sadržaj', $tekst);
-        // Natpis pretrage i broj rezultata nisu više jedan do drugog: između njih je sada izbor statusa (paket 36).
-        $this->assertStringContainsString('Pretraga', $tekst);
-        $this->assertStringContainsString('1 rezultat', $tekst);
+        // Natpis pretrage i broj rezultata nisu više jedan do drugog: između njih je izbor statusa (paket 36). Broj rezultata
+        // stoji ispred prve kartice („Primer"), pa to nije tekst paginacije („Prikazan je 1 rezultat"), koji dolazi posle kartica.
+        $this->assertMatchesRegularExpression('/Pretraga .*Primeni filter 1 rezultat Primer/u', $tekst);
+        $this->assertStringContainsString('Prikazan je 1 rezultat', $tekst);
         $this->assertStringNotContainsString('Skip to content', $tekst);
         $this->assertStringNotContainsString('1 result', $tekst);
     }

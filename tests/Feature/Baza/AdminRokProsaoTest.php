@@ -3,6 +3,7 @@
 namespace Tests\Feature\Baza;
 
 use App\Enums\StatusPrilike;
+use App\Enums\VrstaPrilike;
 use App\Filament\Resources\Prilike\Pages\ListPrilike;
 use App\Models\Prilika;
 use App\Models\User;
@@ -191,14 +192,19 @@ class AdminRokProsaoTest extends AdminBazaTestCase
         return $upita;
     }
 
+    // Vrsta je pod svojim imenom, a ne nasumična iz fabrike: crvena je samo oznaka roka.
     #[Test]
     public function oznaka_je_crvena_a_status_i_vrsta_to_nisu(): void
     {
-        $this->prilika('2026-10-09', false, StatusPrilike::Nacrt);
+        Prilika::factory()->create(['naslov' => 'Za boju', 'vrsta' => VrstaPrilike::Posao, 'status' => StatusPrilike::Nacrt, 'rok' => '2026-10-09', 'rok_stalno_otvoren' => false]);
 
         $html = Livewire::test(ListPrilike::class)->html();
 
         $this->assertMatchesRegularExpression('/fi-color-danger[^>]*>\s*(?:<[^>]+>\s*)*Rok prošao/s', $html);
         $this->assertDoesNotMatchRegularExpression('/fi-color-danger[^>]*>\s*(?:<[^>]+>\s*)*Nacrt/s', $html);
+        $this->assertDoesNotMatchRegularExpression('/fi-color-danger[^>]*>\s*(?:<[^>]+>\s*)*'.preg_quote(VrstaPrilike::Posao->getLabel(), '/').'/s', $html);
+        // Ogledalo: obe oznake su na kartici, pa pretraga nije prošla nad praznim.
+        $this->assertStringContainsString('Nacrt', strip_tags($html));
+        $this->assertStringContainsString(VrstaPrilike::Posao->getLabel(), strip_tags($html));
     }
 }
