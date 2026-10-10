@@ -48,6 +48,16 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
         foreach ($adrese as $ime => $adresa) {
             $html = $this->get($adresa)->assertOk()->getContent();
 
+            // Početna ima svoj naslovni deo (hero): jedan naslov, bez putanje (od paketa 57).
+            if ($ime === 'početna') {
+                $this->assertSame(1, preg_match('#<section class="hero zrno">(.*?)</section>#s', $html, $hero), $ime);
+                $this->assertSame(1, substr_count($hero[1], '<h1>'), $ime);
+                $this->assertSame(1, substr_count($html, '<h1>'), $ime);
+                $this->assertStringNotContainsString('class="mrvice"', $html, $ime);
+
+                continue;
+            }
+
             $this->assertSame(1, preg_match('#<section class="naslovna-traka">(.*?)</section>\s*<div class="sirina sadrzaj">#s', $html, $traka), $ime);
             $this->assertSame(1, substr_count($traka[1], '<h1>'), $ime);
             $this->assertSame(1, substr_count($html, '<h1>'), $ime);
@@ -57,6 +67,7 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
         }
 
         $this->assertCount(8, $adrese);
+        $this->assertArrayHasKey('početna', $adrese);
     }
 
     // Ogledalo: strana „ne postoji" nema naslovnu traku, jer nema naslov ni putanju.
@@ -188,6 +199,6 @@ class IzgledStranaPoPrototipuTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\.oznaka \{[^}]*border-radius: 999px;[^}]*background: var\(--pesak\);/s', $stil);
         $this->assertMatchesRegularExpression('/\.pitanje button \{[^}]*border-radius: 999px;[^}]*background: var\(--button-dark-bg\);[^}]*color: var\(--button-dark-text\);/s', $stil);
         $this->assertMatchesRegularExpression('/\n\.kartica \{[^}]*border-radius: var\(--radius\);[^}]*box-shadow: var\(--shadow\);/s', $stil);
-        $this->assertMatchesRegularExpression('/\.naslovna-traka \{[^}]*radial-gradient\(90% 70% at 14% -10%[^}]*var\(--noc\);/s', $stil);
+        $this->assertMatchesRegularExpression('/\.naslovna-traka,\s*\.hero \{[^}]*radial-gradient\(90% 70% at 14% -10%[^}]*var\(--noc\);/s', $stil);
     }
 }

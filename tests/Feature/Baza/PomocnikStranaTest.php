@@ -96,7 +96,8 @@ class PomocnikStranaTest extends BazaTestCase
                 ? '<a class="asistent" href="'.$adresaPomocnika.'">'.PrikazPomocnika::NASLOV.'</a>'
                 : '<a class="asistent" href="'.$adresaPomocnika.'" data-pomocnik-otvori aria-controls="pomocnik-prozor">'.PrikazPomocnika::NASLOV.'</a>';
             $this->assertStringContainsString($ocekivano, $zaglavlje[1] ?? '', $adresa);
-            $this->assertSame($naStraniPomocnika ? 0 : 1, substr_count($telo, 'href="'.$adresaPomocnika.'"'), $adresa);
+            // Na početnoj je u telu i dugme naslovnog dela (paket 57) koje otvara isti prozor; ostalo je samo plutajuće dugme.
+            $this->assertSame($naStraniPomocnika ? 0 : ($adresa === route('pocetna') ? 2 : 1), substr_count($telo, 'href="'.$adresaPomocnika.'"'), $adresa);
             $this->assertSame($naStraniPomocnika ? 0 : 1, substr_count($telo, '<a class="plutajuci-dugme" href="'.$adresaPomocnika.'"'), $adresa);
         }
     }

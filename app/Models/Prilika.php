@@ -139,6 +139,23 @@ class Prilika extends Model
         $upit->where('status', StatusPrilike::Objavljeno)->rokNijeProsao();
     }
 
+    // Najbliži rok prvo; bez roka i stalno otvorene na kraju, jer im rok ne važi. Spisak i početna se slažu isto.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function poRoku(Builder $upit): void
+    {
+        $upit->orderByRaw('rok IS NULL OR rok_stalno_otvoren')->orderBy('rok')->orderBy('id');
+    }
+
+    // Vrste koje imaju bar jednu javnu priliku, redom kojim su nabrojane u VrstaPrilike; dugme i oznaka postoje samo za njih.
+    /** @return list<VrstaPrilike> */
+    public static function vrsteSaJavnimPrilikama(): array
+    {
+        $postojece = self::query()->javne()->distinct()->pluck('vrsta');
+
+        return array_values(array_filter(VrstaPrilike::cases(), fn (VrstaPrilike $vrsta) => $postojece->contains($vrsta)));
+    }
+
     // Jedino mesto gde se odlučuje šta je nacrt za pregled; admin pita ovde.
     /** @param  Builder<Prilika>  $upit */
     #[Scope]

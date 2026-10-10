@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ asset('css/javno.css') }}?v={{ filemtime(public_path('css/javno.css')) }}">
     <script src="{{ asset('js/javno.js') }}?v={{ filemtime(public_path('js/javno.js')) }}"></script>
 </head>
-{!! View::hasSection('traka') ? '<body class="ima-traku">' : '<body>' !!}
+{!! View::hasSection('traka') || View::hasSection('hero') ? '<body class="ima-traku">' : '<body>' !!}
     <div class="linija" aria-hidden="true"></div>
     <header class="zaglavlje">
         <nav class="zaglavlje-red" aria-label="Glavni meni">
@@ -36,6 +36,12 @@
         </nav>
     </header>
     <main>
+        {{-- Početna ima svoj naslovni deo (hero), ostale strane naslovnu traku. --}}
+        @hasSection('hero')
+            <section class="hero zrno">
+                @yield('hero')
+            </section>
+        @endif
         @hasSection('traka')
             <section class="naslovna-traka">
                 <div class="sirina">

@@ -21,11 +21,12 @@ class ZaglavljeStaklenaPilulaTest extends BazaTestCase
     {
         $prilika = Prilika::factory()->objavljena()->create();
 
-        foreach ([route('pocetna'), route('prilike.index'), route('prilike.show', $prilika->slug), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')] as $adresa) {
+        foreach ([route('pocetna') => '<section class="hero zrno">', route('prilike.index') => '<section class="naslovna-traka">', route('prilike.show', $prilika->slug) => '<section class="naslovna-traka">', route('vodici.index') => '<section class="naslovna-traka">', route('organizacije.index') => '<section class="naslovna-traka">', route('kalendar.index') => '<section class="naslovna-traka">', route('pomocnik.index') => '<section class="naslovna-traka">'] as $adresa => $naslovniDeo) {
             $html = $this->get($adresa)->assertOk()->getContent();
 
+            // Početna ima svoj naslovni deo (hero), ostale strane naslovnu traku; obe su pod providnim zaglavljem.
             $this->assertStringContainsString('<body class="ima-traku">', $html, $adresa);
-            $this->assertStringContainsString('<section class="naslovna-traka">', $html, $adresa);
+            $this->assertStringContainsString($naslovniDeo, $html, $adresa);
             $this->assertSame(1, substr_count($html, '<div class="linija" aria-hidden="true"></div>'), $adresa);
             $this->assertLessThan(strpos($html, '<header class="zaglavlje">'), strpos($html, '<div class="linija" aria-hidden="true"></div>'), $adresa);
         }
@@ -101,6 +102,6 @@ class ZaglavljeStaklenaPilulaTest extends BazaTestCase
 
         // 12 px od vrha, 58 px visine (56 + obrub); naslovni deo je povučen pod zaglavlje za 70 px.
         $this->assertGreaterThanOrEqual(12 + 58 + 16, (int) ($osnovno[1] ?? 0));
-        $this->assertMatchesRegularExpression('/\n\.naslovna-traka \{[^}]*margin-top: -70px;/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.naslovna-traka,\n\.hero \{[^}]*margin-top: -70px;/', $stil);
     }
 }

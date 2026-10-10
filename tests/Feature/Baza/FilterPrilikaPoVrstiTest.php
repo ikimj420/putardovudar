@@ -190,16 +190,23 @@ class FilterPrilikaPoVrstiTest extends BazaTestCase
         $this->assertCount(count(VrstaPrilike::cases()), $this->naslovi($html));
     }
 
-    // Filter radi i na početnoj strani, jer je to isti spisak; dugmad vode na /prilike.
+    // Od paketa 57 početna nije spisak sa filterom: pokazuje najbliže prilike i ne čita ?vrsta= (daje iste kartice kao bez njega), a filter živi na /prilike.
     #[Test]
-    public function pocetna_strana_ima_isti_filter(): void
+    public function pocetna_strana_nema_filter_a_vrsta_u_adresi_se_na_njoj_ne_cita(): void
     {
         $this->sveVrste();
 
-        $html = $this->get(route('pocetna', ['vrsta' => 'obuka']))->assertOk()->getContent();
+        $bez = $this->get(route('pocetna'))->assertOk()->getContent();
+        $sa = $this->get(route('pocetna', ['vrsta' => 'obuka']))->assertOk()->getContent();
 
-        $this->assertSame(['Prilika obuka'], $this->naslovi($html));
-        $this->assertStringContainsString('href="'.route('prilike.index', ['vrsta' => 'posao']).'"', $html);
+        $this->assertCount(count(VrstaPrilike::cases()), $this->naslovi($bez));
+        $this->assertSame($this->naslovi($bez), $this->naslovi($sa));
+        $this->assertStringNotContainsString('class="filteri"', $bez);
+        $this->assertStringNotContainsString('href="'.route('prilike.index', ['vrsta' => 'posao']).'"', $bez);
+        // Ogledalo: filter na /prilike postoji i radi.
+        $spisak = $this->get(route('prilike.index', ['vrsta' => 'obuka']))->assertOk()->getContent();
+        $this->assertSame(['Prilika obuka'], $this->naslovi($spisak));
+        $this->assertStringContainsString('href="'.route('prilike.index', ['vrsta' => 'posao']).'"', $spisak);
     }
 
     // Redosled po roku ostaje i unutar vrste: najbliži rok prvi, stalno otvorene na kraju.

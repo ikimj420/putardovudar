@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\JavnaPocetnaController;
 use App\Http\Controllers\JavneOrganizacijeController;
 use App\Http\Controllers\JavnePrilikeController;
 use App\Http\Controllers\JavniKalendarController;
@@ -8,7 +9,7 @@ use App\Http\Controllers\PomocnikController;
 use App\Http\Controllers\PomocnikSablonController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [JavnePrilikeController::class, 'index'])->name('pocetna');
+Route::get('/', [JavnaPocetnaController::class, 'index'])->name('pocetna');
 Route::get('/prilike', [JavnePrilikeController::class, 'index'])->name('prilike.index');
 Route::get('/prilike/{slug}', [JavnePrilikeController::class, 'show'])->name('prilike.show');
 Route::get('/prilike/{slug}/rok.ics', [JavnePrilikeController::class, 'rok'])->name('prilike.rok');

@@ -32,6 +32,9 @@ final class PrikazPomocnika
 
     public const TRAZIM = 'Tražim odgovor…';
 
+    // Ime i dugme (Ivan, 10.10.2026., paket 57/T9): dugme na početnoj i dole desno, naslov prozora i strane „Vudar pomoćnik" (kao na starom sajtu).
+    public const PITAJ_VUDAR = 'Pitaj Vudar pomoćnika';
+
     // „Napiši moj" (paket 56): pomoćnik piše tekst po šablonu iz onoga što čovek upiše; tekstovi su predlog, Ivan odobrava (PITANJA-55-56.md).
     public const NAPISI_MOJ = 'Napiši moj';
 

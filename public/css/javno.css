@@ -48,6 +48,11 @@
   /* Okvir polja mora da se razlikuje od pozadine bar 3 : 1 (WCAG 1.4.11). */
   --input-border: #7b7488;
 
+  /* Sjajevi u naslovnom delu: levo gore, desno gore (boja strane, vidi „Svaka strana ima svoju boju") i dole. */
+  --sjaj-1: rgba(168, 95, 242, 0.45);
+  --sjaj-2: rgba(240, 153, 76, 0.28);
+  --sjaj-3: rgba(137, 31, 93, 0.75);
+
   --font-tekst: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-naslov: "Plus Jakarta Sans", Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -108,7 +113,8 @@ html {
     scroll-padding-top: 190px;
   }
 
-  html:not(.js) .naslovna-traka {
+  html:not(.js) .naslovna-traka,
+  html:not(.js) .hero {
     margin-top: 0;
     padding-top: 42px;
   }
@@ -418,17 +424,32 @@ html {
   order: 4;
 }
 
-.naslovna-traka {
+.naslovna-traka,
+.hero {
   position: relative;
   overflow: hidden;
   margin-top: -70px;
-  padding: 112px 0 34px;
   color: #fff;
   background:
-    radial-gradient(90% 70% at 14% -10%, rgba(168, 95, 242, 0.45), transparent 60%),
-    radial-gradient(80% 80% at 95% 0%, rgba(240, 153, 76, 0.28), transparent 58%),
-    radial-gradient(120% 100% at 80% 115%, rgba(137, 31, 93, 0.75), transparent 62%),
+    radial-gradient(90% 70% at 14% -10%, var(--sjaj-1), transparent 60%),
+    radial-gradient(80% 80% at 95% 0%, var(--sjaj-2), transparent 58%),
+    radial-gradient(120% 100% at 80% 115%, var(--sjaj-3), transparent 62%),
     var(--noc);
+}
+
+.naslovna-traka {
+  padding: 112px 0 34px;
+}
+
+/* Fino zrno preko naslovnog dela početne (slika je lokalni fajl). */
+.zrno::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("../img/zrno.svg");
+  mix-blend-mode: overlay;
+  opacity: 0.1;
+  pointer-events: none;
 }
 
 .naslovna-traka :focus-visible {
@@ -458,6 +479,133 @@ html {
 
 .mrvice a:hover {
   text-decoration: underline;
+}
+
+.hero {
+  padding: 112px 0 56px;
+}
+
+.hero .vrata {
+  position: absolute;
+  right: -20px;
+  bottom: 10px;
+  width: 190px;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.tacka {
+  stroke: none;
+}
+
+.tacka[data-vrsta="posao"] {
+  fill: var(--narandzasta);
+}
+
+.tacka[data-vrsta="stipendija"] {
+  fill: var(--bobica);
+}
+
+.tacka[data-vrsta="konkurs"] {
+  fill: var(--ljubicasta);
+}
+
+.tacka[data-vrsta="obuka"] {
+  fill: var(--zlato);
+}
+
+.tacka[data-vrsta="praksa"] {
+  fill: var(--lila);
+}
+
+.tacka[data-vrsta="drugo"] {
+  fill: var(--narandzasta-meka);
+}
+
+.hero-sadrzaj {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-natpis {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #f6c8a0;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.hero-natpis::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.hero h1 {
+  max-width: 13ch;
+  margin: 16px 0;
+  font-size: 44px;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(100deg, var(--lila), var(--narandzasta-meka) 70%, var(--zlato));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero p {
+  max-width: 38ch;
+  margin: 0 0 26px;
+  color: #dcd2ea;
+}
+
+.hero-dugmad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hero-vise {
+  margin-top: 22px;
+}
+
+/* Dugmad (paket 57): glavno je narandžasto u zlato sa tamnim slovima, jer bela na narandžastoj nema kontrast; stakleno stoji na tamnoj pozadini. */
+.dugme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  padding: 0 24px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dugme-glavno {
+  background: linear-gradient(135deg, var(--narandzasta) 0%, var(--narandzasta-meka) 55%, var(--zlato) 160%);
+  color: var(--noc);
+  box-shadow: 0 12px 30px -12px rgba(224, 114, 41, 0.7);
+}
+
+.dugme-staklo {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.35);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: #fff;
 }
 
 .naslovna-traka h1 {
@@ -892,6 +1040,10 @@ h1.prazno {
     padding: 136px 0 42px;
   }
 
+  .hero {
+    padding: 136px 0 72px;
+  }
+
   .naslovna-traka .kratko {
     font-size: 18px;
   }
@@ -907,6 +1059,23 @@ h1.prazno {
   .ploca,
   .izvor {
     padding: 26px;
+  }
+}
+
+@media (min-width: 900px) {
+  .hero {
+    padding: 170px 0 100px;
+  }
+
+  .hero h1 {
+    font-size: 80px;
+  }
+
+  .hero .vrata {
+    right: 120px;
+    bottom: 30px;
+    width: 380px;
+    opacity: 1;
   }
 }
 

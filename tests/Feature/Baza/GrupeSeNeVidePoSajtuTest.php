@@ -67,17 +67,17 @@ class GrupeSeNeVidePoSajtuTest extends BazaTestCase
         ];
     }
 
-    // Ni na spisku ni na početnoj nema reda „Ja sam…", ni natpisa, ni mesta za njega; red vrsta je tu (merilo nije prazno).
+    // Ni na spisku ni na početnoj nema reda „Ja sam…", ni natpisa, ni mesta za njega; na spisku je red vrsta (merilo nije prazno), a početna ima najviše šest kartica.
     #[Test]
     public function spisak_i_pocetna_nemaju_red_ja_sam_a_red_vrsta_ostaje(): void
     {
         $this->sveGrupe();
 
-        foreach ([route('prilike.index'), route('pocetna')] as $adresa) {
+        foreach ([route('prilike.index') => count(Grupa::cases()), route('pocetna') => 6] as $adresa => $kartica) {
             $html = $this->get($adresa)->assertOk()->getContent();
 
-            $this->assertSame(['Sve prilike', 'Posao'], $this->dugmad($html), $adresa);
-            $this->assertCount(count(Grupa::cases()), $this->naslovi($html), $adresa);
+            $this->assertSame($adresa === route('pocetna') ? [] : ['Sve prilike', 'Posao'], $this->dugmad($html), $adresa);
+            $this->assertCount($kartica, $this->naslovi($html), $adresa);
             foreach (['Ja sam', 'filteri grupe', 'ja-sam', 'filteri-naslov', 'adresa spiska'] as $trag) {
                 $this->assertStringNotContainsString($trag, $html, $adresa.': '.$trag);
             }
