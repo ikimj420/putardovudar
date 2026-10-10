@@ -14,6 +14,9 @@ final class Pomocnik
 {
     public const NEMAM_PODATAK = 'Nemam podatak.';
 
+    // Predlog teksta; Ivan odobrava (PITANJA-23-25.md).
+    public const NE_MOGU_DA_POMOGNEM = 'U tome ne mogu da pomognem.';
+
     public const SABLON_NASLOV = 'Našao sam sledeće prilike:';
 
     public const SABLON_NASLOV_VODICI = 'Našao sam sledeće vodiče:';
@@ -26,15 +29,16 @@ final class Pomocnik
         private readonly PretragaVodica $pretragaVodica,
         private readonly PisanjeOdgovora $pisanje,
         private readonly ProveraOdgovora $provera,
+        private readonly OpasnaPitanja $opasnaPitanja,
     ) {}
 
     /** @throws OllamaNedostupna */
     public function pretrazi(string $pitanje, ?int $vremeCekanja = null): RezultatPretrage
     {
-        $pitanje = mb_substr(trim(Latinica::izCirilice($pitanje)), 0, self::NAJVISE_ZNAKOVA_PITANJA);
+        $pitanje = $this->ocisti($pitanje);
 
-        // Prazno pitanje se ne šalje modelu: nema šta da se pita.
-        if ($pitanje === '') {
+        // Prazno pitanje se ne šalje modelu: nema šta da se pita. Opasno pitanje se ne šalje ni modelu ni pretrazi.
+        if ($pitanje === '' || $this->opasnaPitanja->jeOpasno($pitanje)) {
             return new RezultatPretrage(new Formular, new Collection, new Collection);
         }
 
@@ -52,6 +56,11 @@ final class Pomocnik
      */
     public function odgovori(string $pitanje): OdgovorPomocnika
     {
+        // Opasno pitanje dobija jednu rečenicu: bez modela, bez pretrage, bez izvora.
+        if ($this->opasnaPitanja->jeOpasno($this->ocisti($pitanje))) {
+            return new OdgovorPomocnika(self::NE_MOGU_DA_POMOGNEM, [], false, null, true);
+        }
+
         $ukupno = (int) config('pomocnik.ukupno_za_pitanje');
         $pocetak = now();
         $rezultat = $this->pretrazi($pitanje, intdiv($ukupno, 2));
@@ -82,6 +91,12 @@ final class Pomocnik
         return $razlog === null
             ? new OdgovorPomocnika($tekst, $izvori, false)
             : new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, $razlog);
+    }
+
+    // Isto što ide modelu: latinica, bez razmaka na krajevima, najviše 300 znakova.
+    private function ocisti(string $pitanje): string
+    {
+        return mb_substr(trim(Latinica::izCirilice($pitanje)), 0, self::NAJVISE_ZNAKOVA_PITANJA);
     }
 
     private function sablon(RezultatPretrage $rezultat): string
