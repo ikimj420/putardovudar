@@ -59,6 +59,17 @@ class PomocnikTemaTest extends BazaTestCase
         $this->assertSame(['Kako razumeti uslove konkursa'], $rezultat->vodici->pluck('naslov')->all());
     }
 
+    // Model ume da vrati i ceo izraz u jednoj ključnoj reči; predlog u njemu ne sme da sakrije vodič.
+    #[Test]
+    public function vodic_za_konkurse_kao_jedan_izraz_nalazi_isti_vodic(): void
+    {
+        $this->vodici();
+
+        $rezultat = $this->pitaj('Imate li vodič za konkurse?', ['vrsta' => 'konkurs', 'kljucne_reci' => ['vodič za konkurse']]);
+
+        $this->assertSame(['Kako razumeti uslove konkursa'], $rezultat->vodici->pluck('naslov')->all());
+    }
+
     // Ogledalo: bez reči „vodič" reč koja ponavlja vrstu i dalje ne sužava, pa „stipendiju" ne dovodi vodiče ni organizacije.
     #[Test]
     public function bez_reci_vodic_ponovljena_vrsta_ne_dovodi_vodice_ni_organizacije(): void

@@ -63,11 +63,35 @@ class OpsteReciTest extends TestCase
     {
         $reci = new OpsteReci(['vodič za CV', 'organizacije', 'vodiči', 'zapošljavanje']);
 
-        $this->assertSame(['za cv', 'organizacije', 'zaposljavanje'], $reci->izrazi(OpsteReci::VODIC));
-        $this->assertSame(['vodic za cv', 'vodici', 'zaposljavanje'], $reci->izrazi(OpsteReci::ORGANIZACIJA));
+        // Predlog „za" otpada iz izraza (pravilo od ispravke paketa 27), a ostale reči ostaju.
+        $this->assertSame(['cv', 'organizacije', 'zaposljavanje'], $reci->izrazi(OpsteReci::VODIC));
+        $this->assertSame(['vodic cv', 'vodici', 'zaposljavanje'], $reci->izrazi(OpsteReci::ORGANIZACIJA));
         // Ogledalo: reč koja samo počinje slično ostaje.
         $this->assertSame(['organizovanje', 'vodovod'], (new OpsteReci(['organizovanje', 'vodovod']))->izrazi(OpsteReci::ORGANIZACIJA));
         $this->assertSame(['organizovanje', 'vodovod'], (new OpsteReci(['organizovanje', 'vodovod']))->izrazi(OpsteReci::VODIC));
+    }
+
+    // Predlog nije tema: „vodič za konkurse" je „vodič" i „konkurse", a spisak predloga je ugovor i stoji ovde doslovno.
+    #[Test]
+    public function predlog_se_ne_racuna_kao_rec_ni_u_izrazu_ni_sam(): void
+    {
+        $predlozi = ['za', 'u', 'na', 'o', 'od', 'do', 'po', 'sa', 'uz', 'iz', 'kod', 'pri', 'oko', 'bez', 'preko'];
+        $this->assertSame(['konkurse'], (new OpsteReci(['vodič za konkurse']))->izrazi(OpsteReci::VODIC));
+        $this->assertSame(['stipendije'], (new OpsteReci(['organizacija za stipendije']))->izrazi(OpsteReci::ORGANIZACIJA));
+        $this->assertSame(['zaposljavanje'], (new OpsteReci(['organizacija', 'za zapošljavanje']))->izrazi(OpsteReci::ORGANIZACIJA));
+        $this->assertTrue((new OpsteReci(['vodiči za organizacije']))->jeSamoOpste());
+
+        foreach ($predlozi as $predlog) {
+            $this->assertSame(['cv'], (new OpsteReci(["vodič {$predlog} CV"]))->izrazi(OpsteReci::VODIC), $predlog);
+            $this->assertTrue((new OpsteReci(["vodič {$predlog} organizacije"]))->jeSamoOpste(), $predlog);
+            // Ogledalo: sam predlog nije ni opšta reč ni tema.
+            $this->assertFalse((new OpsteReci([$predlog]))->jeSamoOpste(), $predlog);
+            $this->assertSame([], (new OpsteReci([$predlog]))->izrazi(OpsteReci::VODIC), $predlog);
+        }
+
+        // Ogledalo: reč koja samo počinje kao predlog ostaje („zapošljavanje" počinje na „za").
+        $this->assertSame(['zaposljavanje'], (new OpsteReci(['zapošljavanje']))->izrazi(OpsteReci::VODIC));
+        $this->assertSame(['pozajmica'], (new OpsteReci(['pozajmica']))->izrazi(OpsteReci::VODIC));
     }
 
     #[Test]

@@ -12,6 +12,9 @@ final readonly class OpsteReci
 
     public const ORGANIZACIJA = 'organizacij';
 
+    // Predlog nije tema („vodič za konkurse" je „vodič" i „konkurse"): u pretrazi vodiča i organizacija ne računa se.
+    private const PREDLOZI = ['za', 'u', 'na', 'o', 'od', 'do', 'po', 'sa', 'uz', 'iz', 'kod', 'pri', 'oko', 'bez', 'preko'];
+
     /** @param  list<string>  $kljucneReci */
     public function __construct(private array $kljucneReci) {}
 
@@ -55,6 +58,6 @@ final readonly class OpsteReci
     /** @return list<string> */
     private function reci(string $izraz): array
     {
-        return array_values(array_filter(explode(' ', PoredjenjeTeksta::normalizuj($izraz)), fn (string $rec) => $rec !== ''));
+        return array_values(array_filter(explode(' ', PoredjenjeTeksta::normalizuj($izraz)), fn (string $rec) => $rec !== '' && ! in_array($rec, self::PREDLOZI, true)));
     }
 }
