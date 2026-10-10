@@ -423,6 +423,8 @@ h1.prazno {
 .meta-stavka {
   display: inline-flex;
   align-items: center;
+  /* Pilula je flex: razmak između teksta i veze (E-pošta: adresa) bez ovoga nestaje. */
+  gap: 0.3em;
   min-height: 34px;
   padding: 0 12px;
   border-radius: 999px;

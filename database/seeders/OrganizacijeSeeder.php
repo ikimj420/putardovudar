@@ -7,22 +7,29 @@ use App\Enums\VrstaOrganizacije;
 use App\Models\Organizacija;
 use Illuminate\Database\Seeder;
 
-// Sadržaj je iz Dokumentacija/NASLEDJE/podaci/OrganizationSeeder.php. Sve organizacije ulaze kao nacrt, a slug koji već
-// postoji se ne dira. Ivan pokreće seeder sam, proveri adrese sajtova i objavi organizacije.
+// Sadržaj je iz Dokumentacija/NASLEDJE/podaci/OrganizationSeeder.php. Nove organizacije ulaze kao nacrt. Postojeća
+// (isti slug) se ne menja; jedino se prazno polje e-pošte popunjava. Ivan pokreće seeder sam, proveri adrese i objavi.
 class OrganizacijeSeeder extends Seeder
 {
     public function run(): void
     {
         foreach (self::organizacije() as $organizacija) {
-            if (Organizacija::query()->where('slug', $organizacija['slug'])->exists()) {
+            $postojeca = Organizacija::query()->where('slug', $organizacija['slug'])->first();
+
+            if ($postojeca === null) {
+                Organizacija::query()->create([...$organizacija, 'status' => StatusObjave::Nacrt]);
+
                 continue;
             }
 
-            Organizacija::query()->create([...$organizacija, 'status' => StatusObjave::Nacrt]);
+            // Upit bez modela: ne pokreće pravila objave i ne dira nijedno drugo polje.
+            if (blank($postojeca->eposta) && isset($organizacija['eposta'])) {
+                Organizacija::query()->whereKey($postojeca->getKey())->update(['eposta' => $organizacija['eposta']]);
+            }
         }
     }
 
-    /** @return list<array{naziv: string, slug: string, vrsta: VrstaOrganizacije, kratak_opis: string, opis: string, mesto: string, online: bool, telefon: string, sajt: string, usluge: list<string>, beleska: string}> */
+    /** @return list<array{naziv: string, slug: string, vrsta: VrstaOrganizacije, kratak_opis: string, opis: string, mesto: string, online: bool, telefon: string, eposta?: string, sajt: string, usluge: list<string>, beleska: string}> */
     public static function organizacije(): array
     {
         return [
@@ -48,6 +55,7 @@ class OrganizacijeSeeder extends Seeder
                 'mesto' => 'Programi su namenjeni korisnicima širom Srbije; sedište Ministarstva je u Beogradu.',
                 'online' => true,
                 'telefon' => '011/3806-914',
+                'eposta' => 'ucenici@prosveta.gov.rs',
                 'sajt' => 'https://prosveta.gov.rs/skolski-i-studentski-zivot/stipendije/?pismo=lat',
                 'usluge' => ['Pomoć oko stipendija', 'Obrazovna podrška', 'Konkursi', 'Kontakt sa institucijama'],
                 'beleska' => 'Provereno na zvaničnoj stranici Ministarstva prosvete za stipendije 2026-07-21.',
@@ -61,6 +69,7 @@ class OrganizacijeSeeder extends Seeder
                 'mesto' => 'Info centar: Terazije 39, I sprat, Beograd.',
                 'online' => true,
                 'telefon' => '+381 11 33 42 430',
+                'eposta' => 'info@tempus.ac.rs',
                 'sajt' => 'https://tempus.ac.rs/',
                 'usluge' => ['Obrazovna podrška', 'Pomoć oko stipendija', 'Savetovanje', 'Podrška organizacijama', 'Konkursi'],
                 'beleska' => 'Provereno na zvaničnom sajtu i kontakt stranici Fondacije Tempus 2026-07-21.',
@@ -87,6 +96,7 @@ class OrganizacijeSeeder extends Seeder
                 'mesto' => 'Sekretarijat: Kralja Milutina 15, Beograd; aktivnosti su namenjene organizacijama i mladima širom Srbije.',
                 'online' => true,
                 'telefon' => '+381 11 407 6251',
+                'eposta' => 'office@koms.rs',
                 'sajt' => 'https://koms.rs/',
                 'usluge' => ['Podrška organizacijama', 'Podrška zajednici', 'Konkursi', 'Savetovanje'],
                 'beleska' => 'Provereno na zvaničnim stranicama O organizaciji i Kontakt KOMS-a 2026-07-21.',
@@ -100,6 +110,7 @@ class OrganizacijeSeeder extends Seeder
                 'mesto' => 'Džordža Vašingtona 54/7, Beograd; podrška se odnosi na ugrožene grupe u Srbiji.',
                 'online' => true,
                 'telefon' => '011/3225-172',
+                'eposta' => 'office@a11initiative.org',
                 'sajt' => 'https://www.a11initiative.org/',
                 'usluge' => ['Pravna pomoć', 'Podrška zajednici', 'Savetovanje', 'Kontakt sa institucijama'],
                 'beleska' => 'Provereno na zvaničnim stranicama Vizija i misija, Aktivnosti i Kontakt A 11 2026-07-21.',

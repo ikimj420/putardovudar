@@ -76,4 +76,82 @@ class OrganizacijeSeederTest extends BazaTestCase
         $this->assertSame(StatusObjave::Nacrt, Organizacija::query()->where('slug', 'inicijativa-a-11')->sole()->status);
         $this->assertSame(6, Organizacija::query()->count());
     }
+
+    // Adrese iz starog projekta (Dokumentacija/NASLEDJE/podaci/OrganizationSeeder.php), za četiri organizacije; ostale dve ih nemaju.
+    private const EPOSTE = [
+        'ministarstvo-prosvete-stipendije-i-krediti' => 'ucenici@prosveta.gov.rs',
+        'fondacija-tempus' => 'info@tempus.ac.rs',
+        'krovna-organizacija-mladih-srbije' => 'office@koms.rs',
+        'inicijativa-a-11' => 'office@a11initiative.org',
+    ];
+
+    #[Test]
+    public function seeder_upisuje_eposte_za_cetiri_organizacije_a_ostale_dve_ostaju_bez(): void
+    {
+        $this->seed(OrganizacijeSeeder::class);
+
+        $this->assertCount(4, self::EPOSTE);
+
+        foreach (self::EPOSTE as $slug => $eposta) {
+            $this->assertSame($eposta, Organizacija::query()->where('slug', $slug)->sole()->eposta, $slug);
+        }
+
+        $this->assertSame(2, Organizacija::query()->whereNull('eposta')->count());
+        $this->assertSame([], array_diff(Organizacija::query()->whereNull('eposta')->pluck('slug')->all(), ['nacionalna-sluzba-za-zaposljavanje', 'fond-za-mlade-talente-republike-srbije']));
+    }
+
+    // Organizacija koja je već u bazi bez e-pošte dobija je; ništa drugo na njoj se ne menja.
+    #[Test]
+    public function seeder_popunjava_prazno_polje_eposte_a_nista_drugo_ne_dira(): void
+    {
+        $this->seed(OrganizacijeSeeder::class);
+        $organizacija = Organizacija::query()->where('slug', 'fondacija-tempus')->sole();
+        $organizacija->update(['eposta' => null, 'opis' => 'Ivanova verzija.', 'telefon' => '000', 'status' => StatusObjave::Objavljeno]);
+        $pre = Organizacija::query()->whereKey($organizacija->getKey())->sole()->getAttributes();
+
+        $this->seed(OrganizacijeSeeder::class);
+
+        $posle = Organizacija::query()->whereKey($organizacija->getKey())->sole()->getAttributes();
+
+        $this->assertSame('info@tempus.ac.rs', $posle['eposta']);
+        $this->assertSame('Ivanova verzija.', $posle['opis']);
+        $this->assertSame('000', $posle['telefon']);
+        $this->assertSame(StatusObjave::Objavljeno->value, $posle['status']);
+        // Jedina razlika u redu su e-pošta i vreme izmene; svako drugo polje je isto.
+        $this->assertSame([], array_diff(array_keys(array_diff_assoc($posle, $pre)), ['eposta', 'updated_at']));
+    }
+
+    // Ogledalo (glavna tvrdnja paketa): izmenjena e-pošta ostaje kakva je i posle jednog i posle drugog pokretanja.
+    #[Test]
+    public function seeder_dvaput_pokrenut_ne_menja_izmenjenu_organizaciju(): void
+    {
+        $this->seed(OrganizacijeSeeder::class);
+        $organizacija = Organizacija::query()->where('slug', 'fondacija-tempus')->sole();
+        $organizacija->update(['eposta' => 'ivan@primer.rs', 'opis' => 'Ivanova verzija.']);
+        $pre = Organizacija::query()->whereKey($organizacija->getKey())->sole()->getAttributes();
+
+        $this->seed(OrganizacijeSeeder::class);
+        $this->seed(OrganizacijeSeeder::class);
+
+        $posle = Organizacija::query()->whereKey($organizacija->getKey())->sole()->getAttributes();
+
+        $this->assertSame('ivan@primer.rs', $posle['eposta']);
+        $this->assertSame($pre, $posle);
+        $this->assertSame(6, Organizacija::query()->count());
+    }
+
+    // Obrisana organizacija se vraća sa e-poštom, kao nacrt.
+    #[Test]
+    public function obrisana_organizacija_se_vraca_sa_epostom(): void
+    {
+        $this->seed(OrganizacijeSeeder::class);
+        Organizacija::query()->where('slug', 'inicijativa-a-11')->delete();
+
+        $this->seed(OrganizacijeSeeder::class);
+
+        $vracena = Organizacija::query()->where('slug', 'inicijativa-a-11')->sole();
+
+        $this->assertSame('office@a11initiative.org', $vracena->eposta);
+        $this->assertSame(StatusObjave::Nacrt, $vracena->status);
+    }
 }

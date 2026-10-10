@@ -15,6 +15,9 @@
         @if (filled($organizacija->telefon))
             <span class="meta-stavka">{{ \App\Support\PrikazOrganizacija::TELEFON }}: {{ $organizacija->telefon }}</span>
         @endif
+        @if (\App\Support\PrikazOrganizacija::eposta($organizacija))
+            <span class="meta-stavka">{{ \App\Support\PrikazOrganizacija::EPOSTA }}: <a href="mailto:{{ \App\Support\PrikazOrganizacija::eposta($organizacija) }}">{{ \App\Support\PrikazOrganizacija::eposta($organizacija) }}</a></span>
+        @endif
     </div>
 @endsection
 

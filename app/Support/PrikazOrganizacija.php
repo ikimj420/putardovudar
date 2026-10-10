@@ -23,6 +23,9 @@ final class PrikazOrganizacija
 
     public const TELEFON = 'Telefon';
 
+    // Predlog; Ivan odobrava (PITANJA-26-38.md, paket 37).
+    public const EPOSTA = 'E-pošta';
+
     public const SAJT = 'Sajt';
 
     public const USLUGE = 'Usluge';
@@ -31,6 +34,12 @@ final class PrikazOrganizacija
     public static function linkSajta(Organizacija $organizacija): ?string
     {
         return LinkSajta::jeIspravan($organizacija->sajt) ? trim((string) $organizacija->sajt) : null;
+    }
+
+    // Isto kao link sajta: adresa u bazi može da stigne i mimo admina, pa se veza „mailto:" pravi samo od ispravne.
+    public static function eposta(Organizacija $organizacija): ?string
+    {
+        return EpostaAdresa::jeIspravna($organizacija->eposta) ? trim((string) $organizacija->eposta) : null;
     }
 
     public static function nazivSajta(string $link): string

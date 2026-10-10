@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
  * @property VrstaOrganizacije $vrsta
  * @property list<string>|null $usluge
  */
-#[Fillable(['naziv', 'slug', 'vrsta', 'kratak_opis', 'opis', 'mesto', 'online', 'telefon', 'sajt', 'usluge', 'beleska', 'status'])]
+#[Fillable(['naziv', 'slug', 'vrsta', 'kratak_opis', 'opis', 'mesto', 'online', 'telefon', 'eposta', 'sajt', 'usluge', 'beleska', 'status'])]
 class Organizacija extends Model
 {
     /** @use HasFactory<OrganizacijaFactory> */

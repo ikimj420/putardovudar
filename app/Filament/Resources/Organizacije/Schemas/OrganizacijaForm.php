@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Organizacije\Schemas;
 use App\Enums\StatusObjave;
 use App\Enums\VrstaOrganizacije;
 use App\Models\Organizacija;
+use App\Support\EpostaAdresa;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -59,6 +60,12 @@ class OrganizacijaForm
                     ->label('Telefon')
                     ->helperText('Broj za kontakt, npr. „011/123-456“; ostavi prazno ako ga nema.')
                     ->maxLength(64),
+                TextInput::make('eposta')
+                    ->label('E-pošta')
+                    ->helperText('Adresa za kontakt, npr. „info@primer.rs“; ostavi prazno ako je nema.')
+                    ->email()
+                    ->regex(EpostaAdresa::OBRAZAC)
+                    ->maxLength(254),
                 TextInput::make('sajt')
                     ->label('Sajt')
                     ->helperText('Adresa zvaničnog sajta; bez nje se organizacija ne može objaviti.')
