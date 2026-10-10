@@ -80,7 +80,7 @@
         var forma = prozor.querySelector('[data-pomocnik-forma]');
         var polje = forma.querySelector('textarea');
         var dugmePitaj = forma.querySelector('button[type="submit"]');
-        var rezultat = prozor.querySelector('[data-pomocnik-rezultat]');
+        var razgovor = prozor.querySelector('[data-pomocnik-rezultat]');
         var zatvori = prozor.querySelector('[data-pomocnik-zatvori]');
         var otvaraci = document.querySelectorAll('[data-pomocnik-otvori]');
         var pozadina = document.querySelectorAll('.zaglavlje, main');
@@ -147,7 +147,7 @@
 
         zatvori.addEventListener('click', zatvoriProzor);
 
-        // „Napiši moj": pitanja šablona stižu u isti prozor, a napisan tekst u njegov rezultat. Ako ne uspe, veza i obrazac rade
+        // „Napiši moj": pitanja šablona stižu u isti prozor kao poruka pomoćnika, a napisan tekst u njoj. Ako ne uspe, veza i obrazac rade
         // običnim putem, na strani pomoćnika.
         function zatrazi(adresa, opcije) {
             return fetch(
@@ -166,6 +166,27 @@
             v.setAttribute('aria-haspopup', 'dialog');
         });
 
+        // Razgovor: poruke stoje jedna ispod druge; pitanje je poruka čoveka, a odgovor stiže ispod nje.
+        function napraviPoruku(klasa) {
+            var poruka = document.createElement('div');
+            poruka.className = 'poruka ' + klasa;
+
+            return poruka;
+        }
+
+        function cekanje() {
+            var poruka = napraviPoruku('poruka-pomocnik poruka-cekanje');
+            poruka.setAttribute('role', 'status');
+            poruka.textContent = prozor.getAttribute('data-trazim');
+            razgovor.appendChild(poruka);
+
+            return poruka;
+        }
+
+        function pomeriNa(element) {
+            element.scrollIntoView({ block: 'start' });
+        }
+
         document.addEventListener('click', function (dogadjaj) {
             var veza = dogadjaj.target.closest('[data-pomocnik-sablon]');
 
@@ -175,20 +196,24 @@
 
             dogadjaj.preventDefault();
             otvori(jeOtvoren() ? null : veza);
-            rezultat.textContent = prozor.getAttribute('data-trazim');
+            var stanje = cekanje();
+            pomeriNa(stanje);
 
             zatrazi(veza.href)
                 .then(function (html) {
-                    rezultat.innerHTML = html;
-                    prikaziKopiraj(rezultat);
-                    (rezultat.querySelector('input:not([type="hidden"]), textarea') || rezultat).focus();
+                    var obrazac = napraviPoruku('poruka-pomocnik poruka-obrazac');
+                    obrazac.innerHTML = html;
+                    stanje.replaceWith(obrazac);
+                    prikaziKopiraj(obrazac);
+                    pomeriNa(obrazac);
+                    (obrazac.querySelector('input:not([type="hidden"]), textarea') || polje).focus({ preventScroll: true });
                 })
                 .catch(function () {
                     window.location.href = veza.href;
                 });
         });
 
-        rezultat.addEventListener('submit', function (dogadjaj) {
+        razgovor.addEventListener('submit', function (dogadjaj) {
             var obrazac = dogadjaj.target.closest('[data-pomocnik-sablon-forma]');
 
             if (!obrazac) {
@@ -196,6 +221,7 @@
             }
 
             dogadjaj.preventDefault();
+            var blok = obrazac.closest('.poruka-obrazac');
             obrazac.querySelector('button[type="submit"]').disabled = true;
             prozor.setAttribute('aria-busy', 'true');
 
@@ -207,11 +233,10 @@
 
             zatrazi(obrazac.action, { method: 'POST', body: new FormData(obrazac) })
                 .then(function (html) {
-                    rezultat.innerHTML = html;
-                    prikaziKopiraj(rezultat);
+                    blok.innerHTML = html;
+                    prikaziKopiraj(blok);
                     // Napisan tekst je dug: prozor se pomera na njegov početak, a ne na kraj.
-                    rezultat.focus({ preventScroll: true });
-                    rezultat.scrollIntoView({ block: 'start' });
+                    pomeriNa(blok);
                 })
                 .catch(function () {
                     obrazac.submit();
@@ -251,17 +276,62 @@
             }
         });
 
-        // Isto pitanje, ista pravila i ista provera kao na strani pomoćnika; šalje se isti obrazac, a odgovor stiže bez okvira strane. Ako ne uspe,
-        // obrazac se šalje običnim putem i odgovor se pokazuje na strani pomoćnika.
+        // Polje raste sa tekstom (najviše oko šest redova).
+        function podesiVisinu() {
+            polje.style.height = 'auto';
+            polje.style.height = Math.min(polje.scrollHeight, 140) + 'px';
+        }
+
+        polje.addEventListener('input', podesiVisinu);
+
+        // Enter šalje pitanje, Shift+Enter pravi nov red; dok se slovo još sastavlja (isComposing) Enter ostaje običan.
+        polje.addEventListener('keydown', function (dogadjaj) {
+            if (dogadjaj.key !== 'Enter' || dogadjaj.shiftKey || dogadjaj.isComposing) {
+                return;
+            }
+
+            dogadjaj.preventDefault();
+
+            if (polje.value.trim() !== '') {
+                if (forma.requestSubmit) {
+                    forma.requestSubmit();
+                } else {
+                    dugmePitaj.click();
+                }
+            }
+        });
+
+        // Isto pitanje, ista pravila i ista provera kao na strani pomoćnika; šalje se isti obrazac, a odgovor stiže bez okvira strane. Pitanje se odmah
+        // vidi kao poruka čoveka i polje se prazni. Ako ne uspe, pitanje se vraća u polje i obrazac se šalje običnim putem, na stranu pomoćnika.
+        var zauzet = false;
+
         forma.addEventListener('submit', function (dogadjaj) {
             dogadjaj.preventDefault();
+
+            var pitanje = polje.value;
+
+            if (zauzet || pitanje.trim() === '') {
+                return;
+            }
+
+            zauzet = true;
+            var podaci = new FormData(forma);
+            polje.value = '';
+            podesiVisinu();
             dugmePitaj.disabled = true;
             prozor.setAttribute('aria-busy', 'true');
-            rezultat.textContent = prozor.getAttribute('data-trazim');
+
+            var moja = napraviPoruku('poruka-moja');
+            var tekst = document.createElement('p');
+            tekst.textContent = pitanje;
+            moja.appendChild(tekst);
+            razgovor.appendChild(moja);
+            var stanje = cekanje();
+            pomeriNa(moja);
 
             fetch(forma.action, {
                 method: 'POST',
-                body: new FormData(forma),
+                body: podaci,
                 headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html' },
                 credentials: 'same-origin',
             })
@@ -273,15 +343,20 @@
                     return odgovor.text();
                 })
                 .then(function (html) {
-                    rezultat.innerHTML = html;
-                    rezultat.focus();
+                    stanje.remove();
+                    razgovor.insertAdjacentHTML('beforeend', html);
+                    prikaziKopiraj(razgovor);
+                    pomeriNa(moja);
                 })
                 .catch(function () {
+                    polje.value = pitanje;
                     forma.submit();
                 })
                 .then(function () {
+                    zauzet = false;
                     dugmePitaj.disabled = false;
                     prozor.removeAttribute('aria-busy');
+                    polje.focus({ preventScroll: true });
                 });
         });
     });

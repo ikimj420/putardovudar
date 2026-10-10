@@ -5,7 +5,8 @@ namespace App\Support;
 // Tekstovi strane pomoćnika koje vidi posetilac, na jednom mestu (kao PrikazPrilike). Predlog je u PITANJA-NOC-1.md.
 final class PrikazPomocnika
 {
-    public const NASLOV = 'Pomoćnik';
+    // Ime pomoćnika (Ivan, 10.10.2026.): naslov prozora i strane je „Vudar pomoćnik", kao na starom sajtu; dugme je „Pitaj Vudar pomoćnika".
+    public const NASLOV = 'Vudar pomoćnik';
 
     public const UVOD = 'Postavi pitanje o prilikama. Odgovaram samo iz baze, uz izvor.';
 

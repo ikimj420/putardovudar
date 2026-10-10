@@ -76,10 +76,10 @@ class PomocnikStranaTest extends BazaTestCase
         Http::assertNothingSent();
     }
 
-    // Od paketa 18 link ka pomoćniku stoji u meniju zaglavlja (Ivanova odluka). Od paketa 55 je u telu samo plutajuće dugme (obična veza ka
-    // strani pomoćnika, a skript ga pretvara u prozor); na samoj strani pomoćnika u telu nema nijedne veze ka njoj.
+    // Od paketa 57 (Ivan, 10.10.2026.) u zaglavlju nema linka ka pomoćniku: pomoćnik je samo dugme dole desno (obična veza ka strani pomoćnika, a skript ga
+    // pretvara u prozor); na samoj strani pomoćnika u telu nema nijedne veze ka njoj.
     #[Test]
-    public function link_ka_pomocniku_je_u_meniju_zaglavlja_a_u_telu_samo_plutajuce_dugme(): void
+    public function link_ka_pomocniku_nije_u_zaglavlju_a_u_telu_je_samo_plutajuce_dugme(): void
     {
         $prilika = $this->prilika();
         $adresaPomocnika = route('pomocnik.index');
@@ -91,15 +91,29 @@ class PomocnikStranaTest extends BazaTestCase
             $telo = str_replace('action="'.route('pomocnik.pitaj').'"', '', $telo);
             $naStraniPomocnika = $adresa === $adresaPomocnika;
 
-            // Od paketa 32 je to pilula „Pomoćnik" desno u traci, kao u prototipu; uz plutajući prozor otvara ga (data-pomocnik-otvori).
-            $ocekivano = $naStraniPomocnika
-                ? '<a class="asistent" href="'.$adresaPomocnika.'">'.PrikazPomocnika::NASLOV.'</a>'
-                : '<a class="asistent" href="'.$adresaPomocnika.'" data-pomocnik-otvori aria-controls="pomocnik-prozor">'.PrikazPomocnika::NASLOV.'</a>';
-            $this->assertStringContainsString($ocekivano, $zaglavlje[1] ?? '', $adresa);
+            $this->assertStringNotContainsString($adresaPomocnika, $zaglavlje[1] ?? '', $adresa);
+            $this->assertStringNotContainsString(PrikazPomocnika::NASLOV, $zaglavlje[1] ?? '', $adresa);
             // Na početnoj je u telu i dugme naslovnog dela (paket 57) koje otvara isti prozor; ostalo je samo plutajuće dugme.
             $this->assertSame($naStraniPomocnika ? 0 : ($adresa === route('pocetna') ? 2 : 1), substr_count($telo, 'href="'.$adresaPomocnika.'"'), $adresa);
             $this->assertSame($naStraniPomocnika ? 0 : 1, substr_count($telo, '<a class="plutajuci-dugme" href="'.$adresaPomocnika.'"'), $adresa);
         }
+    }
+
+    // Ime (Ivan, 10.10.2026.): dugme je „Pitaj Vudar pomoćnika", a naslov prozora i strane „Vudar pomoćnik" (kao na starom sajtu); doslovno, ne preko konstante.
+    #[Test]
+    public function pomocnik_se_zove_vudar_pomocnik_a_dugme_pitaj_vudar_pomocnika(): void
+    {
+        $this->assertSame('Vudar pomoćnik', PrikazPomocnika::NASLOV);
+        $this->assertSame('Pitaj Vudar pomoćnika', PrikazPomocnika::PITAJ_VUDAR);
+
+        $strana = $this->get(route('pomocnik.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('<h1>Vudar pomoćnik</h1>', $strana);
+        $this->assertStringContainsString('<title>Vudar pomoćnik - Putardo Vudar</title>', $strana);
+
+        $prilika = $this->get(route('prilike.index'))->assertOk()->getContent();
+        $this->assertStringContainsString('<h2 id="pomocnik-naslov">Vudar pomoćnik</h2>', $prilika);
+        $this->assertStringContainsString('</svg></span>Pitaj Vudar pomoćnika</a>', $prilika);
+        $this->assertStringContainsString('data-pomocnik-otvori aria-controls="pomocnik-prozor">Pitaj Vudar pomoćnika</a>', $this->get(route('pocetna'))->getContent());
     }
 
     #[Test]

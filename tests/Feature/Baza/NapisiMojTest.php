@@ -438,8 +438,8 @@ class NapisiMojTest extends BazaTestCase
 
         foreach ([
             "document.addEventListener('click'", "dogadjaj.target.closest('[data-pomocnik-sablon]')", 'zatrazi(veza.href)', "dogadjaj.target.closest('[data-pomocnik-sablon-forma]')",
-            "'X-Requested-With': 'XMLHttpRequest'", 'new FormData(obrazac)', 'window.location.href = veza.href;', 'obrazac.submit();', 'prikaziKopiraj(rezultat);', 'input:not([type="hidden"]), textarea', 'rezultat.focus({ preventScroll: true });', "rezultat.scrollIntoView({ block: 'start' });",
-            'odgovor.status === 404',
+            "'X-Requested-With': 'XMLHttpRequest'", 'new FormData(obrazac)', 'window.location.href = veza.href;', 'obrazac.submit();', 'prikaziKopiraj(obrazac);', 'prikaziKopiraj(blok);', 'input:not([type="hidden"]), textarea',
+            'napraviPoruku(\'poruka-pomocnik poruka-obrazac\')', "obrazac.closest('.poruka-obrazac')", "element.scrollIntoView({ block: 'start' });", 'pomeriNa(blok);', 'odgovor.status === 404',
         ] as $trag) {
             $this->assertStringContainsString($trag, $skript, $trag);
         }

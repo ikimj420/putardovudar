@@ -121,10 +121,12 @@ class StampaStranaTest extends BazaTestCase
                 array_push($skriveno, ...array_map(fn (string $selektor) => substr(trim($selektor), strlen($uslov) + 1), explode(',', $izbor)));
             }
         }
-        $this->assertSame(['.zaglavlje', 'main', '.plutajuci-glava', '.plutajuci-forma', '.plutajuci-uvod', '.plutajuci-sablon', '.sklopljen h2'], $skriveno);
+        // Od paketa 57 prozor je razgovor: štampa se samo poruka sa napisanim tekstom, pa se sakrivaju i sve ostale poruke.
+        $this->assertSame(['.zaglavlje', 'main', '.plutajuci-glava', '.plutajuci-forma', '.plutajuci-uvod', '.plutajuci-sablon', '.sklopljen h2', '.poruka:not(:has(.sklopljen-tekst))'], $skriveno);
         $this->assertContains($uslov.' .plutajuci', $selektori);
         $this->assertMatchesRegularExpression('/\.plutajuci,[^{]*\.plutajuci-prozor \{[^}]*position: static;[^}]*display: block;/', $blok);
         $this->assertMatchesRegularExpression('/\.plutajuci-telo \{[^}]*overflow: visible;/', $blok);
+        $this->assertMatchesRegularExpression('/\) \.poruka \{[^}]*max-width: none;[^}]*border: 0;[^}]*box-shadow: none;/', $blok);
     }
 
     // Ogledalo: sadržaj strane se ne sakriva u štampi.

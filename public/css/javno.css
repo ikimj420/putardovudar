@@ -216,7 +216,7 @@ html {
 
 .zaglavlje-red {
   display: grid;
-  grid-template-columns: 220px 1fr 160px;
+  grid-template-columns: 220px 1fr 220px;
   align-items: center;
   min-height: 56px;
   padding: 0 8px 0 20px;
@@ -284,14 +284,6 @@ html {
   font-weight: 600;
 }
 
-.meni-desno {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  font-size: 15px;
-  font-weight: 700;
-}
-
 .meni a {
   color: var(--text);
   text-decoration: none;
@@ -319,19 +311,6 @@ html {
 .meni a[aria-current="page"] {
   background: var(--strana-pozadina);
   color: var(--strana-slova);
-}
-
-/* „Pomoćnik": mala narandžasta pilula kao u predlogu; tamna slova, jer bela na narandžastoj nema kontrast. */
-.meni .asistent {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--narandzasta) 0%, var(--narandzasta-meka) 55%, var(--zlato) 160%);
-  color: var(--noc);
-  box-shadow: 0 12px 30px -12px rgba(224, 114, 41, 0.7);
 }
 
 /* Dugme menija postoji samo uz skript; bez skripta meni ostaje običan spisak veza. */
@@ -400,8 +379,7 @@ html {
     gap: 0 16px;
   }
 
-  .meni-sredina,
-  .meni-desno {
+  .meni-sredina {
     display: contents;
     font-size: 15px;
     font-weight: 600;
@@ -409,16 +387,6 @@ html {
 
   .meni a {
     padding: 12px 0;
-  }
-
-  .meni .asistent {
-    display: block;
-    height: auto;
-    padding: 8px 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-    color: var(--text);
   }
 
   .js .dugme-meni {
@@ -1510,10 +1478,11 @@ h1.prazno {
   z-index: 200;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   width: 380px;
   max-width: calc(100vw - 32px);
   max-height: min(640px, calc(100vh - 32px));
-  background: var(--page);
+  background: var(--soft);
   border: 1px solid var(--surface-border-strong);
   border-radius: var(--radius);
   box-shadow: var(--shadow-velika);
@@ -1523,30 +1492,38 @@ h1.prazno {
   display: none;
 }
 
+/* Glava prozora je noć sa slovima koja su beli i zlatni fokus, kao naslovni deo strana. */
 .plutajuci-glava {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--surface-border);
+  background:
+    radial-gradient(90% 160% at 0% 0%, var(--sjaj-1), transparent 60%),
+    var(--noc);
+  color: #fff;
 }
 
 .plutajuci-glava h2 {
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   letter-spacing: -0.02em;
   font-weight: 800;
+}
+
+.plutajuci-glava :focus-visible {
+  outline-color: var(--zlato);
 }
 
 .plutajuci-zatvori {
   min-width: 44px;
   min-height: 44px;
   padding: 0 16px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 999px;
-  background: var(--white);
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -1557,7 +1534,7 @@ h1.prazno {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
+  min-height: 0;
   padding: 16px;
   overflow-y: auto;
 }
@@ -1567,37 +1544,150 @@ h1.prazno {
   font-weight: 500;
 }
 
-.plutajuci-rezultat:empty {
-  display: none;
+/* Razgovor: poruke čoveka su desno u boji strane, poruke pomoćnika levo na belom; novo se pomera na vrh, pa se pitanje vidi iznad odgovora. */
+.razgovor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.plutajuci-rezultat .spisak {
-  grid-template-columns: 1fr;
+.poruka {
+  max-width: 92%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
-.plutajuci-sablon {
-  font-size: 20px;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-  font-weight: 800;
+.poruka p + p,
+.poruka .izvori,
+.poruka .dugme-red {
+  margin-top: 10px;
+}
+
+.poruka-moja {
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+  background: var(--strana-pozadina);
+  color: var(--strana-slova);
+  white-space: pre-wrap;
+}
+
+.poruka-pomocnik {
+  align-self: flex-start;
+  border: 1px solid rgba(26, 26, 28, 0.06);
+  border-bottom-left-radius: 6px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow);
+}
+
+.poruka-obrazac {
+  align-self: stretch;
+  max-width: none;
+}
+
+.poruka-cekanje {
+  color: var(--muted);
+}
+
+/* Izvori u razgovoru su male kartice: naslov običnim slovima, rok i zvanični izvor; cela kartica je veza. */
+.izvori {
+  display: grid;
+  gap: 8px;
+}
+
+.izvor-mala {
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--soft);
+  box-shadow: none;
+}
+
+.izvor-mala:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.izvor-naslov {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.izvor-naslov a {
+  text-decoration: none;
+}
+
+.izvor-podatak {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.poruka .izvor-upozorenje {
+  margin-top: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.poruka .obrazac {
+  max-width: none;
 }
 
 .plutajuci-rezultat .obrazac {
   margin-bottom: 0;
 }
 
-.plutajuci-rezultat .plutajuci-sablon {
+.plutajuci-sablon {
   margin-bottom: 6px;
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 800;
 }
 
-.plutajuci-rezultat .plutajuci-sablon + .plutajuci-uvod {
+.plutajuci-sablon + .plutajuci-uvod {
   margin-bottom: 16px;
 }
 
+/* Polje i dugme su u jednom redu ispod razgovora; polje raste sa tekstom, a dugme je uvek pored njega. */
 .plutajuci-forma {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
   margin: 0;
   padding: 12px 16px 16px;
+  background: var(--card-bg);
   border-top: 1px solid var(--surface-border);
+}
+
+.plutajuci-forma textarea {
+  flex: 1;
+  min-width: 0;
+  max-height: 140px;
+  min-height: 46px;
+  padding: 11px 14px;
+  resize: none;
+}
+
+.plutajuci-forma button {
+  flex: none;
+  align-self: flex-end;
+  min-width: 0;
+}
+
+/* Natpis koji vide samo čitači ekrana (polje u prozoru nema vidljiv natpis, ima primer u polju). */
+.samo-citac {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .pomocnik-otvoren .plutajuci-dugme {
@@ -1859,7 +1949,8 @@ h1.prazno {
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-forma,
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-uvod,
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-sablon,
-  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .sklopljen h2 {
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .sklopljen h2,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .poruka:not(:has(.sklopljen-tekst)) {
     display: none;
   }
 
@@ -1878,5 +1969,12 @@ h1.prazno {
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-telo {
     padding: 0;
     overflow: visible;
+  }
+
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .poruka {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
   }
 }
