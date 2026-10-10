@@ -34,6 +34,9 @@
 
   /* Izvedeno iz prototipske zelene: pozadina oznake. */
   --green-soft: rgba(85, 216, 178, 0.28);
+
+  /* Tamnija plava za tekst i brojeve: prototipska --blue-hover (3,8 : 1) ne ispunjava WCAG AA (4,5 : 1) na svetloj pozadini. */
+  --blue-text: #2563b8;
 }
 
 * {
@@ -54,7 +57,8 @@ a {
   color: inherit;
 }
 
-a:focus-visible {
+/* Vidljiv fokus na svemu što se fokusira, ne samo na vezama. */
+:focus-visible {
   outline: 3px solid var(--blue-hover);
   outline-offset: 2px;
 }
@@ -92,6 +96,7 @@ a:focus-visible {
 }
 
 .logo {
+  padding: 8px 0;
   font-size: 16px;
   font-weight: 900;
   letter-spacing: 0.16em;
@@ -134,6 +139,14 @@ a:focus-visible {
   color: var(--text);
   text-decoration: none;
   transition: color 0.2s ease;
+}
+
+.meni-sredina a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .meni-sredina a:hover {
@@ -210,7 +223,7 @@ a:focus-visible {
   }
 
   .meni a {
-    padding: 8px 0;
+    padding: 12px 0;
   }
 
   .asistent {
@@ -302,14 +315,19 @@ a:focus-visible {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 18px;
+  gap: 4px;
+  margin-bottom: 8px;
   color: var(--muted);
   font-size: 14px;
   font-weight: 800;
 }
 
 .mrvice a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   color: var(--text);
   text-decoration: none;
 }
@@ -338,6 +356,12 @@ a:focus-visible {
 .prazno {
   color: var(--muted);
   font-weight: 700;
+}
+
+h1.prazno {
+  font-size: clamp(22px, 5vw, 32px);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
 }
 
 /* Filter prilika po vrsti: obične veze u pilulama kao u prototipu (bez skripta); aktivna je plava */
@@ -443,6 +467,10 @@ a:focus-visible {
 
 .kartica h2 a,
 .kartica h3 a {
+  /* Veza naslova je cilj od najmanje 44 px visine; dopuna je potrošena negativnim razmakom, pa se raspored ne menja. */
+  display: inline-block;
+  padding: 9px 0;
+  margin: -9px 0;
   text-decoration: none;
 }
 
@@ -533,7 +561,7 @@ a:focus-visible {
 }
 
 .izvor a {
-  color: var(--blue-hover);
+  color: var(--blue-text);
   font-weight: 900;
 }
 
@@ -592,7 +620,7 @@ a:focus-visible {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--blue-hover);
+  background: var(--blue-text);
   color: #fff;
   font-size: 13px;
   font-weight: 900;
