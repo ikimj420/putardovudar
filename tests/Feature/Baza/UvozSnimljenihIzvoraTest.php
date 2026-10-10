@@ -12,7 +12,8 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 
-// Snimci pravih odgovora pet izvora (po tri stavke, bez autora) u tests/Fixtures/rss/; internet se ne koristi.
+// Snimci pravih odgovora devet izvora (po tri stavke, bez autora) u tests/Fixtures/rss/; internet se ne koristi.
+// Paket 58: četiri nova izvora (KOMS, dva ministarstva, Infostud) imaju i svoj test, UvozNovihIzvoraTest.
 #[Group('baza')]
 class UvozSnimljenihIzvoraTest extends BazaTestCase
 {
@@ -24,7 +25,14 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
         'EU mogućnosti - konkursi' => 'eu-mogucnosti-konkursi',
         'Youth.rs' => 'youth-rs',
         'EU u Srbiji - konkursi' => 'eu-u-srbiji-konkursi',
+        'KOMS - konkursi' => 'koms',
+        'Ministarstvo prosvete' => 'ministarstvo-prosvete',
+        'Ministarstvo za ljudska i manjinska prava' => 'ministarstvo-ljudska-prava',
+        'Infostud Poslovi' => 'infostud-poslovi',
     ];
+
+    // Veze iz izvora su https, osim Infostuda koji ih u RSS-u daje kao http (sa oznakama izvora); svaki izvor ima svoje pravilo.
+    private const POSEBNE_VEZE = ['Infostud Poslovi' => '#^http://poslovi\.infostud\.com/posao/\S+$#'];
 
     protected function setUp(): void
     {
@@ -41,7 +49,7 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
     }
 
     #[Test]
-    public function svih_pet_izvora_iz_podesavanja_uvozi_nacrte_iz_snimaka(): void
+    public function svih_devet_izvora_iz_podesavanja_uvozi_nacrte_iz_snimaka(): void
     {
         $this->artisan('uvoz:rss')
             ->expectsOutput('Fond za mlade talente: novih 3, preskočeno 0, greška: nema')
@@ -49,9 +57,13 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
             ->expectsOutput('EU mogućnosti - konkursi: novih 3, preskočeno 0, greška: nema')
             ->expectsOutput('Youth.rs: novih 3, preskočeno 0, greška: nema')
             ->expectsOutput('EU u Srbiji - konkursi: novih 0, preskočeno 0, greška: nema')
+            ->expectsOutput('KOMS - konkursi: novih 3, preskočeno 0, greška: nema')
+            ->expectsOutput('Ministarstvo prosvete: novih 3, preskočeno 0, greška: nema')
+            ->expectsOutput('Ministarstvo za ljudska i manjinska prava: novih 3, preskočeno 0, greška: nema')
+            ->expectsOutput('Infostud Poslovi: novih 3, preskočeno 0, greška: nema')
             ->assertExitCode(0);
 
-        $this->assertSame(12, Prilika::query()->count());
+        $this->assertSame(24, Prilika::query()->count());
     }
 
     #[Test]
@@ -65,7 +77,7 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
             $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
             $this->assertSame(VrstaPrilike::Drugo, $prilika->vrsta);
             $this->assertContains($prilika->naziv_izvora, $imena);
-            $this->assertMatchesRegularExpression('#^https://\S+$#', $prilika->link_izvora);
+            $this->assertMatchesRegularExpression(self::POSEBNE_VEZE[$prilika->naziv_izvora] ?? '#^https://\S+$#', $prilika->link_izvora);
             $this->assertNotSame('', $prilika->naslov);
             $this->assertNotSame('', $prilika->kratak_opis);
             $this->assertLessThanOrEqual(300, mb_strlen($prilika->kratak_opis));
@@ -87,9 +99,11 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
         $this->artisan('uvoz:rss')
             ->expectsOutput('Fond za mlade talente: novih 0, preskočeno 3, greška: nema')
             ->expectsOutput('Youth.rs: novih 0, preskočeno 3, greška: nema')
-            ->expectsOutput('EU u Srbiji - konkursi: novih 0, preskočeno 0, greška: nema');
+            ->expectsOutput('EU u Srbiji - konkursi: novih 0, preskočeno 0, greška: nema')
+            ->expectsOutput('Ministarstvo za ljudska i manjinska prava: novih 0, preskočeno 3, greška: nema')
+            ->expectsOutput('Infostud Poslovi: novih 0, preskočeno 3, greška: nema');
 
-        $this->assertSame(12, Prilika::query()->count());
+        $this->assertSame(24, Prilika::query()->count());
     }
 
     #[Test]

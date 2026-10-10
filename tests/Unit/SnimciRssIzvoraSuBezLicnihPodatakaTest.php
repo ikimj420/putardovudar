@@ -13,7 +13,7 @@ class SnimciRssIzvoraSuBezLicnihPodatakaTest extends TestCase
         $snimci = glob(dirname(__DIR__).'/Fixtures/rss/*.xml') ?: [];
 
         // Dokaz da je merilo obišlo neprazan skup: jedan snimak po izvoru.
-        $this->assertCount(5, $snimci);
+        $this->assertCount(9, $snimci);
 
         foreach ($snimci as $snimak) {
             $sadrzaj = (string) file_get_contents($snimak);

@@ -8,7 +8,7 @@ use Tests\TestCase;
 class UvozIzvoriUPodesavanjimaTest extends TestCase
 {
     #[Test]
-    public function podesavanja_nabrajaju_tacno_pet_provernih_izvora(): void
+    public function podesavanja_nabrajaju_tacno_devet_provernih_izvora(): void
     {
         $this->assertSame([
             ['ime' => 'Fond za mlade talente', 'adresa' => 'https://fondzamladetalente.gov.rs/feed/'],
@@ -16,7 +16,12 @@ class UvozIzvoriUPodesavanjimaTest extends TestCase
             ['ime' => 'EU mogućnosti - konkursi', 'adresa' => 'https://eumogucnosti.rs/category/konkursi/feed/'],
             ['ime' => 'Youth.rs', 'adresa' => 'https://youth.rs/feed/'],
             ['ime' => 'EU u Srbiji - konkursi', 'adresa' => 'https://europa.rs/category/konkursi/feed/'],
+            ['ime' => 'KOMS - konkursi', 'adresa' => 'https://koms.rs/category/konkursi/feed/'],
+            ['ime' => 'Ministarstvo prosvete', 'adresa' => 'https://prosveta.gov.rs/kategorija/vazna-obavestenja/feed/'],
+            ['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/'],
+            ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php'],
         ], config('uvoz.izvori'));
+        $this->assertCount(9, config('uvoz.izvori'));
     }
 
     // Ogledalo: svaki izvor ima ime i veb adresu, a imena i adrese se ne ponavljaju.

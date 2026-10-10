@@ -9,6 +9,11 @@ return [
         ['ime' => 'EU mogućnosti - konkursi', 'adresa' => 'https://eumogucnosti.rs/category/konkursi/feed/'],
         ['ime' => 'Youth.rs', 'adresa' => 'https://youth.rs/feed/'],
         ['ime' => 'EU u Srbiji - konkursi', 'adresa' => 'https://europa.rs/category/konkursi/feed/'],
+        ['ime' => 'KOMS - konkursi', 'adresa' => 'https://koms.rs/category/konkursi/feed/'],
+        ['ime' => 'Ministarstvo prosvete', 'adresa' => 'https://prosveta.gov.rs/kategorija/vazna-obavestenja/feed/'],
+        // Godina je u adresi: u januaru 2027. adresa se menja (konkursi-i-javni-pozivi-2027).
+        ['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/'],
+        ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php'],
     ],
 
     // Ograničenja da jedan izvor ne može da zaglavi uvoz ni da napuni bazu.
