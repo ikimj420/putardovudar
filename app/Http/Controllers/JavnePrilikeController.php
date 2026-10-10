@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\Grupa;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Support\PrikazPrilike;
+use App\Support\RokUKalendaru;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class JavnePrilikeController extends Controller
 {
@@ -46,5 +49,18 @@ class JavnePrilikeController extends Controller
         $prilika = Prilika::javne()->where('slug', $slug)->firstOrFail();
 
         return view('javno.prilika', ['prilika' => $prilika]);
+    }
+
+    // Isto pravilo kao strana: samo javna prilika, i samo sa rokom koji važi; sve ostalo je 404.
+    public function rok(string $slug): Response
+    {
+        $prilika = Prilika::javne()->where('slug', $slug)->firstOrFail();
+
+        abort_unless(PrikazPrilike::imaRokZaTelefon($prilika), 404);
+
+        return response(RokUKalendaru::sadrzaj($prilika, route('prilike.show', $prilika->slug), now()), 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="rok-'.$prilika->slug.'.ics"',
+        ]);
     }
 }

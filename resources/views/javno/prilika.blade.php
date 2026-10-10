@@ -17,6 +17,11 @@
 @endsection
 
 @section('sadrzaj')
+    @if (\App\Support\PrikazPrilike::imaRokZaTelefon($prilika))
+        <div class="dugme-red">
+            <a class="dugme-veza" href="{{ route('prilike.rok', $prilika->slug) }}">{{ \App\Support\PrikazPrilike::DODAJ_ROK }}</a>
+        </div>
+    @endif
     @include('javno.podeli', ['naslov' => $prilika->naslov, 'adresa' => route('prilike.show', $prilika->slug)])
     <div class="{{ \App\Support\PrikazPrilike::nazivIzvora($prilika) && filled($prilika->opis) ? 'detalj sa-bocnim' : 'detalj' }}">
         <article class="prilika">

@@ -38,6 +38,17 @@ final class PrikazPrilike
     // Oznaka na kartici u adminu; sajt je ne piše jer prilike sa prošlim rokom ne prikazuje.
     public const ROK_PROSAO = 'Rok prošao';
 
+    // Dugme na strani prilike i događaj u kalendaru telefona; tekstovi su predlog (PITANJA-46-52.md, paket 49).
+    public const DODAJ_ROK = 'Dodaj rok u telefon';
+
+    public const ROK_U_KALENDARU = 'Rok: ';
+
+    // Rok se prenosi u telefon samo kad postoji i važi; za stalno otvorene prijave i prilike bez roka nema šta da se doda.
+    public static function imaRokZaTelefon(Prilika $prilika): bool
+    {
+        return $prilika->rok !== null && ! $prilika->rok_stalno_otvoren;
+    }
+
     public static function rok(Prilika $prilika): string
     {
         if ($prilika->rok_stalno_otvoren) {
