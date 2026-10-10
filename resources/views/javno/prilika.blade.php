@@ -17,6 +17,7 @@
 @endsection
 
 @section('sadrzaj')
+    @include('javno.podeli', ['naslov' => $prilika->naslov, 'adresa' => route('prilike.show', $prilika->slug)])
     <div class="{{ \App\Support\PrikazPrilike::nazivIzvora($prilika) && filled($prilika->opis) ? 'detalj sa-bocnim' : 'detalj' }}">
         <article class="prilika">
             @if (filled($prilika->opis))

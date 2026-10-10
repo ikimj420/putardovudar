@@ -7,6 +7,7 @@
 @endsection
 
 @section('sadrzaj')
+    @include('javno.podeli', ['naslov' => $vodic->naslov, 'adresa' => route('vodici.show', $vodic->slug)])
     <article class="prilika detalj">
         <div class="ploca">
             <div class="sadrzaj-opis">{!! nl2br(e($vodic->tekst)) !!}</div>

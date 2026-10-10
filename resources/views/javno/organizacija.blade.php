@@ -22,6 +22,7 @@
 @endsection
 
 @section('sadrzaj')
+    @include('javno.podeli', ['naslov' => $organizacija->naziv, 'adresa' => route('organizacije.show', $organizacija->slug)])
     <div class="{{ \App\Support\PrikazOrganizacija::linkSajta($organizacija) ? 'detalj sa-bocnim' : 'detalj' }}">
         <article class="prilika detalj">
             @if (filled($organizacija->opis))
