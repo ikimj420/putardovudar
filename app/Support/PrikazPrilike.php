@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\Grupa;
+use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 
 // Tekstovi o prilici koje vidi posetilac, na jednom mestu, da kartica i strana ne pišu isto na dva načina.
@@ -14,6 +15,9 @@ final class PrikazPrilike
 
     // Naziv grupe dugmadi za filter, čita ga čitač ekrana; predlog je u PITANJA-26-38.md.
     public const FILTERI = 'Brzi filteri';
+
+    // Natpis reda dugmadi sa grupama na spisku; tekst je iz paketa 42.
+    public const JA_SAM = 'Ja sam…';
 
     public const NEMA_STRANE = 'Ta strana ne postoji ili prilika više nije otvorena.';
 
@@ -38,6 +42,12 @@ final class PrikazPrilike
         }
 
         return $prilika->rok === null ? self::BEZ_ROKA : 'Rok: '.Prikaz::datum($prilika->rok);
+    }
+
+    // Adresa spiska sa izabranom vrstom i/ili grupom; bez ijedne je običan spisak. Vrsta ide pre grupe, uvek istim redom.
+    public static function adresaSpiska(?VrstaPrilike $vrsta = null, ?Grupa $grupa = null): string
+    {
+        return route('prilike.index', array_filter(['vrsta' => $vrsta?->value, 'grupa' => $grupa?->value]));
     }
 
     // Nazivi grupa jednim redom, ili null kad prilika nema nijednu grupu (tada se ništa ne piše).

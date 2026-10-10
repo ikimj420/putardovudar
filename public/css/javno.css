@@ -386,6 +386,20 @@ h1.prazno {
   margin-bottom: 24px;
 }
 
+/* Red „Ja sam…" ide ispod reda vrsta; natpis reda je običan tekst iste visine kao pilule. */
+.filteri.grupe {
+  margin-top: -12px;
+}
+
+.filteri-naslov {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
 .filter-pilula {
   display: inline-flex;
   align-items: center;
