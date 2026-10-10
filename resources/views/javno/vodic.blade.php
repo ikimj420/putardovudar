@@ -23,5 +23,13 @@
                 </ol>
             </div>
         @endif
+
+        @if (filled($vodic->primer))
+            <div class="ploca">
+                <h2 class="naslov-izvora">{{ \App\Support\PrikazVodica::PRIMER }}</h2>
+                <div class="primer-tekst" id="primer-tekst">{{ $vodic->primer }}</div>
+                <button class="dugme-kopiraj" type="button" data-kopiraj="primer-tekst" data-kopirano="{{ \App\Support\PrikazVodica::KOPIRANO }}" aria-live="polite" hidden>{{ \App\Support\PrikazVodica::KOPIRAJ }}</button>
+            </div>
+        @endif
     </article>
 @endsection

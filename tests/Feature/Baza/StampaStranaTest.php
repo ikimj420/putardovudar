@@ -26,7 +26,7 @@ class StampaStranaTest extends BazaTestCase
         $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
 
         $prilika = Prilika::factory()->objavljena()->create(['rok' => '2026-12-15', 'naziv_izvora' => 'Probni izvor', 'link_izvora' => 'https://primer.rs/konkurs']);
-        $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.']]);
+        $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.'], 'primer' => 'Primer.']);
         $organizacija = Organizacija::factory()->objavljena()->create(['telefon' => '011/123-456', 'sajt' => 'https://primer.rs/', 'usluge' => ['Savetovanje']]);
 
         $sablon = Sablon::factory()->objavljen()->create();
@@ -79,7 +79,7 @@ class StampaStranaTest extends BazaTestCase
         $sakriveno = $this->selektoriSa($this->stampa(), 'display: none');
         $stranice = $this->strane();
 
-        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci'], $sakriveno);
+        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
 
         foreach ($sakriveno as $selektor) {
             $klasa = ltrim($selektor, '.');

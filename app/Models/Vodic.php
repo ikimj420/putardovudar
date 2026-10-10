@@ -14,8 +14,9 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property StatusObjave $status
  * @property list<string>|null $koraci
+ * @property string|null $primer gotov primer (pismo, e-pošta, CV…) koji se na strani vodiča pokazuje ispod koraka
  */
-#[Fillable(['naslov', 'slug', 'kratak_opis', 'tekst', 'koraci', 'beleska', 'status'])]
+#[Fillable(['naslov', 'slug', 'kratak_opis', 'tekst', 'koraci', 'primer', 'beleska', 'status'])]
 class Vodic extends Model
 {
     /** @use HasFactory<VodicFactory> */

@@ -1017,6 +1017,31 @@ h1.prazno {
   }
 }
 
+/* Dugme „Kopiraj" (primer u vodiču, napisan tekst): vidi se samo uz skript, jer kopiranje u međuspremnik traži skript. */
+.dugme-kopiraj {
+  align-self: flex-start;
+  min-width: 150px;
+  min-height: 44px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--button-dark-bg);
+  color: var(--button-dark-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.dugme-kopiraj:hover {
+  background: var(--blue);
+  color: var(--dark);
+}
+
+.dugme-kopiraj[hidden] {
+  display: none;
+}
+
 /* Šabloni za pisanje: obrazac sa poljima i sklopljen tekst koji liči na dopis (novi redovi ostaju). */
 .obrazac {
   display: flex;
@@ -1089,7 +1114,8 @@ h1.prazno {
   font-weight: 700;
 }
 
-.sklopljen-tekst {
+.sklopljen-tekst,
+.primer-tekst {
   padding: 18px;
   border-radius: var(--radius);
   background: var(--input-bg);
@@ -1125,7 +1151,8 @@ h1.prazno {
   .dugme-veza,
   .obrazac,
   .uputstvo,
-  .plutajuci {
+  .plutajuci,
+  .dugme-kopiraj {
     display: none;
   }
 
@@ -1149,6 +1176,7 @@ h1.prazno {
   .izvor,
   .izvor-upozorenje,
   .sklopljen-tekst,
+  .primer-tekst,
   .koraci li,
   .usluge li,
   .oznake .oznaka,

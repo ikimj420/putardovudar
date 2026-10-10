@@ -186,4 +186,56 @@
                 });
         });
     });
+
+    // Dugme „Kopiraj": kopira tekst iz elementa na koji pokazuje data-kopiraj. Vidi se tek kad skript radi; bez međuspremnika tekst se samo označi.
+    function prikaziKopiraj(koren) {
+        (koren || document).querySelectorAll('[data-kopiraj]').forEach(function (dugme) {
+            dugme.hidden = false;
+        });
+    }
+
+    window.prikaziKopiraj = prikaziKopiraj;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        prikaziKopiraj(document);
+    });
+
+    document.addEventListener('click', function (dogadjaj) {
+        var dugme = dogadjaj.target.closest('[data-kopiraj]');
+        var izvor = dugme ? document.getElementById(dugme.getAttribute('data-kopiraj')) : null;
+
+        if (!dugme || !izvor) {
+            return;
+        }
+
+        var naziv = dugme.textContent;
+
+        function gotovo() {
+            dugme.textContent = dugme.getAttribute('data-kopirano');
+            window.setTimeout(function () {
+                dugme.textContent = naziv;
+            }, 2000);
+        }
+
+        function oznaci() {
+            var opseg = document.createRange();
+            opseg.selectNodeContents(izvor);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(opseg);
+
+            try {
+                if (document.execCommand('copy')) {
+                    gotovo();
+                }
+            } catch (greska) {
+                // Tekst ostaje označen; čovek ga kopira sam.
+            }
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(izvor.textContent).then(gotovo, oznaci);
+        } else {
+            oznaci();
+        }
+    });
 })();

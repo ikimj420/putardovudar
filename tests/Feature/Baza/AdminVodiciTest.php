@@ -164,13 +164,32 @@ class AdminVodiciTest extends AdminBazaTestCase
         }
     }
 
+    // Paket 56: primer se snima uz vodič i može da se obriše (prazno polje je vodič bez primera).
+    #[Test]
+    public function primer_se_snima_menja_i_brise(): void
+    {
+        Livewire::test(CreateVodic::class)
+            ->fillForm(['naslov' => 'Sa primerom', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.', 'primer' => "Poštovani,\n\nPrimer pisma."])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $vodic = Vodic::query()->sole();
+        $this->assertSame("Poštovani,\n\nPrimer pisma.", $vodic->primer);
+
+        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primer' => 'Novi primer.'])->call('save')->assertHasNoFormErrors();
+        $this->assertSame('Novi primer.', $vodic->fresh()->primer);
+
+        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primer' => ''])->call('save')->assertHasNoFormErrors();
+        $this->assertNull($vodic->fresh()->primer);
+    }
+
     #[Test]
     public function natpisi_i_objasnjenja_polja_su_na_srpskom(): void
     {
         $this->get(VodicResource::getUrl('create'))->assertOk()->assertSeeInOrder([
             'Naslov', 'Naslov vodiča koji se vidi na spisku', 'Slug', 'Deo adrese strane',
             'Kratak opis', 'Jedna do dve rečenice za spisak', 'Tekst', 'Ceo vodič, običnim rečima',
-            'Koraci', 'Spisak koraka redom', 'Beleška', 'Samo za tebe, ne vidi se na sajtu',
+            'Koraci', 'Spisak koraka redom', 'Primer', 'Gotov primer (pismo, e-pošta, CV…)', 'Beleška', 'Samo za tebe, ne vidi se na sajtu',
             'Status', 'Nacrt se ne vidi javno, a Objavljeno se vidi na sajtu.',
         ]);
     }

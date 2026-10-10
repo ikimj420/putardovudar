@@ -15,4 +15,11 @@ final class PrikazVodica
     public const KORACI = 'Koraci';
 
     public const OZNAKA = 'Vodič';
+
+    // Primer ispod koraka (paket 56); tekstovi su predlog, Ivan odobrava (PITANJA-55-56.md).
+    public const PRIMER = 'Primer';
+
+    public const KOPIRAJ = 'Kopiraj';
+
+    public const KOPIRANO = 'Kopirano';
 }

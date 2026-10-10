@@ -234,6 +234,6 @@ class PlutajuciPomocnikTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/@media \(max-width: 719px\) \{\s*\.plutajuci-prozor \{\s*inset: 0;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.plutajuci-zatvori \{[^}]*min-height: 44px;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.sadrzaj \{[^}]*padding-bottom: 96px;/', $stil);
-        $this->assertStringContainsString('.plutajuci {', substr($stil, (int) strpos($stil, '@media print')));
+        $this->assertMatchesRegularExpression('/\.plutajuci[,\s][^}]*display: none;/', substr($stil, (int) strpos($stil, '@media print')));
     }
 }

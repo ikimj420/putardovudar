@@ -185,6 +185,6 @@ class SabloniJavnoTest extends BazaTestCase
         $html = $this->get(route('sabloni.index'))->assertOk()->getContent();
 
         $this->assertMatchesRegularExpression('#<a href="'.preg_quote(route('sabloni.index'), '#').'">'.PrikazSablona::NASLOV.'</a>#', $html);
-        $this->assertMatchesRegularExpression('/\.sklopljen-tekst \{[^}]*white-space: pre-wrap;/', $this->stilBezKomentara());
+        $this->assertMatchesRegularExpression('/\.sklopljen-tekst,\n\.primer-tekst \{[^}]*white-space: pre-wrap;/', $this->stilBezKomentara());
     }
 }

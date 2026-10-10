@@ -46,6 +46,12 @@ class VodicForm
                     ->defaultItems(0)
                     ->reorderable()
                     ->columnSpanFull(),
+                Textarea::make('primer')
+                    ->label('Primer')
+                    ->helperText('Gotov primer (pismo, e-pošta, CV…); vidi se na strani odmah ispod koraka, sa dugmetom „Kopiraj“. Ostavi prazno ako vodič nema primer.')
+                    ->rows(8)
+                    ->autosize()
+                    ->columnSpanFull(),
                 Textarea::make('beleska')
                     ->label('Beleška')
                     ->helperText('Samo za tebe, ne vidi se na sajtu; npr. odakle je vodič.')
