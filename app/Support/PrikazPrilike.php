@@ -11,6 +11,9 @@ final class PrikazPrilike
 {
     public const NEMA_PRILIKA = 'Trenutno nema otvorenih prilika.';
 
+    // Kad izabrana vrsta i grupa nemaju zajedničku priliku, a prilike inače ima; predlog je u PITANJA-39-45.md.
+    public const NEMA_PRILIKA_ZA_IZBOR = 'Nema otvorenih prilika za ovaj izbor.';
+
     public const SVE_PRILIKE = 'Sve prilike';
 
     // Naziv grupe dugmadi za filter, čita ga čitač ekrana; predlog je u PITANJA-26-38.md.

@@ -144,6 +144,31 @@ class UvozObradiTest extends BazaTestCase
         $this->assertFalse(Prilika::javne()->whereKey($prilika->id)->exists());
     }
 
+    /** @return array<string, array{0: string, 1: StatusPrilike}> */
+    public static function stranaSaRecimaGrupe(): array
+    {
+        return [
+            'citat je deo druge reči' => ['<p>Programi u Romania i Bugarskoj.</p>', StatusPrilike::Nacrt],
+            'citat je cela reč' => ['<p>Zajednica Roma u Srbiji.</p>', StatusPrilike::Objavljeno],
+        ];
+    }
+
+    // Citat piše na strani samo kao cela reč: „Roma" ne piše na strani na kojoj piše samo „Romania".
+    #[Test]
+    #[DataProvider('stranaSaRecimaGrupe')]
+    public function citat_se_na_strani_trazi_kao_cela_rec(string $recenica, StatusPrilike $status): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([
+            self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p>'.$recenica.'<p>Konkurs za stipendije.</p>', false),
+            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'romi', 'citat' => 'Roma']]]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame($status, $nacrt->fresh()->status);
+    }
+
     // Ogledalo: rok od danas je još dobar, pa se objavljuje.
     #[Test]
     public function rok_danas_nije_prosao(): void

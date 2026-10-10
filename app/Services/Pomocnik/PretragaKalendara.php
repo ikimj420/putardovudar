@@ -19,10 +19,9 @@ final class PretragaKalendara
     /** @return Collection<int, KalendarStavka> */
     public function pronadji(Formular $formular): Collection
     {
-        // Reči iz pitanja bez onih koje samo kažu grupu ili vrstu (stavka kalendara nema vrstu, a grupe se gledaju posebno); ostale ne
-        // gube ni kad liče na vrstu („ŠTIT" počinje kao „stipendija").
-        $jeLiRec = fn (?string $rec) => $rec !== null && Grupa::izTeksta($rec) === [] && ! $this->jeRecVrste($rec);
-        $izrazi = array_values(array_filter($formular->sveKljucneReci, $jeLiRec));
+        // Iz svake fraze ispadaju reči koje samo kažu grupu ili vrstu (stavka kalendara nema vrstu, a grupe se gledaju posebno); ostale
+        // ne gube ni kad liče na vrstu („ŠTIT" počinje kao „stipendija"), pa „stipendija Dositeja" traži „dositeja".
+        $izrazi = $this->bezReciVrsteIGrupe($formular->sveKljucneReci);
 
         // Sama reč „kome" (mlade) ne otvara kalendar, ali kad ga otvori druga reč, i ona mora da piše u stavci: bez nje bi
         // „program" iz „program za roditelje" pogodio svaku stavku sa tom rečju.
@@ -30,12 +29,41 @@ final class PretragaKalendara
             return new Collection;
         }
 
-        $izrazi = array_values(array_filter([$formular->kome, ...$izrazi], $jeLiRec));
+        $izrazi = [...$this->bezReciVrsteIGrupe($formular->kome === null ? [] : [$formular->kome]), ...$izrazi];
 
         return KalendarStavka::javne()->orderBy('otvoreno_do', 'desc')->orderBy('id')->limit(self::NAJVISE_KANDIDATA)->get()
             ->filter(fn (KalendarStavka $stavka) => $this->sadrziSveIzraze($stavka, $izrazi) && $this->jeZaGrupu($stavka, $formular))
             ->take(self::NAJVISE_ZAPISA)
             ->values();
+    }
+
+    /**
+     * @param  list<string>  $fraze
+     * @return list<string>
+     */
+    private function bezReciVrsteIGrupe(array $fraze): array
+    {
+        $izrazi = [];
+
+        foreach ($fraze as $fraza) {
+            foreach (Grupa::bezReciGrupe($fraza) as $deo) {
+                $niz = [];
+
+                foreach ([...explode(' ', $deo), null] as $rec) {
+                    if ($rec !== null && ! $this->jeRecVrste($rec)) {
+                        $niz[] = $rec;
+
+                        continue;
+                    }
+
+                    $izraz = Grupa::bezPredlogaNaKrajevima(implode(' ', $niz));
+                    $izrazi = $izraz === '' ? $izrazi : [...$izrazi, $izraz];
+                    $niz = [];
+                }
+            }
+        }
+
+        return $izrazi;
     }
 
     private function jeRecVrste(string $rec): bool

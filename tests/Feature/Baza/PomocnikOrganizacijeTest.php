@@ -113,6 +113,19 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         $this->assertNull($odgovor->razlogSablona);
     }
 
+    // Reč grupe u imenu organizacije („Opre Roma") ne sme da ukloni celu frazu: ostatak („opre") se i dalje traži.
+    #[Test]
+    public function ime_organizacije_sa_recju_grupe_se_nalazi_po_ostatku_fraze(): void
+    {
+        $this->nsz(['naziv' => 'Opre Roma', 'kratak_opis' => 'Organizacija.', 'usluge' => ['Savetovanje']]);
+        $this->nsz(['naziv' => 'Druga organizacija', 'kratak_opis' => 'Savetovanje za sve.']);
+        $this->model(['kljucne_reci' => ['Opre Roma']]);
+
+        $odgovor = $this->pitaj('Gde je Opre Roma?');
+
+        $this->assertSame(['Opre Roma'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
+    }
+
     // Isto merilo, nad pravim podacima iz seedera: NSZ se objavi, ostalih pet ostaje nacrt.
     #[Test]
     public function nad_podacima_iz_seedera_nsz_se_nalazi_tek_kad_je_objavljena_a_nacrti_nikad(): void

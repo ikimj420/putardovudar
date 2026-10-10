@@ -166,4 +166,26 @@ class UvozObradiPonovoTest extends BazaTestCase
         $this->assertSame('Ivan je dopisao opis.', $menjan->fresh()->opis);
         $this->assertArrayNotHasKey('pravilo', $menjan->fresh()->predlog);
     }
+
+    // Granica „niko nije menjao": izmena do minut posle obrade (sat obrade i čuvanja ne mora da je isti) još važi za neizmenjen nacrt,
+    // a izmena posle minuta ne.
+    #[Test]
+    public function izmena_do_minut_posle_obrade_ne_isklucuje_nacrt_a_posle_minuta_iskljucuje(): void
+    {
+        $pocetak = now();
+        $unutra = $this->starNacrt(['naslov' => 'Unutra', 'link_izvora' => 'https://a.test/unutra']);
+        $van = $this->starNacrt(['naslov' => 'Van', 'link_izvora' => 'https://a.test/van']);
+        $this->travelTo($pocetak->copy()->addSeconds(30));
+        $unutra->update(['opis' => 'Izmena posle 30 sekundi.']);
+        $this->travelTo($pocetak->copy()->addSeconds(61));
+        $van->update(['opis' => 'Izmena posle 61 sekunde.']);
+        Http::fake(['https://a.test/unutra' => $this->strana(), self::OLLAMA => $this->ollama()]);
+
+        // Tačan ispis: nacrt van granice nije ni pokušan (ne bi bio „nije obrađeno").
+        $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutputToContain('Obrađeno nacrta: 1. Objavljeno: 1. Ostalo nacrt: 0. Nije obrađeno: 0.');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $unutra->fresh()->status);
+        $this->assertSame(StatusPrilike::Nacrt, $van->fresh()->status);
+        $this->assertArrayNotHasKey('pravilo', $van->fresh()->predlog);
+    }
 }

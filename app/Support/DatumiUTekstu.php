@@ -50,6 +50,32 @@ final class DatumiUTekstu
         return array_values($datumi);
     }
 
+    /**
+     * „januara 2027" i sama godina („2027"), za godine koje datum sa danom ne vidi; godina bez meseca ima mesec null.
+     *
+     * @return list<array{mesec: int|null, godina: int}>
+     */
+    public static function mesecIliGodina(string $tekst): array
+    {
+        $tekst = mb_strtolower($tekst);
+        $nazivi = self::nazivi();
+        $nadjeno = [];
+
+        preg_match_all('/('.implode('|', array_map('preg_quote', array_keys($nazivi))).')(?!\p{L})\s*,?\s*(20\d{2})(?!\d)/u', $tekst, $recima, PREG_SET_ORDER);
+
+        foreach ($recima as $deo) {
+            $nadjeno[$nazivi[$deo[1]].'-'.$deo[2]] = ['mesec' => $nazivi[$deo[1]], 'godina' => (int) $deo[2]];
+        }
+
+        preg_match_all('/(?<!\d)(20\d{2})(?!\d)/', $tekst, $godine);
+
+        foreach ($godine[1] as $godina) {
+            $nadjeno['-'.$godina] = ['mesec' => null, 'godina' => (int) $godina];
+        }
+
+        return array_values($nadjeno);
+    }
+
     /** @return array<string, int> mesec napisan rečima (nominativ i genitiv) → broj meseca */
     private static function nazivi(): array
     {

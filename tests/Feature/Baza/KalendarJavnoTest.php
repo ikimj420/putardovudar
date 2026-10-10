@@ -55,6 +55,24 @@ class KalendarJavnoTest extends BazaTestCase
         return $nalazi[1];
     }
 
+    // „Danas" je po beogradskom vremenu, a ne po UTC: posle ponoći u Beogradu stavka završena juče je javna, a pre ponoći ona koja
+    // se završava danas nije.
+    #[Test]
+    public function danas_se_racuna_po_beogradskom_vremenu_oko_ponoci(): void
+    {
+        $this->stavka('Juče', '2026-10-09');
+        $this->stavka('Danas', '2026-10-10');
+
+        $this->travelTo(Carbon::create(2026, 10, 10, 0, 30, 0, 'Europe/Belgrade'));
+        $this->assertSame(['Juče'], $this->naslovi($this->strana()));
+
+        $this->travelTo(Carbon::create(2026, 10, 9, 23, 30, 0, 'Europe/Belgrade'));
+        $this->assertSame([], $this->naslovi($this->strana()));
+
+        $this->travelTo(Carbon::create(2026, 10, 11, 0, 30, 0, 'Europe/Belgrade'));
+        $this->assertEqualsCanonicalizing(['Juče', 'Danas'], $this->naslovi($this->strana()));
+    }
+
     #[Test]
     public function nacrt_nije_javan_a_objavljena_stavka_jeste(): void
     {

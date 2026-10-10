@@ -37,7 +37,7 @@ final class KalendarIzPrilike
     private function istaStvar(KalendarStavka $stavka, Prilika $prilika): bool
     {
         return blank($prilika->link_izvora)
-            ? blank($stavka->link_izvora) && $stavka->naziv === $prilika->naslov
+            ? $stavka->naziv === $prilika->naslov
             : PrikazKalendara::istiLink($stavka->link_izvora, $prilika->link_izvora);
     }
 }

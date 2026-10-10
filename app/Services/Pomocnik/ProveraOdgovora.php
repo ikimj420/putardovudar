@@ -41,8 +41,12 @@ final class ProveraOdgovora
         '/\b(?:podat|informacij)\w*\s+'.self::IZMEDJU_PRE_NEMA.'{0,3}nem(?:a|am|amo|aju)\b(?!\s+(?:'.self::NEMA_SAVET.'))/',
     ];
 
-    // Odgovor o kalendaru ne sme da kaže šta će biti, samo šta je bilo: „otvoriće se", „se otvara", „biće otvorena", „očekuje se".
-    private const PREDVIDJANJE = '/\b(?:(?:se|ce\s+se)\s+otvar\w+|ce\s+se\s+otvori\w*|otvara\s+se|otvori(?:ce|ti)\b|otvorit\s+ce|bice\s+otvoren\w*|ocekuje\s+se|najavljen\w*|sledece\s+godine|naredne\s+godine|ponovo\s+ce)/';
+    // Odgovor o kalendaru ne sme da kaže šta će biti, samo šta je bilo. Svaki oblik „će" („otvoriće", „počeće", „biće") i
+    // sadašnje „se otvara" kažu budućnost; „se otvarala" je prošlo i prolazi.
+    private const PREDVIDJANJE = '/\b(?:ce|bice|otvorice|se\s+(?:otvara|otvaraju|ocekuje|ocekuju)|(?:otvara|otvaraju|ocekuje|ocekuju)\s+se|najavljen\w*|(?:sledece|naredne)\s+godine|sledeci\s+put)\b/';
+
+    // Isto kad model piše sa „ć": svaka reč na „-će".
+    private const BUDUCE_VREME = '/(?<!\p{L})\p{L}*će(?!\p{L})/u';
 
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 
@@ -73,9 +77,9 @@ final class ProveraOdgovora
             return 'datum kog nema u zapisima';
         }
 
-        // Kalendar nikad ne predviđa: budući datum (godina posle današnjeg dana) sme samo ako je rok neke prilike u odgovoru,
-        // a rečenica o tome šta će biti otvoreno ne prolazi.
-        if ($kalendar->isNotEmpty() && ($this->imaBuduciDatum($odgovor, $zapisi) || $this->predvidja($odgovor))) {
+        // Kalendar nikad ne predviđa: budući datum, mesec ili godina sme samo ako je rok neke prilike (ili deo naziva) u odgovoru,
+        // a rečenica o tome šta će biti ne prolazi.
+        if ($kalendar->isNotEmpty() && ($this->imaBuduciDatum($odgovor, $zapisi, $kalendar) || $this->predvidja($odgovor))) {
             return 'odgovor predviđa budućnost';
         }
 
@@ -202,19 +206,34 @@ final class ProveraOdgovora
         return true;
     }
 
-    // Datum sa godinom posle današnjeg dana je budući; sme samo ako je rok neke prilike u odgovoru (prilike imaju buduće rokove).
-    /** @param  Collection<int, Prilika>  $zapisi */
-    private function imaBuduciDatum(string $odgovor, Collection $zapisi): bool
+    // Budući je datum sa godinom posle današnjeg dana, mesec sa godinom posle tekućeg meseca i sama godina posle tekuće. Sme samo ako
+    // je to rok neke prilike u odgovoru (prilike imaju buduće rokove) ili je godina deo naziva prilike ili stavke („konkurs za 2027.").
+    /**
+     * @param  Collection<int, Prilika>  $zapisi
+     * @param  Collection<int, KalendarStavka>  $kalendar
+     */
+    private function imaBuduciDatum(string $odgovor, Collection $zapisi, Collection $kalendar): bool
     {
         foreach (DatumiUTekstu::izvuci($odgovor) as $datum) {
             if ($datum['godina'] === null || ! checkdate($datum['mesec'], $datum['dan'], $datum['godina'])) {
                 continue;
             }
 
-            $buduci = Carbon::create($datum['godina'], $datum['mesec'], $datum['dan'])->startOfDay()->greaterThan(today());
-            $jeRokPrilike = $zapisi->contains(fn (Prilika $prilika) => $prilika->rok !== null && $prilika->rok->isSameDay(Carbon::create($datum['godina'], $datum['mesec'], $datum['dan'])));
+            $dan = Carbon::create($datum['godina'], $datum['mesec'], $datum['dan']);
+            $jeRokPrilike = $zapisi->contains(fn (Prilika $prilika) => $prilika->rok !== null && $prilika->rok->isSameDay($dan));
 
-            if ($buduci && ! $jeRokPrilike) {
+            if ($dan->startOfDay()->greaterThan(today()) && ! $jeRokPrilike) {
+                return true;
+            }
+        }
+
+        $nazivi = $zapisi->pluck('naslov')->merge($kalendar->pluck('naziv'))->implode(' ');
+
+        foreach (DatumiUTekstu::mesecIliGodina($odgovor) as ['mesec' => $mesec, 'godina' => $godina]) {
+            $buduci = $mesec === null ? $godina > today()->year : Carbon::create($godina, $mesec, 1)->startOfMonth()->greaterThan(today()->startOfMonth());
+            $jeRokPrilike = $zapisi->contains(fn (Prilika $prilika) => $prilika->rok !== null && $prilika->rok->year === $godina && ($mesec === null || $prilika->rok->month === $mesec));
+
+            if ($buduci && ! $jeRokPrilike && ! ($mesec === null && str_contains($nazivi, (string) $godina))) {
                 return true;
             }
         }
@@ -224,7 +243,7 @@ final class ProveraOdgovora
 
     private function predvidja(string $odgovor): bool
     {
-        return preg_match(self::PREDVIDJANJE, PoredjenjeTeksta::normalizuj($odgovor)) === 1;
+        return preg_match(self::PREDVIDJANJE, PoredjenjeTeksta::normalizuj($odgovor)) === 1 || preg_match(self::BUDUCE_VREME, mb_strtolower($odgovor)) === 1;
     }
 
     private function normalizuj(string $adresa): string

@@ -15,14 +15,14 @@ class GrupaTest extends TestCase
     public static function prolaze(): array
     {
         $primeri = [
-            'osnovci' => ['Konkurs za osnovce', 'Otvoreno za učenike osnovnih škola', 'osnovnoškolci iz cele Srbije', 'Učenici osmog razreda osnovne škole mogu da se prijave', 'Za svakog osnovca', 'ĐACI OSNOVNIH ŠKOLA'],
-            'srednjoskolci' => ['Za srednjoškolce', 'Učenici srednjih škola', 'gimnazijalci i maturanti', 'Poziv gimnazijalcima', 'za maturante', 'Poziv srednjoškolkama i srednjoškolcima', 'učenicima trećeg razreda srednje škole'],
-            'studenti' => ['Studenti prve godine', 'za studentkinje', 'Otvoreno studentima', 'Stipendije za studente iz Srbije'],
-            'master-doktorski' => ['Master studije u inostranstvu', 'za doktorske studije', 'doktoranti i doktorandi', 'postdiplomske studije', 'magistarske studije', 'PhD kandidati', 'studenti mastera'],
+            'osnovci' => ['Konkurs za osnovce', 'Otvoreno za učenike osnovnih škola', 'osnovnoškolci iz cele Srbije', 'Učenici osmog razreda osnovne škole mogu da se prijave', 'Za svakog osnovca', 'ĐACI OSNOVNIH ŠKOLA', 'Nagrade za 200 osnovaca', 'Poziv za đaka osnovne škole'],
+            'srednjoskolci' => ['Za srednjoškolce', 'Učenici srednjih škola', 'gimnazijalci i maturanti', 'Poziv gimnazijalcima', 'za maturante', 'Poziv srednjoškolkama i srednjoškolcima', 'učenicima trećeg razreda srednje škole', 'Za 50 gimnazijalaca', 'Nagrade za najbolje maturanata'],
+            'studenti' => ['Studenti prve godine', 'za studentkinje', 'Otvoreno studentima', 'Stipendije za studente iz Srbije', 'Stipendije za 100 studenata'],
+            'master-doktorski' => ['Master studije u inostranstvu', 'za doktorske studije', 'doktoranti i doktorandi', 'Poziv doktorandima', 'Za 20 doktoranada', 'postdiplomske studije', 'magistarske studije', 'PhD kandidati', 'studenti mastera'],
             'nezaposleni-mladi' => ['Nezaposleni mladi do 30 godina', 'za nezaposlena lica', 'mladi bez posla', 'osobe bez zaposlenja', 'Tražioci posla'],
             'povratnici' => ['Povratnici iz inostranstva', 'Povratnici po osnovu sporazuma o readmisiji', 'povratnik u Srbiju', 'Povratak u Srbiju', 'vraćeni iz inostranstva', 'Osobe po sporazumu o readmisiji', 'repatrijaci'],
             'organizacije' => ['Konkurs za organizacije civilnog društva', 'Udruženja građana', 'nevladine organizacije', 'NVO sektor', 'OCD iz cele Srbije', 'neprofitne organizacije', 'Podrška organizacijama koje rade sa mladima', 'organizacije mladih', 'civilni sektor'],
-            'romi' => ['Rom iz Niša traži posao', 'Konkurs za Romi', 'Zajednica Roma u Srbiji', 'namenjeno Romima', 'pomoć Romu', 'sa Romom', 'mladi Rome', 'mlada Romkinja', 'stipendije za Romkinje', 'Romkinjama je otvoreno', 'romski mladi', 'romska zajednica', 'ZA ROMSKU ZAJEDNICU I ROMA', '(Romi), Romkinje; Romima!', 'РОМИ И РОМКИЊЕ'],
+            'romi' => ['Rom iz Niša traži posao', 'Konkurs za Romi', 'Zajednica Roma u Srbiji', 'namenjeno Romima', 'pomoć Romu', 'sa Romom', 'mladi Rome', 'mlada Romkinja', 'stipendije za Romkinje', 'Romkinjama je otvoreno', 'romski mladi', 'romska zajednica', 'u romskoj naselju', 'ZA ROMSKU ZAJEDNICU I ROMA', '(Romi), Romkinje; Romima!', 'РОМИ И РОМКИЊЕ'],
         ];
         $skup = [];
 
@@ -46,8 +46,8 @@ class GrupaTest extends TestCase
     public static function lice(): array
     {
         $primeri = [
-            'osnovci' => ['Osnovna škola traži nastavnika', 'Osnove programiranja', 'Osnovni kurs engleskog', 'nastavnici osnovnih škola', 'osnovica poreza'],
-            'srednjoskolci' => ['Srednja klasa', 'Srednji nivo znanja', 'nastavnici srednjih škola', 'srednjoročni plan'],
+            'osnovci' => ['Osnovna škola traži nastavnika', 'Osnove programiranja', 'Osnovni kurs engleskog', 'nastavnici osnovnih škola', 'osnovica poreza', 'Dakle, osnovna škola traži nastavnika'],
+            'srednjoskolci' => ['Srednja klasa', 'Srednji nivo znanja', 'nastavnici srednjih škola', 'srednjoročni plan', 'Dakle srednja klasa'],
             'studenti' => ['Studio za dizajn', 'studije u inostranstvu', 'Stud. servis', 'istraživači'],
             'master-doktorski' => ['Mastercard popust', 'Masterplan grada', 'doktor opšte prakse', 'majstor za vodovod', 'Mastering Excel'],
             'nezaposleni-mladi' => ['Zaposleni u firmi', 'zaposlenje u Nišu', 'Posao za mlade', 'mladi u zajednici'],
@@ -111,5 +111,28 @@ class GrupaTest extends TestCase
         $this->assertSame([Grupa::Studenti, Grupa::NezaposleniMladi, Grupa::Romi], Grupa::izTeksta('Romi i nezaposleni mladi, kao i studenti'));
         $this->assertSame([Grupa::Studenti, Grupa::MasterDoktorski], Grupa::izTeksta('studenti master studija'));
         $this->assertSame([], Grupa::izTeksta('Konkurs za firme'));
+    }
+
+    /** @return array<string, array{0: string, 1: list<string>}> */
+    public static function ostaciFraza(): array
+    {
+        return [
+            'ime sa rečju grupe' => ['Opre Roma', ['opre']],
+            'predlog na početku ispada' => ['za studente u tehnici', ['tehnici']],
+            'predlog na kraju ispada' => ['tehnici za studente', ['tehnici']],
+            'samo grupa' => ['studente', []],
+            'dve reči grupe' => ['mladi Romi', ['mladi']],
+            'bez reči grupe' => ['skladištu', ['skladistu']],
+            'fraza grupe od više reči' => ['organizacije mladih', []],
+            'reč grupe u sredini deli frazu' => ['Opre Roma u zajednici', ['opre', 'zajednici']],
+        ];
+    }
+
+    /** @param  list<string>  $ostatak */
+    #[Test]
+    #[DataProvider('ostaciFraza')]
+    public function bez_reci_grupe_ostavlja_ono_sto_pitanje_jos_trazi(string $fraza, array $ostatak): void
+    {
+        $this->assertSame($ostatak, Grupa::bezReciGrupe($fraza), $fraza);
     }
 }

@@ -74,6 +74,32 @@ class FilterPrilikaPoGrupiTest extends BazaTestCase
         $this->assertNotContains('Za '.$grupa->value, $this->naslovi($this->get(route('prilike.index', ['grupa' => $druga]))->getContent()));
     }
 
+    // Prazan presek vrste i grupe ne tvrdi da nema nijedne prilike (ima ih, samo ne takvih); ogledala: neprazan presek i nijedna prilika.
+    #[Test]
+    public function prazan_presek_vrste_i_grupe_ima_svoj_tekst(): void
+    {
+        Prilika::factory()->objavljena()->zaGrupe(Grupa::Romi)->create(['naslov' => 'Posao za Rome', 'vrsta' => VrstaPrilike::Posao, 'rok' => '2026-12-15']);
+        Prilika::factory()->objavljena()->zaGrupe(Grupa::Studenti)->create(['naslov' => 'Praksa za studente', 'vrsta' => VrstaPrilike::Praksa, 'rok' => '2026-12-15']);
+
+        $prazan = $this->vidljivTekst($this->get(route('prilike.index', ['vrsta' => 'posao', 'grupa' => 'studenti']))->assertOk()->getContent());
+        $this->assertStringContainsString(PrikazPrilike::NEMA_PRILIKA_ZA_IZBOR, $prazan);
+        $this->assertStringNotContainsString(PrikazPrilike::NEMA_PRILIKA, $prazan);
+
+        $pun = $this->vidljivTekst($this->get(route('prilike.index', ['vrsta' => 'posao', 'grupa' => 'romi']))->assertOk()->getContent());
+        $this->assertStringNotContainsString(PrikazPrilike::NEMA_PRILIKA_ZA_IZBOR, $pun);
+        $this->assertStringNotContainsString(PrikazPrilike::NEMA_PRILIKA, $pun);
+        $this->assertStringContainsString('Posao za Rome', $pun);
+    }
+
+    #[Test]
+    public function bez_ijedne_prilike_stoji_stari_tekst_i_uz_izbor(): void
+    {
+        $tekst = $this->vidljivTekst($this->get(route('prilike.index', ['vrsta' => 'posao', 'grupa' => 'studenti']))->assertOk()->getContent());
+
+        $this->assertStringContainsString(PrikazPrilike::NEMA_PRILIKA, $tekst);
+        $this->assertStringNotContainsString(PrikazPrilike::NEMA_PRILIKA_ZA_IZBOR, $tekst);
+    }
+
     // Prilika za više grupa ulazi u spisak svake od njih.
     #[Test]
     public function prilika_za_vise_grupa_je_u_spisku_svake_od_njih(): void
@@ -179,6 +205,7 @@ class FilterPrilikaPoGrupiTest extends BazaTestCase
         $html = $this->get(route('prilike.index', ['grupa' => $vrednost]))->assertOk()->getContent();
 
         $this->assertCount(count(Grupa::cases()), $this->naslovi($html));
+        $this->assertNotEmpty($this->dugmad($html));
         $this->assertSame([], array_filter($this->dugmad($html), fn (array $d) => $d[2]));
         $this->assertSame([PrikazPrilike::SVE_PRILIKE], array_column(array_filter($this->dugmad($html, 'filteri'), fn (array $d) => $d[2]), 0));
     }

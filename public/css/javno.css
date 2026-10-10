@@ -60,14 +60,14 @@ a {
   color: inherit;
 }
 
-/* Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu: 57 px sa skriptom i na laptopu, 101 px bez skripta na telefonu, uz 16 px. */
+/* Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu: 57 px sa skriptom i na laptopu, 146 px bez skripta na telefonu (pet veza u dva reda), uz 16 px. */
 html {
   scroll-padding-top: 73px;
 }
 
 @media (max-width: 1000px) {
   html:not(.js) {
-    scroll-padding-top: 117px;
+    scroll-padding-top: 162px;
   }
 }
 

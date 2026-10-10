@@ -94,6 +94,27 @@ class PomocnikGrupeTest extends BazaTestCase
         $this->assertEqualsCanonicalizing(['Za grupu', 'Za sve grupe'], $this->naslovi($rezultat), $grupa->value);
     }
 
+    /** @return array<string, array{0: string, 1: string, 2: list<string>}> fraza koju vrati model, pitanje, reči koje ostaju */
+    public static function frazeSaRecimaGrupe(): array
+    {
+        return [
+            'ime sa rečju grupe' => ['Opre Roma', 'Gde je Opre Roma?', ['opre']],
+            'predlog ispada' => ['studente u tehnici', 'Ima li nešto za studente u tehnici?', ['tehnici']],
+            'sama grupa ispada' => ['studente', 'Ima li nešto za studente?', []],
+            'bez reči grupe ostaje kakva jeste' => ['skladištu', 'Ima li nešto u skladištu?', ['skladištu']],
+        ];
+    }
+
+    /** @param  list<string>  $ostaje */
+    #[Test]
+    #[DataProvider('frazeSaRecimaGrupe')]
+    public function fraza_sa_recju_grupe_zadrzava_ostatak_a_sama_grupa_ispada(string $fraza, string $pitanje, array $ostaje): void
+    {
+        $this->model(['kljucne_reci' => [$fraza]]);
+
+        $this->assertSame($ostaje, $this->pitaj($pitanje)->formular->kljucneReci);
+    }
+
     // Grupu iz pitanja određuje kod po rečniku (paket 40), ne model: model koji ništa ne vrati ne gubi grupu.
     #[Test]
     public function grupu_odredjuje_kod_a_model_koji_nista_ne_vrati_je_ne_gubi(): void

@@ -303,6 +303,24 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
             ->assertSee('Citati za grupe');
     }
 
+    // Grupa koju je model predložio, a kod odbio (citat ne dokazuje grupu), ne piše kao dokaz na objavljenoj prilici; u nacrtu piše.
+    #[Test]
+    public function odbijena_grupa_ne_pise_kao_dokaz_na_objavljenoj_prilici(): void
+    {
+        $predlog = $this->predlogSaGrupama(['odbijeno' => null, 'prihvacene_grupe' => ['studenti'], 'grupe' => [
+            ['grupa' => 'studenti', 'citat' => 'Konkurs je otvoren za sve studente'],
+            ['grupa' => 'povratnici', 'citat' => 'Nema ga na strani za povratnike'],
+        ]]);
+        $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $predlog]);
+        $prilika->objavi(KoJeObjavio::Ollama);
+
+        $this->izmena($prilika)->assertFormSet(['predlog.grupe' => 'Studenti: „Konkurs je otvoren za sve studente"']);
+
+        $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => [...$predlog, 'odbijeno' => 'pravilo nije potkrepljeno citatom']]);
+
+        $this->izmena($nacrt)->assertFormSet(['predlog.grupe' => "Studenti: „Konkurs je otvoren za sve studente\"\nPovratnici iz inostranstva: „Nema ga na strani za povratnike\""]);
+    }
+
     // Ogledalo: isti predlog na prilici koju je objavio Ivan ne pokazuje tuđe citate kao dokaz.
     #[Test]
     public function na_prilici_koju_je_objavio_ivan_ne_pisu_citati_za_grupe(): void

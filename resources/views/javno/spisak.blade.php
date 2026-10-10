@@ -34,6 +34,6 @@
             </div>
         @endif
     @empty
-        <p class="prazno">{{ \App\Support\PrikazPrilike::NEMA_PRILIKA }}</p>
+        <p class="prazno">{{ $izabrana !== null && $izabranaGrupa !== null ? \App\Support\PrikazPrilike::NEMA_PRILIKA_ZA_IZBOR : \App\Support\PrikazPrilike::NEMA_PRILIKA }}</p>
     @endforelse
 @endsection

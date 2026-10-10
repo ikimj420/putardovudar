@@ -105,7 +105,7 @@ class PrilikaForm
                     ->helperText('Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.')
                     ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'citat_pravila')))
                     ->columnSpanFull(),
-                self::predlog('grupe', 'Citati za grupe', fn (mixed $state): string => self::grupePredloga($state), dug: true)
+                self::predlog('grupe', 'Citati za grupe', fn (mixed $state, ?Prilika $record): string => self::grupePredloga($state, $record?->objavio === KoJeObjavio::Ollama ? self::prihvaceneGrupe($record) : null), dug: true)
                     ->helperText('Isečci iz teksta strane koji pokazuju kome je prilika namenjena.')
                     ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'grupe')))
                     ->columnSpanFull(),
@@ -142,9 +142,19 @@ class PrilikaForm
     // Stari predlozi (do paketa 40) imaju osnov „romi" ili „srbija"; novi imaju grupe sa citatom.
     private const STARI_OSNOV = ['romi' => 'Romi', 'srbija' => 'Srbija'];
 
+    // Grupe koje je kod prihvatio (upisane u priliku); stariji predlog bez toga ima samo grupe prilike.
+    /** @return list<string> */
+    private static function prihvaceneGrupe(?Prilika $prilika): array
+    {
+        $prihvacene = data_get($prilika?->predlog, 'prihvacene_grupe');
+
+        return is_array($prihvacene) ? array_values(array_filter($prihvacene, is_string(...))) : array_map(fn (Grupa $grupa) => $grupa->value, $prilika?->izabraneGrupe() ?? []);
+    }
+
     // Po jedan red za grupu: „Studenti: „citat"". Polje se formatira i kad je sakriveno, pa pokvaren zapis ne sme da obori stranu;
-    // dva polja dele isto stanje, pa se već složen tekst ne slaže ponovo.
-    private static function grupePredloga(mixed $stanje): string
+    // dva polja dele isto stanje, pa se već složen tekst ne slaže ponovo. Sa $samoGrupe ostaju samo te grupe (objavljena prilika).
+    /** @param  list<string>|null  $samoGrupe */
+    private static function grupePredloga(mixed $stanje, ?array $samoGrupe = null): string
     {
         if (is_string($stanje)) {
             return $stanje;
@@ -155,7 +165,7 @@ class PrilikaForm
         foreach (is_array($stanje) ? $stanje : [] as $stavka) {
             $grupa = is_array($stavka) && is_string($stavka['grupa'] ?? null) ? Grupa::tryFrom($stavka['grupa']) : null;
 
-            if ($grupa !== null) {
+            if ($grupa !== null && ($samoGrupe === null || in_array($grupa->value, $samoGrupe, true))) {
                 $redovi[] = $grupa->getLabel().': „'.(is_string($stavka['citat'] ?? null) ? $stavka['citat'] : '').'"';
             }
         }

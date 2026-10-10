@@ -149,6 +149,24 @@ class PomocnikKalendarTest extends BazaTestCase
         $this->assertSame(['Stipendija Dositeja'], $this->naslovi($this->pretrazi('Kada se otvara Dositeja za mlade?')));
     }
 
+    // Fraza sa rečju vrste ili grupe ne ispada cela: ostatak („Dositeja") se traži, a ostale stavke ne ulaze.
+    #[Test]
+    public function fraza_sa_recju_vrste_ili_grupe_traži_ostatak(): void
+    {
+        $this->stavka(['naziv' => 'Stipendija Dositeja', 'grupe' => ['studenti']]);
+        $this->stavka(['naziv' => 'Stipendija Zlatna', 'grupe' => ['studenti']]);
+
+        foreach (['stipendija Dositeja', 'Dositeja za studente', 'stipendija Dositeja za studente'] as $fraza) {
+            $this->model(forma: ['kljucne_reci' => [$fraza]]);
+
+            $this->assertSame(['Stipendija Dositeja'], $this->naslovi($this->pretrazi('Kada se otvara '.$fraza.'?')), $fraza);
+        }
+
+        // Fraza koja je samo vrsta i grupa i dalje ne izlistava kalendar.
+        $this->model(forma: ['kljucne_reci' => ['stipendija za studente']]);
+        $this->assertSame([], $this->naslovi($this->pretrazi('Kada se otvara stipendija za studente?')));
+    }
+
     // Najviše tri stavke, najnovije prve; ogledalo: kad ih je tri ili manje, ulaze sve.
     #[Test]
     public function kalendar_vraca_najvise_tri_stavke_najnovije_prve(): void
@@ -287,6 +305,10 @@ class PomocnikKalendarTest extends BazaTestCase
             'početak i kraj' => ['Bila je otvorena od 22. decembra 2025. do 26. januara 2026.'],
             'bez godine' => ['Prošli put je bila otvorena do 26. januara.'],
             'bez datuma' => ['Dositeja je bila otvorena prošli put, a pojedinosti su u kalendaru.'],
+            'prošlo vreme „se otvarala"' => ['Dositeja se prošli put otvarala od 22. decembra 2025. do 26. januara 2026.'],
+            'mesec i godina u prošlosti' => ['Prošli put je bila otvorena do januara 2026.'],
+            'tekući mesec' => ['Prijave su trajale do oktobra 2026.'],
+            'tekuća godina' => ['Prošli put, 2026. godine, bila je otvorena do 26. januara.'],
         ];
     }
 
@@ -315,6 +337,17 @@ class PomocnikKalendarTest extends BazaTestCase
             'očekuje se' => ['Očekuje se ponovo u januaru.'],
             'sledeće godine' => ['Sledeće godine ponovo, u januaru.'],
             'najavljen' => ['Najavljen je novi konkurs.'],
+            'biti otvorena' => ['Dositeja će biti otvorena u januaru.'],
+            'otvorena će biti' => ['Otvorena će biti opet u januaru.'],
+            'početi' => ['Prijave će početi u januaru.'],
+            'počeće' => ['Prijave počeće u januaru.'],
+            'trajaće' => ['Prijave trajaće do kraja januara.'],
+            'bez dijakritika' => ['Dositeja ce biti otvorena u januaru.'],
+            'biće bez dijakritika' => ['Bice otvorena u januaru.'],
+            'otvoriće bez dijakritika' => ['Otvorice se opet u januaru.'],
+            'sledeći put' => ['Sledeći put prijave su u januaru.'],
+            'otvaraju se' => ['Prijave se otvaraju u januaru.'],
+            'očekuje se, obrnut redosled' => ['Prijava se očekuje u januaru.'],
         ];
     }
 
@@ -329,6 +362,52 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $this->assertTrue($odgovor->jeIzSablona(), $tekst);
         $this->assertSame('odgovor predviđa budućnost', $odgovor->razlogSablona);
+    }
+
+    // Mesec sa godinom i sama godina posle tekuće su budućnost i kad nema dana, jer ih datum sa danom ne vidi.
+    /** @return array<string, array{0: string}> */
+    public static function buduciMeseciIGodine(): array
+    {
+        return [
+            'mesec i godina' => ['Prošli put je bila otvorena do januara 2027.'],
+            'mesec ove godine posle tekućeg' => ['Prošli put je bila otvorena do decembra 2026.'],
+            'sama godina' => ['Prošli put, 2027. godine, bila je otvorena.'],
+            'ISO uz godinu' => ['Prijave su do 2027-01-15.'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('buduciMeseciIGodine')]
+    public function mesec_ili_godina_posle_tekuce_daju_sablon(string $tekst): void
+    {
+        $this->stavka();
+        $this->model($tekst);
+
+        $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
+
+        $this->assertTrue($odgovor->jeIzSablona(), $tekst);
+    }
+
+    // Ogledalo: godina u nazivu stavke nije najava, a mesec i godina roka prilike u odgovoru prolaze; bez njih ista godina ne prolazi.
+    #[Test]
+    public function godina_iz_naziva_ili_roka_prilike_prolazi_a_ista_godina_bez_njih_ne(): void
+    {
+        $stavka = $this->stavka();
+        $this->model('Konkurs za 2027. godinu prošli put je bio otvoren do 26.01.2026.');
+
+        $this->assertSame('odgovor predviđa budućnost', app(Pomocnik::class)->odgovori(self::PITANJE)->razlogSablona);
+
+        $stavka->update(['naziv' => 'Dositeja za 2027. godinu']);
+        $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
+        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+
+        $stavka->update(['naziv' => 'Stipendija Dositeja']);
+        $this->model('Prošli put do 26.01.2026, a sada je rok u januaru 2027.');
+        $this->assertSame('odgovor predviđa budućnost', app(Pomocnik::class)->odgovori(self::PITANJE)->razlogSablona);
+
+        Prilika::factory()->objavljena()->create(['naslov' => 'Dositeja ove godine', 'rok' => '2027-01-15', 'vrsta' => 'stipendija', 'kratak_opis' => 'Stipendija.', 'opis' => 'Stipendija.']);
+        $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
+        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
     }
 
     // Datum posle današnjeg dana koji stoji u napomeni stavke se ne prenosi: kalendar ne predviđa ni preko napomene.

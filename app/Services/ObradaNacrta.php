@@ -145,12 +145,18 @@ TEXT;
             $grupa = Grupa::from($stavka['grupa']);
             $citat = TekstStrane::normalizuj($stavka['citat']);
 
-            if ($citat !== '' && str_contains($strana, $citat) && $grupa->potkrepljuje($citat)) {
+            if ($citat !== '' && $this->pisePoRecima($strana, $citat) && $grupa->potkrepljuje($citat)) {
                 $prihvacene[] = $grupa;
             }
         }
 
         return Grupa::izVrednosti(array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene));
+    }
+
+    // Citat piše na strani samo kao cele reči: „roma" nije na strani na kojoj piše samo „Romania".
+    private function pisePoRecima(string $strana, string $citat): bool
+    {
+        return preg_match('/(?<![\p{L}\d])'.preg_quote($citat, '/').'(?![\p{L}\d])/u', $strana) === 1;
     }
 
     /**
@@ -190,7 +196,7 @@ TEXT;
 
         $citat = TekstStrane::normalizuj((string) $forma['citat']);
 
-        if (! str_contains($strana, $citat) || ! DatumUTekstu::postoji($citat, $forma['rok'])) {
+        if (! $this->pisePoRecima($strana, $citat) || ! DatumUTekstu::postoji($citat, $forma['rok'])) {
             return 'rok ne piše u tekstu strane';
         }
 

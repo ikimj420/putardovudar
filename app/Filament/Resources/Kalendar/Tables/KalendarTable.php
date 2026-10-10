@@ -53,7 +53,8 @@ class KalendarTable
     {
         return Split::make([
             TextColumn::make($ime.'_oznaka')->state($oznaka)->color('gray')->grow(false),
-            TextColumn::make($ime)->state($vrednost)->alignEnd()->wrap(),
+            // Link izvora nema razmaka, pa bez prelamanja gde god treba izlazi iz kartice na uskoj koloni.
+            TextColumn::make($ime)->state($vrednost)->alignEnd()->wrap()->extraAttributes(['style' => 'overflow-wrap: anywhere; min-width: 0;']),
         ])->hidden(fn (KalendarStavka $record): bool => blank($vrednost($record)));
     }
 }

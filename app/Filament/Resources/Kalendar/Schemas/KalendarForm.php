@@ -59,7 +59,7 @@ class KalendarForm
                     ->columnSpanFull(),
                 Select::make('status')
                     ->label('Status')
-                    ->helperText('Nacrt se ne vidi javno, a Objavljeno se vidi u kalendaru na sajtu; za objavu je potreban link izvora.')
+                    ->helperText('Nacrt se ne vidi javno, a Objavljeno se vidi u kalendaru na sajtu kad prođe poslednji dan roka; za objavu je potreban link izvora.')
                     ->options(StatusObjave::class)
                     ->default(StatusObjave::Nacrt)
                     ->live()

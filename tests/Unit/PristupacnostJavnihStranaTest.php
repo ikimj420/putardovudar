@@ -116,7 +116,7 @@ class PristupacnostJavnihStranaTest extends TestCase
         $this->assertSame(0, preg_match(self::GASI_OBRIS, '.x:focus { outline: 3px solid var(--blue-hover); outline-offset: 2px; }'));
     }
 
-    // Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu (WCAG 2.4.11): visina izmerena u pregledaču je 57 px, a bez skripta na telefonu 101 px.
+    // Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu (WCAG 2.4.11): visina izmerena u pregledaču je 57 px, a bez skripta na telefonu 146 px (pet veza, dva reda; sa četiri veze bilo je 101 px).
     #[Test]
     public function skrolovanje_do_fokusa_ostavlja_mesto_za_lepljivo_zaglavlje(): void
     {
@@ -126,7 +126,7 @@ class PristupacnostJavnihStranaTest extends TestCase
         preg_match('/@media \(max-width: 1000px\) \{\s*html:not\(\.js\) \{\s*scroll-padding-top: (\d+)px;/', $stil, $bezSkripta);
 
         $this->assertGreaterThanOrEqual(57, (int) ($osnovno[1] ?? 0));
-        $this->assertGreaterThanOrEqual(101, (int) ($bezSkripta[1] ?? 0));
+        $this->assertGreaterThanOrEqual(146 + 16, (int) ($bezSkripta[1] ?? 0));
     }
 
     // Boja teksta je --blue-text, a prototipska --blue-hover (preslaba za tekst) služi samo za obris; test čita upotrebu, ne samo definicije.

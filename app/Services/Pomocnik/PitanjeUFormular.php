@@ -48,10 +48,11 @@ TEXT;
         $sveReci = $this->kljucneReci($forma['kljucne_reci'] ?? null, $pitanjeNormalizovano, [$grad]);
 
         // „Kome je namenjeno" je grupa kad pitanje kaže reč grupe („Ja sam student", „za Rome"): tada se poredi sa grupama prilike,
-        // a ni „kome" ni reči koje su ime grupe ne idu u reči koje prilika mora da ima u tekstu. Drugo „kome" (žene, mladi) ostaje reč.
+        // a ni „kome" ni reči grupe ne idu u reči koje prilika mora da ima u tekstu; ostatak fraze ostaje („Opre Roma" → „opre").
+        // Drugo „kome" (žene, mladi) ostaje reč.
         $grupe = Grupa::izTeksta($pitanje);
         $kome = $kome !== null && Grupa::izTeksta($kome) !== [] ? null : $kome;
-        $reci = array_values(array_filter($reci, fn (string $rec) => Grupa::izTeksta($rec) === []));
+        $reci = array_merge(...array_map(fn (string $rec) => Grupa::izTeksta($rec) === [] ? [$rec] : Grupa::bezReciGrupe($rec), $reci));
 
         return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano), $grupe);
     }

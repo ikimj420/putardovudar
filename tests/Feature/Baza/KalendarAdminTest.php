@@ -140,6 +140,19 @@ class KalendarAdminTest extends AdminBazaTestCase
         $this->assertSame('Dopuna.', $stavka->fresh()->napomena);
     }
 
+    // Link izvora nema razmaka: red koji ga ispisuje se prelama gde god treba, da ne izlazi iz kartice na telefonu.
+    #[Test]
+    public function link_izvora_na_kartici_se_prelama(): void
+    {
+        $stavka = KalendarStavka::factory()->create(['link_izvora' => 'https://fond.rs/'.str_repeat('a', 300), 'ko_daje' => 'Fond']);
+
+        $html = Livewire::test(ListKalendar::class)->assertCanSeeTableRecords([$stavka])->html();
+
+        $this->assertStringContainsString('overflow-wrap: anywhere', $html);
+        // Ogledalo: link i ko daje su na kartici, pa stil pokriva red koji ih ispisuje.
+        $this->assertStringContainsString('https://fond.rs/'.str_repeat('a', 300), $html);
+    }
+
     #[Test]
     public function polja_nose_oznaku_i_objasnjenje(): void
     {
@@ -153,9 +166,11 @@ class KalendarAdminTest extends AdminBazaTestCase
             'Otvoreno do' => 'Poslednji dan kada se moglo prijaviti, npr. 26.01.2026.',
             'Link izvora' => 'Adresa zvaničnog izvora; bez nje se stavka ne može objaviti.',
             'Napomena' => 'Šta još treba znati o tom roku (vidi se na sajtu), npr. „Prijave su išle preko eUprave.“',
-            'Status' => 'Nacrt se ne vidi javno, a Objavljeno se vidi u kalendaru na sajtu; za objavu je potreban link izvora.',
+            'Status' => 'Nacrt se ne vidi javno, a Objavljeno se vidi u kalendaru na sajtu kad prođe poslednji dan roka; za objavu je potreban link izvora.',
         ] as $oznaka => $objasnjenje) {
-            $stranica->assertSee($oznaka)->assertSee($objasnjenje);
+            // Oznaka je sama u svom elementu (reč „Naziv" piše i u objašnjenjima), objašnjenje je uz polje.
+            $this->assertSame(1, preg_match('#<span class="fi-fo-field-label-content">\s*'.preg_quote($oznaka, '#').'\s*(?:<[^>]+>[^<]*</[^>]+>\s*)?</span>#', $stranica->html()), $oznaka);
+            $stranica->assertSee($objasnjenje);
         }
     }
 
@@ -230,14 +245,30 @@ class KalendarAdminTest extends AdminBazaTestCase
         $this->assertSame(['Prva', 'Druga'], KalendarStavka::query()->orderBy('id')->pluck('naziv')->all());
     }
 
+    // Ista stvar je isti link izvora i isti rok: drugi rok istog linka je nova stavka, a bez linka isto važi za naziv (i drugi naziv).
     #[Test]
-    public function prilika_bez_linka_se_ne_dodaje_dvaput_po_nazivu(): void
+    public function isti_link_sa_drugim_rokom_i_bez_linka_drugi_naziv_daju_nove_stavke(): void
     {
-        $prilika = Prilika::factory()->create(['naslov' => 'Bez linka', 'link_izvora' => null, 'rok' => '2026-01-26']);
+        $usluga = app(KalendarIzPrilike::class);
+        $prva = Prilika::factory()->create(['naslov' => 'Dositeja', 'link_izvora' => 'https://fond.rs/dositeja', 'rok' => '2026-01-26']);
+        $sledeca = Prilika::factory()->create(['naslov' => 'Dositeja', 'link_izvora' => 'https://fond.rs/dositeja', 'rok' => '2025-01-26']);
 
-        $this->assertTrue(app(KalendarIzPrilike::class)->dodaj($prilika)->wasRecentlyCreated);
-        $this->assertFalse(app(KalendarIzPrilike::class)->dodaj($prilika)->wasRecentlyCreated);
-        $this->assertSame(1, KalendarStavka::query()->count());
+        $this->assertTrue($usluga->dodaj($prva)->wasRecentlyCreated);
+        $this->assertTrue($usluga->dodaj($sledeca)->wasRecentlyCreated);
+        $this->assertFalse($usluga->dodaj($prva)->wasRecentlyCreated);
+        $this->assertSame(2, KalendarStavka::query()->count());
+
+        $bez = Prilika::factory()->create(['naslov' => 'Bez linka', 'link_izvora' => null, 'rok' => '2026-01-26']);
+        $drugaBez = Prilika::factory()->create(['naslov' => 'Drugi naziv', 'link_izvora' => null, 'rok' => '2026-01-26']);
+
+        $this->assertTrue($usluga->dodaj($bez)->wasRecentlyCreated);
+        $this->assertFalse($usluga->dodaj($bez)->wasRecentlyCreated);
+        $this->assertTrue($usluga->dodaj($drugaBez)->wasRecentlyCreated);
+        $this->assertSame(4, KalendarStavka::query()->count());
+
+        // Prilika bez linka sa istim nazivom i rokom kao stavka koja link ima je ista stvar.
+        $this->assertFalse($usluga->dodaj(Prilika::factory()->create(['naslov' => 'Dositeja', 'link_izvora' => null, 'rok' => '2026-01-26']))->wasRecentlyCreated);
+        $this->assertSame(4, KalendarStavka::query()->count());
     }
 
     #[Test]
@@ -248,24 +279,30 @@ class KalendarAdminTest extends AdminBazaTestCase
         app(KalendarIzPrilike::class)->dodaj(Prilika::factory()->create(['rok' => '2026-10-10']));
     }
 
-    // Brava na radnji koja piše: kome politika ne dozvoljava dodavanje, dugme ne postoji i klik ništa ne pravi.
+    // Brava na radnji koja piše: kome politika ne dozvoljava dodavanje, dugme ne postoji, a ni direktan poziv (kao da ga šalje klijent
+    // mimo ekrana) ništa ne pravi. Ogledalo: sa pravom dodavanja isti poziv pravi stavku.
     #[Test]
     public function bez_prava_dodavanja_dugme_se_ne_nudi_i_ne_radi(): void
     {
         $prilika = Prilika::factory()->create(['rok' => '2026-01-26']);
-        Livewire::test(ListPrilike::class)->assertTableActionVisible('dodajUKalendar', $prilika);
 
         Gate::policy(KalendarStavka::class, KalendarPolitikaBezDodavanja::class);
 
         $spisak = Livewire::test(ListPrilike::class)->assertTableActionHidden('dodajUKalendar', $prilika);
-
-        try {
-            $spisak->callTableAction('dodajUKalendar', $prilika);
-        } catch (\Throwable) {
-            // Skrivena radnja se ne može pozvati.
-        }
+        $spisak->call('mountTableAction', 'dodajUKalendar', (string) $prilika->getKey())->call('callMountedTableAction');
 
         $this->assertSame(0, KalendarStavka::query()->count());
+    }
+
+    #[Test]
+    public function sa_pravom_dodavanja_isti_direktan_poziv_pravi_stavku(): void
+    {
+        $prilika = Prilika::factory()->create(['rok' => '2026-01-26']);
+
+        $spisak = Livewire::test(ListPrilike::class)->assertTableActionVisible('dodajUKalendar', $prilika);
+        $spisak->call('mountTableAction', 'dodajUKalendar', (string) $prilika->getKey())->call('callMountedTableAction');
+
+        $this->assertSame(1, KalendarStavka::query()->count());
     }
 }
 
