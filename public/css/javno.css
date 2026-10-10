@@ -466,6 +466,7 @@ h1.prazno {
 }
 
 .kartica {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -478,6 +479,21 @@ h1.prazno {
     box-shadow 0.2s ease;
 }
 
+/* Cela kartica je veza: jedina veza (naslov) se razvlači preko kartice, pa čitač ekrana čuje je jednom; ostale veze u kartici ostaju iznad nje. */
+.kartica-veza::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+.kartica-veza:focus-visible::after {
+  outline: 3px solid var(--blue-hover);
+  outline-offset: 2px;
+}
+.kartica a:not(.kartica-veza) {
+  position: relative;
+  z-index: 1;
+}
 .kartica:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow);

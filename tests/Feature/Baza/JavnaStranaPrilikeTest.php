@@ -115,7 +115,7 @@ class JavnaStranaPrilikeTest extends BazaTestCase
 
         $html = $this->get(route('prilike.index'))->getContent();
 
-        $this->assertMatchesRegularExpression('#<a href="'.preg_quote(route('prilike.show', $prilika->slug), '#').'">Jedna prilika</a>#', $html);
+        $this->assertMatchesRegularExpression('#<a class="kartica-veza" href="'.preg_quote(route('prilike.show', $prilika->slug), '#').'">Jedna prilika</a>#', $html);
     }
 
     #[Test]

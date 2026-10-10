@@ -450,7 +450,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         $html = $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Gde mogu da nađem pomoć oko zapošljavanja?'])->assertOk()->getContent();
         $tekst = $this->vidljivTekst($html);
 
-        $this->assertStringContainsString('<a href="'.route('organizacije.show', $nsz->slug).'">Nacionalna služba za zapošljavanje</a>', $html);
+        $this->assertStringContainsString('<a class="kartica-veza" href="'.route('organizacije.show', $nsz->slug).'">Nacionalna služba za zapošljavanje</a>', $html);
         $this->assertStringContainsString('<span class="oznaka">'.PrikazOrganizacija::OZNAKA.'</span>', $html);
         // Tekst oznake traži paket 24 („Organizacija"), pa se proverava i doslovno, a ne samo preko konstante.
         $this->assertStringContainsString('<span class="oznaka">Organizacija</span>', $html);

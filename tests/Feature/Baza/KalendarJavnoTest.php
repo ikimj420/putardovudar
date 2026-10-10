@@ -213,7 +213,10 @@ class KalendarJavnoTest extends BazaTestCase
 
         $this->assertStringContainsString('Sada otvoreno: ', $this->vidljivTekst($html));
         $this->assertSame('Sada otvoreno: ', PrikazKalendara::SADA_OTVORENO);
-        $this->assertStringContainsString('<a href="'.route('prilike.show', $prilika->slug).'">Dositeja ove godine</a>', $html);
+        // Paket 54: veza je jedna (naslov kartice) i vodi na priliku; red „Sada otvoreno" piše naslov prilike bez nove veze.
+        $this->assertStringContainsString('<h3><a class="kartica-veza" href="'.route('prilike.show', $prilika->slug).'">Dositeja prošle godine</a></h3>', $html);
+        $this->assertSame(1, substr_count($html, 'href="'.route('prilike.show', $prilika->slug).'"'));
+        $this->assertStringContainsString('Sada otvoreno: Dositeja ove godine', $this->vidljivTekst($html));
     }
 
     /** @return array<string, array{0: array<string, mixed>}> */

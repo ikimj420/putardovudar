@@ -105,7 +105,7 @@ class PomocnikStranaTest extends BazaTestCase
 
         $this->assertStringContainsString('Postoji posao radnika u skladištu, prijave su do 15. novembra 2026.', $tekst);
         $this->assertStringContainsString(PrikazPomocnika::NASLOV_IZVORA, $tekst);
-        $this->assertStringContainsString('<a href="'.route('prilike.show', $prilika->slug).'">Radnik u skladištu</a>', $html);
+        $this->assertStringContainsString('<a class="kartica-veza" href="'.route('prilike.show', $prilika->slug).'">Radnik u skladištu</a>', $html);
         $this->assertStringContainsString('Rok: 15.11.2026.', $tekst);
         $this->assertStringContainsString('<a href="https://primer.rs/skladiste-nis" rel="noopener noreferrer nofollow" target="_blank">Probni izvor</a>', $html);
         $this->assertSame(1, substr_count($html, '<article class="kartica">'));

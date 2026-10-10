@@ -32,7 +32,7 @@
             <div class="spisak">
                 @foreach ($odgovor->izvori as $izvor)
                     <article class="kartica">
-                        <h3><a href="{{ $izvor->adresa }}">{{ $izvor->naslov }}</a></h3>
+                        <h3><a class="kartica-veza" href="{{ $izvor->adresa }}">{{ $izvor->naslov }}</a></h3>
                         @if ($izvor->jeVodic)
                             <p><span class="oznaka">{{ \App\Support\PrikazVodica::OZNAKA }}</span></p>
                         @elseif ($izvor->jeOrganizacija)

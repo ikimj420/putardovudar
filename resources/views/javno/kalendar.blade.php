@@ -13,7 +13,7 @@
             @foreach ($mesec['stavke'] as $red)
                 @php($stavka = $red['stavka'])
                 <article class="kartica">
-                    <h3>{{ $stavka->naziv }}</h3>
+                    <h3>@if ($red['prilika'])<a class="kartica-veza" href="{{ route('prilike.show', $red['prilika']->slug) }}">{{ $stavka->naziv }}</a>@else{{ $stavka->naziv }}@endif</h3>
                     <div class="meta">
                         <span class="meta-stavka">{{ \App\Support\PrikazKalendara::prosliPut($stavka) }}</span>
                         @if (filled($stavka->ko_daje))
@@ -31,8 +31,7 @@
                     @endif
                     @if ($red['prilika'])
                         <p class="red">
-                            {{ \App\Support\PrikazKalendara::SADA_OTVORENO }}
-                            <a href="{{ route('prilike.show', $red['prilika']->slug) }}">{{ $red['prilika']->naslov }}</a>
+                            {{ \App\Support\PrikazKalendara::SADA_OTVORENO }}{{ $red['prilika']->naslov }}
                         </p>
                     @endif
                 </article>

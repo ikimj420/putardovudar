@@ -523,7 +523,7 @@ class PomocnikKalendarTest extends BazaTestCase
         $html = (string) $this->post(route('pomocnik.pitaj'), ['pitanje' => self::PITANJE])->assertOk()->getContent();
 
         $this->assertStringContainsString('<span class="oznaka">Kalendar</span>', $html);
-        $this->assertStringContainsString('<h3><a href="'.route('kalendar.index').'">Stipendija Dositeja</a></h3>', $html);
+        $this->assertStringContainsString('<h3><a class="kartica-veza" href="'.route('kalendar.index').'">Stipendija Dositeja</a></h3>', $html);
         $this->assertStringContainsString('Prošli put: od 22.12.2025. do 26.01.2026.', $this->vidljivTekst($html));
         $this->assertStringContainsString('<a href="https://fond.rs/dositeja" rel="noopener noreferrer nofollow" target="_blank">fond.rs</a>', $html);
     }

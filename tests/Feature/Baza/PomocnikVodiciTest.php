@@ -354,7 +354,7 @@ class PomocnikVodiciTest extends BazaTestCase
         $html = $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Kako da napišem CV?'])->assertOk()->getContent();
         $tekst = $this->vidljivTekst($html);
 
-        $this->assertStringContainsString('<a href="'.route('vodici.show', $cv->slug).'">Kako napisati prvi CV</a>', $html);
+        $this->assertStringContainsString('<a class="kartica-veza" href="'.route('vodici.show', $cv->slug).'">Kako napisati prvi CV</a>', $html);
         $this->assertStringContainsString('<span class="oznaka">'.PrikazVodica::OZNAKA.'</span>', $html);
         $this->assertStringNotContainsString('Rok:', $tekst);
         $this->assertStringNotContainsString('Bez roka', $tekst);
