@@ -44,6 +44,31 @@
         });
     });
 
+    // Zaglavlje: na vrhu strane providno preko naslovnog dela, posle skrolovanja staklo, uz liniju napretka čitanja. Bez ovog skripta je odmah staklo.
+    document.addEventListener('DOMContentLoaded', function () {
+        var zaglavlje = document.querySelector('.zaglavlje');
+        var linija = document.querySelector('.linija');
+
+        if (!zaglavlje) {
+            return;
+        }
+
+        function osvezi() {
+            var vrh = window.scrollY;
+            var najvise = document.documentElement.scrollHeight - window.innerHeight;
+
+            zaglavlje.classList.toggle('skrolovano', vrh > 40);
+
+            if (linija) {
+                linija.style.opacity = vrh > 40 ? '1' : '0';
+                linija.style.transform = 'scaleX(' + (najvise > 0 ? Math.min(1, vrh / najvise) : 0) + ')';
+            }
+        }
+
+        window.addEventListener('scroll', osvezi, { passive: true });
+        osvezi();
+    });
+
     // Plutajući pomoćnik: prozor na istoj strani. Bez ovog skripta dugme je obična veza ka strani pomoćnika, a prozor ostaje skriven.
     document.addEventListener('DOMContentLoaded', function () {
         var prozor = document.getElementById('pomocnik-prozor');

@@ -100,12 +100,17 @@ a {
 
 /* Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu: 57 px sa skriptom i na laptopu, 146 px bez skripta na telefonu (pet veza u dva reda), uz 16 px. */
 html {
-  scroll-padding-top: 73px;
+  scroll-padding-top: 90px;
 }
 
 @media (max-width: 1000px) {
   html:not(.js) {
-    scroll-padding-top: 162px;
+    scroll-padding-top: 190px;
+  }
+
+  html:not(.js) .naslovna-traka {
+    margin-top: 0;
+    padding-top: 42px;
   }
 }
 
@@ -128,23 +133,50 @@ html {
   }
 }
 
-/* Zaglavlje i meni kao u prototipu: lepljiva traka od 56 px, logo u dva reda, meni po sredini, „Pomoćnik" desno */
+/* Zaglavlje (paket 57): staklena pilula, logo levo, meni po sredini. Na vrhu strane sa naslovnim delom je providno sa belim slovima (samo uz skript),
+   posle skrolovanja je staklo uz liniju napretka; bez skripta je odmah staklo. */
 .zaglavlje {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 100;
-  background: var(--header-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--surface-border);
+  width: min(1180px, calc(100% - 32px));
+  margin: 12px auto 0;
+  background: rgba(251, 250, 253, 0.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(26, 26, 28, 0.1);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
 }
 
 .zaglavlje-red {
   display: grid;
-  grid-template-columns: 220px 1fr 320px;
+  grid-template-columns: 220px 1fr 160px;
   align-items: center;
   min-height: 56px;
-  padding: 0 34px;
+  padding: 0 8px 0 20px;
+}
+
+/* Linija napretka čitanja strane: samo uz skript i posle skrolovanja. */
+.linija {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 120;
+  height: 3px;
+  background: linear-gradient(90deg, var(--ljubicasta), var(--narandzasta) 60%, var(--zlato));
+  opacity: 0;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: opacity 0.3s ease;
 }
 
 .logo {
@@ -174,23 +206,25 @@ html {
 .meni-sredina {
   display: flex;
   justify-content: center;
-  gap: 34px;
-  font-size: 14px;
-  font-weight: 800;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .meni-desno {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  font-size: 12px;
-  font-weight: 950;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .meni a {
   color: var(--text);
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
 }
 
 .meni-sredina a {
@@ -199,44 +233,26 @@ html {
   justify-content: center;
   min-width: 44px;
   min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
 }
 
 .meni-sredina a:hover {
   color: var(--akcent);
+  background: rgba(26, 26, 28, 0.06);
 }
 
-/* „Pomoćnik": pilula sa prelivom po ivici, kao u prototipu */
-.asistent {
-  position: relative;
-  height: 32px;
-  padding: 0 14px;
-  border-radius: 999px;
+/* „Pomoćnik": mala narandžasta pilula kao u predlogu; tamna slova, jer bela na narandžastoj nema kontrast. */
+.meni .asistent {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  isolation: isolate;
-}
-
-.asistent::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  border-radius: inherit;
-  background: linear-gradient(110deg, var(--ljubicasta), var(--narandzasta), var(--ljubicasta));
-}
-
-.asistent::after {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--header-bg);
-}
-
-.asistent:hover::after {
-  background: rgba(255, 255, 255, 0.55);
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--narandzasta) 0%, var(--narandzasta-meka) 55%, var(--zlato) 160%);
+  color: var(--noc);
+  box-shadow: 0 12px 30px -12px rgba(224, 114, 41, 0.7);
 }
 
 /* Dugme menija postoji samo uz skript; bez skripta meni ostaje običan spisak veza. */
@@ -248,16 +264,49 @@ html {
   width: 44px;
   height: 44px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 999px;
   background: transparent;
-  color: var(--text);
+  color: inherit;
   font-size: 22px;
+}
+
+/* Na vrhu strane sa naslovnim delom zaglavlje je providno, a slova su bela; na telefonu se meni otvara kao bela ploča, pa njegove veze ostaju tamne. */
+.js .ima-traku .zaglavlje:not(.skrolovano) {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-color: transparent;
+  box-shadow: none;
+  color: #fff;
+}
+
+.js .ima-traku .zaglavlje:not(.skrolovano) .logo,
+.js .ima-traku .zaglavlje:not(.skrolovano) .dugme-meni {
+  color: #fff;
+}
+
+.js .ima-traku .zaglavlje:not(.skrolovano) .logo span {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.js .ima-traku .zaglavlje:not(.skrolovano) :focus-visible {
+  outline-color: var(--zlato);
+}
+
+@media (min-width: 1001px) {
+  .js .ima-traku .zaglavlje:not(.skrolovano) .meni-sredina a {
+    color: #fff;
+  }
+
+  .js .ima-traku .zaglavlje:not(.skrolovano) .meni-sredina a:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
 }
 
 @media (max-width: 1000px) {
   .zaglavlje-red {
     grid-template-columns: 1fr auto;
-    padding: 6px 18px;
+    padding: 4px 8px 4px 20px;
   }
 
   .meni {
@@ -270,24 +319,22 @@ html {
   .meni-sredina,
   .meni-desno {
     display: contents;
-    font-size: 14px;
-    font-weight: 800;
+    font-size: 15px;
+    font-weight: 600;
   }
 
   .meni a {
     padding: 12px 0;
   }
 
-  .asistent {
+  .meni .asistent {
     display: block;
     height: auto;
     padding: 8px 0;
     border-radius: 0;
-  }
-
-  .asistent::before,
-  .asistent::after {
-    display: none;
+    background: none;
+    box-shadow: none;
+    color: var(--text);
   }
 
   .js .dugme-meni {
@@ -297,15 +344,15 @@ html {
   .js .meni {
     display: none;
     position: absolute;
-    top: 100%;
-    left: 14px;
-    right: 14px;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
     gap: 6px;
     padding: 12px;
     background: var(--page);
     border: 1px solid var(--surface-border-strong);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-velika);
   }
 
   .js .meni.otvoren {
@@ -314,9 +361,12 @@ html {
 
   .js .meni a {
     padding: 13px 14px;
-    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    border-radius: 12px;
     font-size: 15px;
-    font-weight: 800;
+    font-weight: 700;
   }
 
   .js .meni a:hover {
@@ -357,13 +407,18 @@ html {
 .naslovna-traka {
   position: relative;
   overflow: hidden;
-  padding: 42px 0 34px;
+  margin-top: -70px;
+  padding: 112px 0 34px;
   color: #fff;
   background:
     radial-gradient(90% 70% at 14% -10%, rgba(168, 95, 242, 0.45), transparent 60%),
     radial-gradient(80% 80% at 95% 0%, rgba(240, 153, 76, 0.28), transparent 58%),
     radial-gradient(120% 100% at 80% 115%, rgba(137, 31, 93, 0.75), transparent 62%),
     var(--noc);
+}
+
+.naslovna-traka :focus-visible {
+  outline-color: var(--zlato);
 }
 
 .mrvice {
@@ -820,7 +875,7 @@ h1.prazno {
   }
 
   .naslovna-traka {
-    padding: 66px 0 42px;
+    padding: 136px 0 42px;
   }
 
   .naslovna-traka .kratko {
@@ -1219,6 +1274,7 @@ h1.prazno {
   }
 
   .zaglavlje,
+  .linija,
   .mrvice,
   .deljenje,
   .dugme-red,
