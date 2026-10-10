@@ -31,5 +31,11 @@
                 <button class="dugme-kopiraj" type="button" data-kopiraj="primer-tekst" data-kopirano="{{ \App\Support\PrikazVodica::KOPIRANO }}" aria-live="polite" hidden>{{ \App\Support\PrikazVodica::KOPIRAJ }}</button>
             </div>
         @endif
+
+        @if ($sablon = $vodic->javniSablon())
+            <div class="dugme-red">
+                <a class="dugme-veza" href="{{ route('pomocnik.napisi.forma', $sablon->slug) }}" data-pomocnik-sablon>{{ \App\Support\PrikazPomocnika::NAPISI_MOJ }}</a>
+            </div>
+        @endif
     </article>
 @endsection

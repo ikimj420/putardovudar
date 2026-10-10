@@ -4,9 +4,11 @@ namespace Tests\Feature\Baza;
 
 use App\Models\Organizacija;
 use App\Models\Prilika;
+use App\Models\Sablon;
 use App\Models\Vodic;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
@@ -28,7 +30,13 @@ class StampaStranaTest extends BazaTestCase
         $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.'], 'primer' => 'Primer.']);
         $organizacija = Organizacija::factory()->objavljena()->create(['telefon' => '011/123-456', 'sajt' => 'https://primer.rs/', 'usluge' => ['Savetovanje']]);
 
+        // Model ne radi: napisan tekst je sklopljen šablon, što je dovoljno za štampu (ista klasa za tekst i napomenu).
+        Http::fake(['*' => Http::response('', 500)]);
+        $sablon = Sablon::factory()->objavljen()->create();
+
         return [
+            'šablon' => $this->get(route('pomocnik.napisi.forma', $sablon->slug))->assertOk()->getContent(),
+            'napisan tekst' => $this->post(route('pomocnik.napisi', $sablon->slug), ['polje' => ['ime' => 'Ana']])->assertOk()->getContent(),
             'prilika' => $this->get(route('prilike.show', $prilika->slug))->assertOk()->getContent(),
             'vodič' => $this->get(route('vodici.show', $vodic->slug))->assertOk()->getContent(),
             'organizacija' => $this->get(route('organizacije.show', $organizacija->slug))->assertOk()->getContent(),
@@ -75,7 +83,7 @@ class StampaStranaTest extends BazaTestCase
         $sakriveno = $this->selektoriSa($this->stampa(), 'display: none');
         $stranice = $this->strane();
 
-        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
+        $this->assertSame(['.zaglavlje', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
 
         foreach ($sakriveno as $selektor) {
             $klasa = ltrim($selektor, '.');
@@ -83,6 +91,40 @@ class StampaStranaTest extends BazaTestCase
 
             $this->assertNotEmpty($naStranama, $selektor.' ne pogađa nijedan element na stranama prilike, vodiča, organizacije i šablona');
         }
+    }
+
+    // Paket 56: kad prozor pomoćnika pokazuje napisan tekst, štampa se samo taj tekst. Pravila drugog bloka važe samo uz taj uslov,
+    // da otvoren prozor sa pitanjima ne promeni štampu strane iza njega (ogledalo je prvi blok, gde se `main` ne sakriva).
+    #[Test]
+    public function otvoren_prozor_sa_napisanim_tekstom_stampa_samo_tekst_i_samo_tada(): void
+    {
+        $stil = $this->stilBezKomentara();
+        $prvi = strpos($stil, '@media print {');
+        $drugi = strpos($stil, '@media print {', (int) $prvi + 1);
+
+        $this->assertNotFalse($drugi, 'u javno.css nema drugog bloka za štampu');
+        $blok = substr($stil, (int) $drugi);
+        $uslov = 'html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst)';
+
+        preg_match_all('/([^{}]+)\{([^{}]*)\}/', substr($blok, strlen('@media print {')), $pravila, PREG_SET_ORDER);
+        $selektori = [];
+        foreach ($pravila as [, $izbor, $telo]) {
+            foreach (array_map('trim', explode(',', $izbor)) as $selektor) {
+                $selektori[] = $selektor;
+                $this->assertStringStartsWith($uslov.' ', $selektor, 'pravilo bez uslova menja štampu svake strane');
+            }
+        }
+
+        $skriveno = [];
+        foreach ($pravila as [, $izbor, $telo]) {
+            if (str_contains($telo, 'display: none')) {
+                array_push($skriveno, ...array_map(fn (string $selektor) => substr(trim($selektor), strlen($uslov) + 1), explode(',', $izbor)));
+            }
+        }
+        $this->assertSame(['.zaglavlje', 'main', '.plutajuci-glava', '.plutajuci-forma', '.plutajuci-uvod', '.plutajuci-sablon', '.sklopljen h2'], $skriveno);
+        $this->assertContains($uslov.' .plutajuci', $selektori);
+        $this->assertMatchesRegularExpression('/\.plutajuci,[^{]*\.plutajuci-prozor \{[^}]*position: static;[^}]*display: block;/', $blok);
+        $this->assertMatchesRegularExpression('/\.plutajuci-telo \{[^}]*overflow: visible;/', $blok);
     }
 
     // Ogledalo: sadržaj strane se ne sakriva u štampi.

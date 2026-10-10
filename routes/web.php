@@ -5,6 +5,7 @@ use App\Http\Controllers\JavnePrilikeController;
 use App\Http\Controllers\JavniKalendarController;
 use App\Http\Controllers\JavniVodiciController;
 use App\Http\Controllers\PomocnikController;
+use App\Http\Controllers\PomocnikSablonController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [JavnePrilikeController::class, 'index'])->name('pocetna');
@@ -21,3 +22,5 @@ Route::redirect('/sabloni', '/vodici', 301);
 Route::redirect('/sabloni/{slug}', '/vodici', 301);
 Route::get('/pomocnik', [PomocnikController::class, 'index'])->name('pomocnik.index');
 Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->middleware('throttle:pomocnik')->name('pomocnik.pitaj');
+Route::get('/pomocnik/napisi/{slug}', [PomocnikSablonController::class, 'forma'])->name('pomocnik.napisi.forma');
+Route::post('/pomocnik/napisi/{slug}', [PomocnikSablonController::class, 'napisi'])->middleware('throttle:pomocnik')->name('pomocnik.napisi');

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\PomocnikSablonController;
 use App\Support\PrikazPomocnika;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -26,9 +27,11 @@ class AppServiceProvider extends ServiceProvider
         // Preko granice posetilac dobija našu stranu sa porukom (429), ne praznu grešku; pitanje ostaje u polju.
         RateLimiter::for('pomocnik', fn (Request $zahtev) => Limit::perMinute((int) config('pomocnik.pitanja_u_minuti'))
             ->by((string) $zahtev->ip())
-            ->response(fn (Request $zahtev, array $zaglavlja) => response()->view($zahtev->ajax() ? 'javno.pomocnik-fragment' : 'javno.pomocnik', [
-                'pitanje' => is_string($zahtev->input('pitanje')) ? $zahtev->input('pitanje') : '',
-                'greska' => PrikazPomocnika::PREVISE_PITANJA,
-            ], 429, $zaglavlja)));
+            ->response(fn (Request $zahtev, array $zaglavlja) => $zahtev->routeIs('pomocnik.napisi')
+                ? PomocnikSablonController::previseZahteva($zahtev, $zaglavlja)
+                : response()->view($zahtev->ajax() ? 'javno.pomocnik-fragment' : 'javno.pomocnik', [
+                    'pitanje' => is_string($zahtev->input('pitanje')) ? $zahtev->input('pitanje') : '',
+                    'greska' => PrikazPomocnika::PREVISE_PITANJA,
+                ], 429, $zaglavlja)));
     }
 }

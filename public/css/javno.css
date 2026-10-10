@@ -992,6 +992,25 @@ h1.prazno {
   grid-template-columns: 1fr;
 }
 
+.plutajuci-sablon {
+  font-size: 20px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-weight: 950;
+}
+
+.plutajuci-rezultat .obrazac {
+  margin-bottom: 0;
+}
+
+.plutajuci-rezultat .plutajuci-sablon {
+  margin-bottom: 6px;
+}
+
+.plutajuci-rezultat .plutajuci-sablon + .plutajuci-uvod {
+  margin-bottom: 16px;
+}
+
 .plutajuci-forma {
   margin: 0;
   padding: 12px 16px 16px;
@@ -1149,6 +1168,8 @@ h1.prazno {
   .deljenje,
   .dugme-red,
   .dugme-veza,
+  .obrazac,
+  .uputstvo,
   .plutajuci,
   .dugme-kopiraj {
     display: none;
@@ -1232,5 +1253,35 @@ h1.prazno {
     content: " (" attr(href) ")";
     font-weight: 400;
     overflow-wrap: anywhere;
+  }
+}
+
+/* Prozor pomoćnika sa napisanim tekstom (paket 56): štampa se samo taj tekst, bez strane iza prozora i bez obrasca. */
+@media print {
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .zaglavlje,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) main,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-glava,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-forma,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-uvod,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-sablon,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .sklopljen h2 {
+    display: none;
+  }
+
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-prozor {
+    position: static;
+    display: block;
+    width: auto;
+    max-width: none;
+    max-height: none;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-telo {
+    padding: 0;
+    overflow: visible;
   }
 }

@@ -5,6 +5,7 @@
     <h1 class="prazno">{{ match (true) {
         request()->routeIs('vodici.show') => \App\Support\PrikazVodica::NEMA_STRANE,
         request()->routeIs('organizacije.show') => \App\Support\PrikazOrganizacija::NEMA_STRANE,
+        request()->routeIs('pomocnik.napisi.forma', 'pomocnik.napisi') => \App\Support\PrikazPomocnika::NEMA_SABLONA_STRANE,
         default => \App\Support\PrikazPrilike::NEMA_STRANE,
     } }}</h1>
 @endsection

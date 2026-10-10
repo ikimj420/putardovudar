@@ -31,4 +31,19 @@ final class PrikazPomocnika
     public const ZATVORI = 'Zatvori';
 
     public const TRAZIM = 'Tražim odgovor…';
+
+    // „Napiši moj" (paket 56): pomoćnik piše tekst po šablonu iz onoga što čovek upiše; tekstovi su predlog, Ivan odobrava (PITANJA-55-56.md).
+    public const NAPISI_MOJ = 'Napiši moj';
+
+    public const NAPISI_PONUDA = 'Napiši';
+
+    public const NAPISI = 'Napiši tekst';
+
+    public const NASLOV_TEKSTA = 'Tvoj tekst';
+
+    public const NAPOMENA_NAPISAN = 'Tekst je napisan iz tvojih odgovora. Proveri ga pre nego što ga pošalješ.';
+
+    public const NAPOMENA_SLOZEN = 'Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.';
+
+    public const NEMA_SABLONA_STRANE = 'Ta strana ne postoji ili šablon više nije dostupan.';
 }

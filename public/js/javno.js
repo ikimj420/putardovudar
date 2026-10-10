@@ -122,6 +122,80 @@
 
         zatvori.addEventListener('click', zatvoriProzor);
 
+        // „Napiši moj": pitanja šablona stižu u isti prozor, a napisan tekst u njegov rezultat. Ako ne uspe, veza i obrazac rade
+        // običnim putem, na strani pomoćnika.
+        function zatrazi(adresa, opcije) {
+            return fetch(
+                adresa,
+                Object.assign({ headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'text/html' }, credentials: 'same-origin' }, opcije)
+            ).then(function (odgovor) {
+                if ((odgovor.headers.get('Content-Type') || '').indexOf('text/html') === -1 || odgovor.status >= 500 || odgovor.status === 419 || odgovor.status === 404) {
+                    throw new Error('odgovor nije upotrebljiv');
+                }
+
+                return odgovor.text();
+            });
+        }
+
+        document.querySelectorAll('[data-pomocnik-sablon]').forEach(function (v) {
+            v.setAttribute('aria-haspopup', 'dialog');
+        });
+
+        document.addEventListener('click', function (dogadjaj) {
+            var veza = dogadjaj.target.closest('[data-pomocnik-sablon]');
+
+            if (!veza) {
+                return;
+            }
+
+            dogadjaj.preventDefault();
+            otvori(jeOtvoren() ? null : veza);
+            rezultat.textContent = prozor.getAttribute('data-trazim');
+
+            zatrazi(veza.href)
+                .then(function (html) {
+                    rezultat.innerHTML = html;
+                    prikaziKopiraj(rezultat);
+                    (rezultat.querySelector('input:not([type="hidden"]), textarea') || rezultat).focus();
+                })
+                .catch(function () {
+                    window.location.href = veza.href;
+                });
+        });
+
+        rezultat.addEventListener('submit', function (dogadjaj) {
+            var obrazac = dogadjaj.target.closest('[data-pomocnik-sablon-forma]');
+
+            if (!obrazac) {
+                return;
+            }
+
+            dogadjaj.preventDefault();
+            obrazac.querySelector('button[type="submit"]').disabled = true;
+            prozor.setAttribute('aria-busy', 'true');
+
+            var stanje = document.createElement('p');
+            stanje.className = 'prazno';
+            stanje.setAttribute('role', 'status');
+            stanje.textContent = prozor.getAttribute('data-trazim');
+            obrazac.parentNode.insertBefore(stanje, obrazac);
+
+            zatrazi(obrazac.action, { method: 'POST', body: new FormData(obrazac) })
+                .then(function (html) {
+                    rezultat.innerHTML = html;
+                    prikaziKopiraj(rezultat);
+                    // Napisan tekst je dug: prozor se pomera na njegov početak, a ne na kraj.
+                    rezultat.focus({ preventScroll: true });
+                    rezultat.scrollIntoView({ block: 'start' });
+                })
+                .catch(function () {
+                    obrazac.submit();
+                })
+                .then(function () {
+                    prozor.removeAttribute('aria-busy');
+                });
+        });
+
         document.addEventListener('keydown', function (dogadjaj) {
             if (dogadjaj.key === 'Escape' && jeOtvoren()) {
                 zatvoriProzor();
