@@ -49,6 +49,10 @@ final class ProveraOdgovora
     // Isto kad model piše sa „ć": svaka reč na „-će".
     private const BUDUCE_VREME = '/(?<!\p{L})\p{L}*će(?!\p{L})/u';
 
+    // Pomoćnik ništa ne šalje i ne pamti pitanje, pa „javiću ti" i „ja ću ti javiti" obećavaju ono što se ne radi: svaka reč na „-ću" i samo „ću".
+    // Izuzete su imenice, predlog i sadašnje vreme koje nisu obećanje („veću šansu", „pomoću linka", „hoću").
+    private const OBECANJE = '/(?<!\p{L})(?!(?:pomoću|noću|kuću|sreću|odeću|obuću|sveću|smeću|veću|leću|hoću|pokreću)(?!\p{L}))\p{L}*ću(?!\p{L})/u';
+
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 
     /**
@@ -71,6 +75,11 @@ final class ProveraOdgovora
 
         if (Latinica::imaSlovaVanLatinice($odgovor)) {
             return 'slova koja nisu latinica';
+        }
+
+        // Važi uvek, i bez kalendara.
+        if (preg_match(self::OBECANJE, mb_strtolower($odgovor)) === 1) {
+            return 'obećanje u prvom licu';
         }
 
         // Zapisi postoje, pa odgovor koji kaže da podatka nema protivreči kartici ispod njega.
