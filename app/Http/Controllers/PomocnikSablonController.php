@@ -29,10 +29,10 @@ class PomocnikSablonController extends Controller
         $sablon = self::javniSablon($slug);
         $unosi = self::unosi($sablon, $zahtev);
 
-        // Primer oblika je iz prvog objavljenog vodiča sa ovim šablonom koji ga ima; model ga koristi kao uzor, ne kao izvor podataka.
-        $primer = Vodic::javni()->where('sablon_id', $sablon->getKey())->whereNotNull('primer')->orderBy('id')->value('primer');
+        // Primer oblika je prvi primer prvog objavljenog vodiča sa ovim šablonom koji ga ima; model ga koristi kao uzor, ne kao izvor podataka.
+        $primer = Vodic::javni()->where('sablon_id', $sablon->getKey())->orderBy('id')->get()->map(fn (Vodic $vodic) => $vodic->prviPrimer())->first(fn (?string $primer) => $primer !== null);
 
-        return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'napisan' => $pisanje->napisi($sablon, $unosi, is_string($primer) ? $primer : null)]);
+        return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'napisan' => $pisanje->napisi($sablon, $unosi, $primer)]);
     }
 
     // Preko granice posetilac dobija obrazac sa onim što je upisao i porukom (429), kao i pitanje pomoćniku.

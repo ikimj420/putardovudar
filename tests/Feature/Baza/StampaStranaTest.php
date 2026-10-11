@@ -27,7 +27,7 @@ class StampaStranaTest extends BazaTestCase
         $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
 
         $prilika = Prilika::factory()->objavljena()->create(['rok' => '2026-12-15', 'naziv_izvora' => 'Probni izvor', 'link_izvora' => 'https://primer.rs/konkurs']);
-        $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.'], 'primer' => 'Primer.']);
+        $vodic = Vodic::factory()->objavljen()->create(['koraci' => ['Prvi korak.', 'Drugi korak.'], 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer.']]]);
         $organizacija = Organizacija::factory()->objavljena()->create(['telefon' => '011/123-456', 'sajt' => 'https://primer.rs/', 'usluge' => ['Savetovanje']]);
 
         // Model ne radi: napisan tekst je sklopljen šablon, što je dovoljno za štampu (ista klasa za tekst i napomenu).

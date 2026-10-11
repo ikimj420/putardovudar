@@ -24,13 +24,14 @@
             </div>
         @endif
 
-        @if (filled($vodic->primer))
+        {{-- Primeri jedan ispod drugog, svaki sa svojim „Kopiraj"; dugme se opisuje naslovom primera, da čitač ekrana razlikuje dugmad. --}}
+        @foreach ($vodic->primeriZaPrikaz() as $primer)
             <div class="ploca">
-                <h2 class="naslov-izvora">{{ \App\Support\PrikazVodica::PRIMER }}</h2>
-                <div class="primer-tekst" id="primer-tekst">{{ $vodic->primer }}</div>
-                <button class="dugme-kopiraj" type="button" data-kopiraj="primer-tekst" data-kopirano="{{ \App\Support\PrikazVodica::KOPIRANO }}" aria-live="polite" hidden>{{ \App\Support\PrikazVodica::KOPIRAJ }}</button>
+                <h2 class="naslov-izvora" id="primer-naslov-{{ $loop->iteration }}">{{ $primer['naslov'] }}</h2>
+                <div class="primer-tekst" id="primer-tekst-{{ $loop->iteration }}">{{ $primer['tekst'] }}</div>
+                <button class="dugme-kopiraj" type="button" data-kopiraj="primer-tekst-{{ $loop->iteration }}" data-kopirano="{{ \App\Support\PrikazVodica::KOPIRANO }}" aria-describedby="primer-naslov-{{ $loop->iteration }}" aria-live="polite" hidden>{{ \App\Support\PrikazVodica::KOPIRAJ }}</button>
             </div>
-        @endif
+        @endforeach
 
         @if ($sablon = $vodic->javniSablon())
             <div class="dugme-red">

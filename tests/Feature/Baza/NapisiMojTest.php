@@ -166,7 +166,7 @@ class NapisiMojTest extends BazaTestCase
     public function tekst_modela_koji_prolazi_proveru_se_prikazuje_i_ide_jedan_poziv(): void
     {
         $sablon = $this->sablon();
-        Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primer' => "Poštovani,\n\nPrimer pisma."]);
+        Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => "Poštovani,\n\nPrimer pisma."]]]);
         $this->model("Ana Anić\n\nMolim vas za pomoć. Hvala.\n\n11.10.2026.");
 
         $html = $this->napisi($sablon)->assertOk()->getContent();
@@ -191,13 +191,30 @@ class NapisiMojTest extends BazaTestCase
         });
     }
 
+    // Paket 64: vodič ima više primera; modelu ide samo prvi primer koji ima tekst (uzor oblika), nikad ostali.
+    #[Test]
+    public function modelu_ide_samo_prvi_primer_vodica_sa_vise_primera(): void
+    {
+        $sablon = $this->sablon();
+        Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Prazan', 'tekst' => ' '], ['naslov' => 'Za stipendiju', 'tekst' => 'Prvi primer sa tekstom.'], ['naslov' => 'Za praksu', 'tekst' => 'Drugi primer.']]]);
+        $this->model('x');
+
+        $this->napisi($sablon)->assertOk();
+
+        Http::assertSent(function (Request $zahtev) {
+            $poruka = $zahtev->data()['messages'][1]['content'];
+
+            return str_contains($poruka, "Primer oblika:\nPrvi primer sa tekstom.") && ! str_contains($poruka, 'Drugi primer') && ! str_contains($poruka, 'Za stipendiju');
+        });
+    }
+
     // Ogledalo: primer nacrta vodiča ili vodiča sa drugim šablonom model ne vidi, a polje koje čovek nije popunio ne ide u „Upisano".
     #[Test]
     public function modelu_ide_samo_primer_objavljenog_vodica_sa_istim_sablonom_i_samo_popunjena_polja(): void
     {
         $sablon = $this->sablon();
-        Vodic::factory()->create(['sablon_id' => $sablon->getKey(), 'primer' => 'Primer iz nacrta.']);
-        Vodic::factory()->objavljen()->create(['sablon_id' => $this->sablon(['naslov' => 'Zahtev'])->getKey(), 'primer' => 'Primer drugog šablona.']);
+        Vodic::factory()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer iz nacrta.']]]);
+        Vodic::factory()->objavljen()->create(['sablon_id' => $this->sablon(['naslov' => 'Zahtev'])->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer drugog šablona.']]]);
         $this->model('x');
 
         $this->napisi($sablon, ['ime' => 'Ana Anić', 'tekst' => '', 'datum' => ''])->assertOk();
@@ -260,7 +277,7 @@ class NapisiMojTest extends BazaTestCase
             ['kljuc' => 'ime', 'oznaka' => 'Ime', 'objasnjenje' => null, 'dugo' => false],
             ['kljuc' => 'tekst', 'oznaka' => 'Tekst', 'objasnjenje' => null, 'dugo' => true],
         ]]);
-        Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primer' => 'Marko Marković, tel. 011 555 666.']);
+        Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Marko Marković, tel. 011 555 666.']]]);
 
         $this->model("Ana Anić\n\nOdgovorite u roku od 15 dana.\n\nTražim pomoć.");
         $this->assertSame("Ana Anić\n\nOdgovorite u roku od 15 dana.\n\nTražim pomoć.", $this->napisan($this->napisi($sablon, ['ime' => 'Ana Anić', 'tekst' => 'Tražim pomoć.'])->getContent()), 'stalni tekst i broj iz njega');
@@ -411,10 +428,10 @@ class NapisiMojTest extends BazaTestCase
     {
         $sablon = $this->sablon();
         $sNacrtom = Sablon::factory()->create();
-        $sa = Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primer' => 'Primer pisma.']);
-        $bezPrimera = Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primer' => null]);
-        $nacrtSablona = Vodic::factory()->objavljen()->create(['sablon_id' => $sNacrtom->getKey(), 'primer' => 'Primer.']);
-        $bez = Vodic::factory()->objavljen()->create(['sablon_id' => null, 'primer' => 'Primer.']);
+        $sa = Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer pisma.']]]);
+        $bezPrimera = Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => []]);
+        $nacrtSablona = Vodic::factory()->objavljen()->create(['sablon_id' => $sNacrtom->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer.']]]);
+        $bez = Vodic::factory()->objavljen()->create(['sablon_id' => null, 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer.']]]);
 
         $dugme = '<a class="dugme-veza" href="'.route('pomocnik.napisi.forma', $sablon->slug).'" data-pomocnik-sablon>'.PrikazPomocnika::NAPISI_MOJ.'</a>';
         $html = $this->get(route('vodici.show', $sa->slug))->assertOk()->getContent();

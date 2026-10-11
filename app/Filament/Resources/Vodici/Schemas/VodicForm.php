@@ -47,11 +47,27 @@ class VodicForm
                     ->defaultItems(0)
                     ->reorderable()
                     ->columnSpanFull(),
-                Textarea::make('primer')
-                    ->label('Primer')
-                    ->helperText('Gotov primer (pismo, e-pošta, CV…); vidi se na strani odmah ispod koraka, sa dugmetom „Kopiraj“. Ostavi prazno ako vodič nema primer.')
-                    ->rows(8)
-                    ->autosize()
+                Repeater::make('primeri')
+                    ->label('Primeri')
+                    ->helperText('Gotovi primeri (pismo, e-pošta, CV…); vide se na strani jedan ispod drugog, odmah ispod koraka, svaki sa dugmetom „Kopiraj“. Ostavi bez primera ako vodič nema nijedan.')
+                    ->schema([
+                        TextInput::make('naslov')
+                            ->label('Naslov primera')
+                            ->helperText('Kratko, npr. „Za stipendiju“.')
+                            ->required()
+                            ->maxLength(100),
+                        Textarea::make('tekst')
+                            ->label('Tekst primera')
+                            ->helperText('Ceo primer, kako treba da se kopira; novi red u tekstu je novi red na strani.')
+                            ->required()
+                            ->rows(8)
+                            ->autosize(),
+                    ])
+                    ->itemLabel(fn (array $state): ?string => $state['naslov'] ?? null)
+                    ->addActionLabel('Dodaj primer')
+                    ->defaultItems(0)
+                    ->reorderable()
+                    ->columns(1)
                     ->columnSpanFull(),
                 Select::make('sablon_id')
                     ->label('Šablon')

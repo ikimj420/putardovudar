@@ -165,23 +165,36 @@ class AdminVodiciTest extends AdminBazaTestCase
         }
     }
 
-    // Paket 56: primer se snima uz vodič i može da se obriše (prazno polje je vodič bez primera).
+    // Paket 56 i 64: primeri (naslov + tekst) se snimaju uz vodič, menjaju se, dodaje se drugi, i mogu da se obrišu (bez primera je vodič bez primera).
     #[Test]
-    public function primer_se_snima_menja_i_brise(): void
+    public function primeri_se_snimaju_menjaju_dodaju_i_brisu(): void
     {
         Livewire::test(CreateVodic::class)
-            ->fillForm(['naslov' => 'Sa primerom', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.', 'primer' => "Poštovani,\n\nPrimer pisma."])
+            ->fillForm(['naslov' => 'Sa primerom', 'kratak_opis' => 'Kratko.', 'tekst' => 'Tekst.', 'primeri' => [['naslov' => 'Za stipendiju', 'tekst' => "Poštovani,\n\nPrimer pisma."]]])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $vodic = Vodic::query()->sole();
-        $this->assertSame("Poštovani,\n\nPrimer pisma.", $vodic->primer);
+        $this->assertSame([['naslov' => 'Za stipendiju', 'tekst' => "Poštovani,\n\nPrimer pisma."]], $vodic->primeri);
 
-        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primer' => 'Novi primer.'])->call('save')->assertHasNoFormErrors();
-        $this->assertSame('Novi primer.', $vodic->fresh()->primer);
+        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primeri' => [['naslov' => 'Za praksu', 'tekst' => 'Novi primer.'], ['naslov' => 'Za posao', 'tekst' => 'Drugi primer.']]])->call('save')->assertHasNoFormErrors();
+        $this->assertSame([['naslov' => 'Za praksu', 'tekst' => 'Novi primer.'], ['naslov' => 'Za posao', 'tekst' => 'Drugi primer.']], array_values($vodic->fresh()->primeri));
 
-        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primer' => ''])->call('save')->assertHasNoFormErrors();
-        $this->assertNull($vodic->fresh()->primer);
+        Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primeri' => []])->call('save')->assertHasNoFormErrors();
+        $this->assertSame([], $vodic->fresh()->primeriZaPrikaz());
+    }
+
+    // Primer traži i naslov i tekst: bez jednog od njih forma ne prolazi, a vodič ostaje kakav je.
+    #[Test]
+    public function primer_bez_naslova_ili_teksta_ne_prolazi(): void
+    {
+        $vodic = Vodic::factory()->create(['primeri' => [['naslov' => 'Stari', 'tekst' => 'Stari tekst.']]]);
+
+        foreach ([['naslov' => '', 'tekst' => 'Tekst.'], ['naslov' => 'Naslov', 'tekst' => '']] as $primer) {
+            Livewire::test(EditVodic::class, ['record' => $vodic->getKey()])->fillForm(['primeri' => [$primer]])->call('save')->assertHasFormErrors();
+        }
+
+        $this->assertSame([['naslov' => 'Stari', 'tekst' => 'Stari tekst.']], $vodic->fresh()->primeri);
     }
 
     // Paket 56 T2: vodič ima najviše jedan šablon, može i bez; izbor nudi sve šablone (i nacrte), a javnost ga vidi tek kad je objavljen.
@@ -229,7 +242,7 @@ class AdminVodiciTest extends AdminBazaTestCase
         $this->get(VodicResource::getUrl('create'))->assertOk()->assertSeeInOrder([
             'Naslov', 'Naslov vodiča koji se vidi na spisku', 'Slug', 'Deo adrese strane',
             'Kratak opis', 'Jedna do dve rečenice za spisak', 'Tekst', 'Ceo vodič, običnim rečima',
-            'Koraci', 'Spisak koraka redom', 'Primer', 'Gotov primer (pismo, e-pošta, CV…)', 'Šablon', 'Šablon po kome pomoćnik piše tekst za ovaj vodič', 'Beleška', 'Samo za tebe, ne vidi se na sajtu',
+            'Koraci', 'Spisak koraka redom', 'Primeri', 'Gotovi primeri (pismo, e-pošta, CV…)', 'Šablon', 'Šablon po kome pomoćnik piše tekst za ovaj vodič', 'Beleška', 'Samo za tebe, ne vidi se na sajtu',
             'Status', 'Nacrt se ne vidi javno, a Objavljeno se vidi na sajtu.',
         ]);
     }
