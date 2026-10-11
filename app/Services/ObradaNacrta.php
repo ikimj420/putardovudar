@@ -21,11 +21,11 @@ final class ObradaNacrta
 {
     private const UPUTSTVO = <<<'TEXT'
 Proveravaš oglas za bazu prilika. Odgovaraj samo iz prosleđenog teksta, ništa ne dodaj iz sopstvenog znanja.
-Pravilo: Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni mladi, mladi, povratnici iz inostranstva, organizacije — ili ono što je namenjeno Romima. Oglas za posao u Srbiji važi i bez navedene grupe.
+Pravilo: Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni mladi, mladi, povratnici iz inostranstva, organizacije, odrasli bez završene škole — ili ono što je namenjeno Romima. Oglas za posao u Srbiji važi i bez navedene grupe.
 Organizacije su udruženja i organizacije civilnog društva, ne firme; ono što je samo za firme nije za nijednu grupu.
 Rezultati konkursa, liste dobitnika, vesti i obaveštenja nisu prilika. Ako nije jasno, vazi_pravilo je false.
 Vrati samo JSON objekat sa ključevima, tačno ovim redom:
-grupe (lista objekata {"grupa": ..., "citat": ...}, po jedan za svaku grupu kojoj je prilika namenjena, ili prazna lista; grupa je jedno od: osnovci, srednjoskolci, studenti, master-doktorski (master ili doktorske studije), nezaposleni-mladi, mladi (samo kad tekst kaže „mladi“, „mlade“ ili „mladih“; omladinske organizacije nisu mladi), povratnici (iz inostranstva), organizacije (udruženja i organizacije civilnog društva), romi; citat je tačan isečak iz teksta koji kaže da je prilika namenjena toj grupi i sadrži reč te grupe),
+grupe (lista objekata {"grupa": ..., "citat": ...}, po jedan za svaku grupu kojoj je prilika namenjena, ili prazna lista; grupa je jedno od: osnovci, srednjoskolci, studenti, master-doktorski (master ili doktorske studije), nezaposleni-mladi, mladi (samo kad tekst kaže „mladi“, „mlade“ ili „mladih“; omladinske organizacije nisu mladi), povratnici (iz inostranstva), organizacije (udruženja i organizacije civilnog društva), romi, odrasli-bez-skole (odrasli bez završene osnovne ili srednje škole, nepismeni, bez kvalifikacija); citat je tačan isečak iz teksta koji kaže da je prilika namenjena toj grupi i sadrži reč te grupe),
 vazi_pravilo (true ako je tekst prilika na koju se neko prijavljuje (posao, praksa, stipendija, konkurs ili obuka), a ne rezultat, lista ili vest; da li je grupa dokazana ne ocenjuješ ti, to proverava kod; inače false),
 razlog (jedna rečenica na srpskom latinicom, zašto pravilo važi ili ne važi),
 vrsta (jedno od: posao, praksa, stipendija, konkurs, obuka, drugo; reč te vrste ili njoj srodna mora da piše u tekstu),
