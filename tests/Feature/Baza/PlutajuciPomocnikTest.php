@@ -287,9 +287,14 @@ class PlutajuciPomocnikTest extends BazaTestCase
 
         $this->assertMatchesRegularExpression('/\n\.plutajuci \{[^}]*position: fixed;[^}]*right: 16px;[^}]*bottom: 16px;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.plutajuci-dugme \{[^}]*min-height: 48px;/', $stil);
-        $this->assertMatchesRegularExpression('/\n\.plutajuci-prozor \{[^}]*position: fixed;[^}]*right: 16px;[^}]*bottom: 16px;[^}]*width: 380px;/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.plutajuci-prozor \{[^}]*position: fixed;[^}]*right: 16px;[^}]*bottom: 16px;[^}]*width: 480px;[^}]*max-height: 80vh;/', $stil);
+        // Paket 64/T2: na laptopu 480 px široko i do 80 % ekrana (stara granica od 640 px je skinuta), polje za pitanje bar tri reda (108 px); telefon je kao ranije.
+        preg_match('/\n\.plutajuci-prozor \{([^}]*)\}/', $stil, $prozor);
+        $this->assertStringNotContainsString('640px', $prozor[1]);
+        $this->assertMatchesRegularExpression('/@media \(min-width: 720px\) \{\s*\.plutajuci-forma textarea \{\s*min-height: 108px;/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.plutajuci-forma textarea \{[^}]*min-height: 46px;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.plutajuci-prozor\[hidden\] \{\s*display: none;/', $stil);
-        $this->assertMatchesRegularExpression('/@media \(max-width: 719px\) \{\s*\.plutajuci-prozor \{\s*inset: 0;/', $stil);
+        $this->assertMatchesRegularExpression('/@media \(max-width: 719px\) \{\s*\.plutajuci-prozor \{\s*inset: 0;[^}]*width: auto;[^}]*max-height: none;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.plutajuci-zatvori \{[^}]*min-height: 44px;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.sadrzaj \{[^}]*padding-bottom: 96px;/', $stil);
         $this->assertMatchesRegularExpression('/\.plutajuci[,\s][^}]*display: none;/', substr($stil, (int) strpos($stil, '@media print')));

@@ -1575,7 +1575,7 @@ section + section > .naslov-izvora {
 }
 
 /* Plutajući pomoćnik (paket 55): dugme dole desno na svakoj javnoj strani; skript ga otvara kao prozor na istoj strani, bez skripta je veza ka strani
-   pomoćnika. Na telefonu je prozor preko celog ekrana, na laptopu dole desno. */
+   pomoćnika. Na telefonu je prozor preko celog ekrana, na laptopu dole desno, širok 480 px i visok do 80 % ekrana, sa poljem od bar tri reda (paket 64). */
 .plutajuci {
   position: fixed;
   right: 16px;
@@ -1628,9 +1628,9 @@ section + section > .naslov-izvora {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  width: 380px;
+  width: 480px;
   max-width: calc(100vw - 32px);
-  max-height: min(640px, calc(100vh - 32px));
+  max-height: 80vh;
   background: var(--soft);
   border: 1px solid var(--surface-border-strong);
   border-radius: var(--radius);
@@ -1841,6 +1841,12 @@ section + section > .naslov-izvora {
 
 .pomocnik-otvoren .plutajuci-dugme {
   display: none;
+}
+
+@media (min-width: 720px) {
+  .plutajuci-forma textarea {
+    min-height: 108px;
+  }
 }
 
 @media (max-width: 719px) {
