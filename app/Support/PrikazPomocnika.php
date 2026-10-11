@@ -49,5 +49,13 @@ final class PrikazPomocnika
 
     public const NAPOMENA_SLOZEN = 'Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.';
 
+    // Rod u „Napiši moj" (paket 64): pitanje i link su Ivanov tekst (11.10.2026.), natpisi dugmadi su predlog (PITANJA-64.md).
+    public const ROD_PITANJE = 'Da pišem „radio sam" ili „radila sam"?';
+
+    // Ključ je vrednost roda koja stiže uz dugme.
+    public const ROD_IZBOR = ['muski' => 'radio sam', 'zenski' => 'radila sam'];
+
+    public const PROMENI_ROD = ['muski' => 'Promeni u muški rod', 'zenski' => 'Promeni u ženski rod'];
+
     public const NEMA_SABLONA_STRANE = 'Ta strana ne postoji ili šablon više nije dostupan.';
 }

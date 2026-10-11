@@ -60,6 +60,12 @@ class Sablon extends Model
         return array_values(array_filter(array_map(fn (mixed $polje) => is_array($polje) && is_string($polje['kljuc'] ?? null) ? $polje['kljuc'] : null, (array) $this->polja)));
     }
 
+    // Tekst ima mesto sa muškim i ženskim oblikom ({radio/radila}): rod menja i sklopljen šablon, a ne samo tekst koji piše model.
+    public function imaRod(): bool
+    {
+        return preg_match(SklapanjeSablona::RODNI_OBLIK, (string) $this->tekst) === 1;
+    }
+
     // Jedino mesto gde se odlučuje koji šabloni su javni.
     /** @param  Builder<Sablon>  $upit */
     #[Scope]

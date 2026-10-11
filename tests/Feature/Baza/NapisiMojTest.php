@@ -78,12 +78,15 @@ class NapisiMojTest extends BazaTestCase
         }]);
     }
 
-    /** @param  array<string, mixed>|null  $unosi */
-    private function napisi(Sablon $sablon, ?array $unosi = self::UNOSI, bool $prozor = false): TestResponse
+    /**
+     * @param  array<string, mixed>|null  $unosi
+     * @param  array<string, mixed>  $dopuna  ostalo što stiže uz polja (izabran rod)
+     */
+    private function napisi(Sablon $sablon, ?array $unosi = self::UNOSI, bool $prozor = false, array $dopuna = []): TestResponse
     {
         $zahtev = $prozor ? $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest']) : $this;
 
-        return $zahtev->post(route('pomocnik.napisi', $sablon->slug), $unosi === null ? [] : ['polje' => $unosi]);
+        return $zahtev->post(route('pomocnik.napisi', $sablon->slug), ($unosi === null ? [] : ['polje' => $unosi]) + $dopuna);
     }
 
     private function napisan(string $html): string
@@ -315,7 +318,7 @@ class NapisiMojTest extends BazaTestCase
         $sablon = $this->sablon();
         $this->model(null);
 
-        $tekst = $this->napisan($this->napisi($sablon, ['ime' => '', 'tekst' => 'Samo ovo.'])->assertOk()->getContent());
+        $tekst = $this->napisan($this->napisi($sablon, ['ime' => '', 'tekst' => 'Samo ovo.'], dopuna: ['rod' => 'muski'])->assertOk()->getContent());
 
         $this->assertSame(SklapanjeSablona::PRAZNO."\n\nMolim: Samo ovo.\n\n".SklapanjeSablona::PRAZNO, $tekst);
         $this->assertStringNotContainsString('{', $tekst);
@@ -354,10 +357,10 @@ class NapisiMojTest extends BazaTestCase
         $this->assertSame("Ana\n\nMolim: T\n\nD", $tekst);
 
         foreach ([null, ['ime' => ['niz']]] as $nevazece) {
-            $this->assertSame(SklapanjeSablona::PRAZNO."\n\nMolim: ".SklapanjeSablona::PRAZNO."\n\n".SklapanjeSablona::PRAZNO, $this->napisan($this->napisi($sablon, $nevazece)->assertOk()->getContent()));
+            $this->assertSame(SklapanjeSablona::PRAZNO."\n\nMolim: ".SklapanjeSablona::PRAZNO."\n\n".SklapanjeSablona::PRAZNO, $this->napisan($this->napisi($sablon, $nevazece, dopuna: ['rod' => 'muski'])->assertOk()->getContent()));
         }
 
-        $html = $this->napisi($sablon, ['ime' => '<script>alert(1)</script>', 'tekst' => '<b>podebljano</b> & "navodnici"'])->assertOk()->getContent();
+        $html = $this->napisi($sablon, ['ime' => '<script>alert(1)</script>', 'tekst' => '<b>podebljano</b> & "navodnici"'], dopuna: ['rod' => 'muski'])->assertOk()->getContent();
 
         $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
         $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);

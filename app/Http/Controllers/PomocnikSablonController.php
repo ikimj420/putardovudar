@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Rod;
 use App\Models\Sablon;
 use App\Models\Vodic;
 use App\Services\Pomocnik\PisanjeSablona;
 use App\Support\Prikaz;
 use App\Support\PrikazPomocnika;
+use App\Support\RodIzImena;
 use App\Support\SklapanjeSablona;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -29,10 +31,20 @@ class PomocnikSablonController extends Controller
         $sablon = self::javniSablon($slug);
         $unosi = self::unosi($sablon, $zahtev);
 
+        // Rod (paket 64): dugme pritisnuto u ovom zahtevu pobeđuje; inače ga daje ime, a samo kad ime ne kaže, važi raniji izbor. Kad ni to nema, pomoćnik pita.
+        $izabran = self::rod($zahtev->input('rod'));
+        $ranije = self::rod($zahtev->input('izabran_rod'));
+        $imaIme = in_array(RodIzImena::POLJE, $sablon->kljucevi(), true);
+        $rod = $izabran ?? ($imaIme ? RodIzImena::odredi($unosi[RodIzImena::POLJE]) : null) ?? $ranije;
+
+        if ($imaIme && $rod === null) {
+            return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'pitanjeRoda' => true]);
+        }
+
         // Primer oblika je prvi primer prvog objavljenog vodiča sa ovim šablonom koji ga ima; model ga koristi kao uzor, ne kao izvor podataka.
         $primer = Vodic::javni()->where('sablon_id', $sablon->getKey())->orderBy('id')->get()->map(fn (Vodic $vodic) => $vodic->prviPrimer())->first(fn (?string $primer) => $primer !== null);
 
-        return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'napisan' => $pisanje->napisi($sablon, $unosi, $primer)]);
+        return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'napisan' => $pisanje->napisi($sablon, $unosi, $primer, $rod), 'rod' => $rod, 'izabranRod' => $izabran ?? $ranije]);
     }
 
     // Preko granice posetilac dobija obrazac sa onim što je upisao i porukom (429), kao i pitanje pomoćniku.
@@ -47,6 +59,12 @@ class PomocnikSablonController extends Controller
     private static function javniSablon(string $slug): Sablon
     {
         return Sablon::javni()->where('slug', $slug)->firstOrFail();
+    }
+
+    // Vrednost koja nije „muski" ili „zenski" (i polje, i prazno) ne znači ništa.
+    private static function rod(mixed $vrednost): ?Rod
+    {
+        return is_string($vrednost) ? Rod::tryFrom($vrednost) : null;
     }
 
     // Plutajući prozor traži samo ono što stiže posle pitanja (X-Requested-With), strana pomoćnika celu stranu.

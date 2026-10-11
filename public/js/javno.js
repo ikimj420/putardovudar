@@ -222,6 +222,14 @@
 
             dogadjaj.preventDefault();
             var blok = obrazac.closest('.poruka-obrazac');
+            // Dugme sa imenom (izbor roda) nosi svoju vrednost u zahtev, a FormData je bez njega ne uzima.
+            var dugme = dogadjaj.submitter && dogadjaj.submitter.name ? dogadjaj.submitter : null;
+            var podaci = new FormData(obrazac);
+
+            if (dugme) {
+                podaci.append(dugme.name, dugme.value);
+            }
+
             obrazac.querySelector('button[type="submit"]').disabled = true;
             prozor.setAttribute('aria-busy', 'true');
 
@@ -231,7 +239,7 @@
             stanje.textContent = prozor.getAttribute('data-trazim');
             obrazac.parentNode.insertBefore(stanje, obrazac);
 
-            zatrazi(obrazac.action, { method: 'POST', body: new FormData(obrazac) })
+            zatrazi(obrazac.action, { method: 'POST', body: podaci })
                 .then(function (html) {
                     blok.innerHTML = html;
                     prikaziKopiraj(blok);
@@ -239,6 +247,14 @@
                     pomeriNa(blok);
                 })
                 .catch(function () {
+                    if (dugme) {
+                        var skriveno = document.createElement('input');
+                        skriveno.type = 'hidden';
+                        skriveno.name = dugme.name;
+                        skriveno.value = dugme.value;
+                        obrazac.appendChild(skriveno);
+                    }
+
                     obrazac.submit();
                 })
                 .then(function () {

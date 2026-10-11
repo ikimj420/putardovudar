@@ -1997,6 +1997,57 @@ section + section > .naslov-izvora {
   }
 }
 
+/* „Napiši moj": pitanje o rodu (dva dugmeta) i mali link za promenu roda ispod teksta (paket 64). */
+.rod-pitanje {
+  margin-bottom: 24px;
+}
+
+.rod-pitanje h2 {
+  font-size: 20px;
+}
+
+.rod-forma {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dugme-rod {
+  min-width: 150px;
+  min-height: 44px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--button-dark-bg);
+  color: var(--button-dark-text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dugme-rod:hover {
+  background: var(--ljubicasta);
+  color: #fff;
+}
+
+.veza-dugme {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--akcent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.veza-dugme:hover {
+  color: var(--noc);
+}
+
 /* Ko traži manje kretanja ne dobija prelaze ni pomeranje (WCAG 2.3.3). */
 @media (prefers-reduced-motion: reduce) {
   *,
