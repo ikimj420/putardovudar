@@ -447,6 +447,32 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame([['grupa' => 'master-doktorski', 'citat' => 'Konkurs je otvoren za master studente iz Srbije.', 'izvor_citata' => 'kod']], $sa->fresh()->predlog['grupe']);
     }
 
+    // Paket 67 (PITANJA-63.md 3): citat koji vrati sam model, a stoji samo u bloku „Povezano", ne dokazuje grupu; ista rečenica u telu teksta je dokazuje.
+    #[Test]
+    public function citat_modela_iz_bloka_povezano_ne_dokazuje_grupu_a_isti_citat_iz_tela_dokazuje(): void
+    {
+        $poziv = '<p>Konkurs je otvoren. Rok za prijavu je 20. oktobra 2026. godine. Predlog podnosi glavni predlagač u ime mreže istraživača.</p>';
+        $citat = 'Dve stipendije za punu školarinu za master studije';
+        $samoBlok = $this->nacrt(['naslov' => 'Citat iz bloka', 'link_izvora' => 'https://a.test/blok-citat']);
+        $uTelu = $this->nacrt(['naslov' => 'Citat iz tela', 'link_izvora' => 'https://a.test/telo-citat']);
+        Http::fake([
+            'https://a.test/blok-citat' => Http::response($poziv.'<p>'.self::POVEZANO_NA_DNU.'</p>'),
+            'https://a.test/telo-citat' => Http::response($poziv.'<p>'.$citat.' su otvorene za sve prijavljene.</p><p>'.self::POVEZANO_NA_DNU.'</p>'),
+            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'master-doktorski', 'citat' => $citat]]]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        // Citat jeste doslovno na strani i ima reč grupe, ali samo u bloku: nacrt.
+        $this->assertSame(StatusPrilike::Nacrt, $samoBlok->fresh()->status);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $samoBlok->fresh()->predlog['odbijeno']);
+        $this->assertNull($samoBlok->fresh()->grupe);
+        // Ogledalo: isti citat sa istim blokom, ali i u telu teksta: grupa prolazi sa citatom modela (ne kodovim).
+        $this->assertSame(StatusPrilike::Objavljeno, $uTelu->fresh()->status);
+        $this->assertSame(['master-doktorski'], $uTelu->fresh()->grupe);
+        $this->assertSame([['grupa' => 'master-doktorski', 'citat' => $citat]], $uTelu->fresh()->predlog['grupe']);
+    }
+
     // Rečenica sa namenom ima prednost nad prvom koja grupu samo pominje; citat je doslovan deo strane i kad je rečenica duga.
     #[Test]
     public function kod_bira_recenicu_koja_kaze_kome_je_namenjeno_a_dugu_secie_oko_reci_grupe(): void

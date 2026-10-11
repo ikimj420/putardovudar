@@ -50,13 +50,47 @@ final class CitatGrupe
         return $prvi;
     }
 
+    // Citat koji je naveo model važi samo ako stoji bar jednom izvan bloka „Povezano" i podnožja (paket 67): isto pravilo kao za rečenicu koju traži kod. Ako citat ne stoji
+    // u jednom delu teksta (prelazi granicu rečenice) ili ga nema, ovo ne kaže ništa, pa ostaje kako je bilo.
+    public function samoUBlokuVeza(string $citat, string $tekst): bool
+    {
+        $trazeni = TekstStrane::normalizuj($citat);
+
+        if ($trazeni === '') {
+            return false;
+        }
+
+        $uBloku = false;
+
+        foreach ($this->delovi($tekst) as $deo) {
+            if (preg_match('/(?<![\p{L}\d])'.preg_quote($trazeni, '/').'(?![\p{L}\d])/u', TekstStrane::normalizuj($deo)) !== 1) {
+                continue;
+            }
+
+            preg_match_all('/\p{L}[\p{L}\p{N}\'’-]*/u', $deo, $reci);
+
+            if (! $this->jeBlokVeza($deo, $reci[0])) {
+                return false;
+            }
+
+            $uBloku = true;
+        }
+
+        return $uBloku;
+    }
+
+    /** @return list<string> tekst isečen na delove posle tačke, uzvičnika ili upitnika iza kojih sledi veliko slovo, navodnik, zagrada ili broj */
+    private function delovi(string $tekst): array
+    {
+        return array_map(trim(...), preg_split('/(?<=[.!?])\s+(?=[\p{Lu}„"“(\d])/u', $tekst) ?: []);
+    }
+
     /** @return list<string> delovi teksta koji liče na rečenicu: završavaju se tačkom, uzvičnikom ili upitnikom i nisu spisak naslova ni blok veza */
     private function recenice(string $tekst): array
     {
         $recenice = [];
 
-        foreach (preg_split('/(?<=[.!?])\s+(?=[\p{Lu}„"“(\d])/u', $tekst) ?: [] as $deo) {
-            $deo = trim($deo);
+        foreach ($this->delovi($tekst) as $deo) {
             preg_match_all('/\p{L}[\p{L}\p{N}\'’-]*/u', $deo, $reci);
             $broj = count($reci[0]);
             $velika = count(array_filter($reci[0], fn (string $rec) => preg_match('/^\p{Lu}/u', $rec) === 1));

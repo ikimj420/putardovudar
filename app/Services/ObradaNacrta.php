@@ -173,7 +173,8 @@ TEXT;
             $citat = TekstStrane::normalizuj($stavka['citat']);
             $naStrani = $citat !== '' && $this->pisePoRecima($strana, $citat);
 
-            if ($naStrani && $grupa->potkrepljuje($citat)) {
+            // Citat modela koji stoji samo u bloku „Povezano" ili podnožju ne dokazuje grupu (paket 67); tada grupu traži kod, i bez rečenice izvan bloka ona ne prolazi.
+            if ($naStrani && $grupa->potkrepljuje($citat) && ! $this->citatGrupe->samoUBlokuVeza($stavka['citat'], $tekst)) {
                 $prihvacene[] = $grupa;
             } elseif (($nadjen = $this->citatGrupe->naStrani($grupa, $tekst)) !== null && $this->pisePoRecima($strana, TekstStrane::normalizuj($nadjen))) {
                 $prihvacene[] = $grupa;

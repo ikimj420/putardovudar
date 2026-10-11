@@ -173,4 +173,39 @@ class CitatGrupeTest extends TestCase
         $this->assertSame('Poziv je otvoren za omladinske organizacije i institucije.', $this->naStrani(Grupa::Organizacije, 'Uvod o programu. Poziv je otvoren za omladinske organizacije i institucije.'));
         $this->assertNull($this->naStrani(Grupa::Povratnici, $tekst));
     }
+
+    /** @return array<string, array{0: string, 1: string, 2: bool}> citat modela, tekst strane i da li citat stoji samo u bloku veza */
+    public static function citatiModela(): array
+    {
+        $poziv = 'Rok za podnošenje predloga je 28. oktobar 2026. godine. Predlog podnosi glavni predlagač u ime mreže pojedinaca. ';
+        $stipendije = 'Dve stipendije za punu školarinu za master studije';
+
+        return [
+            'citat samo u bloku Povezano' => [$stipendije, $poziv.self::BLOK_POVEZANO, true],
+            'ista rečenica u telu teksta' => [$stipendije, $poziv.$stipendije.' su otvorene za sve prijavljene. '.self::BLOK_POVEZANO, false],
+            'rečenica u telu i u bloku' => ['Konkurs je otvoren za master studente iz Srbije.', $poziv.'Konkurs je otvoren za master studente iz Srbije. Povezano Konkurs je otvoren za master studente iz Srbije. Konkurs je otvoren za master studente iz Srbije.', false],
+            'citat velikim i malim slovima i višak razmaka' => ['  dve STIPENDIJE za punu školarinu   za master studije ', $poziv.self::BLOK_POVEZANO, true],
+            'bez bloka nema šta da se odbije' => [$stipendije, $poziv.$stipendije.' su otvorene.', false],
+            'citata nema na strani' => ['Citat koga nema nigde', $poziv.self::BLOK_POVEZANO, false],
+            'prazan citat' => ['', self::BLOK_POVEZANO, false],
+            'blok je pre tela, pa citat stoji i u telu' => [$stipendije, 'Povezano '.$stipendije.' Umetnost i dizajn video-igara Dve stipendije za punu školarinu za master studije Umetnost. Rok je 28. oktobar 2026. '.$stipendije.' su otvorene za sve prijavljene.', false],
+            'citat je deo reči u bloku' => ['stipendij', $poziv.self::BLOK_POVEZANO, false],
+            'podnožje sa istim nizom od četiri reči dvaput' => ['najbolje moguće iskustvo u pregledaču', 'Rok je 20. oktobar 2026. godine. Naša web stranica koristi kolačiće da bi pružila najbolje moguće iskustvo u pregledaču Naša web stranica koristi kolačiće da bi pružila najbolje moguće iskustvo u pregledaču', true],
+        ];
+    }
+
+    // Paket 67 (PITANJA-63.md 3): citat koji vrati model, a stoji samo u bloku „Povezano" ili podnožju, ne dokazuje grupu; isto pravilo kao za rečenicu koju traži kod.
+    #[Test]
+    #[DataProvider('citatiModela')]
+    public function citat_modela_koji_stoji_samo_u_bloku_veza_se_prepoznaje(string $citat, string $tekst, bool $samoUBloku): void
+    {
+        $this->assertSame($samoUBloku, (new CitatGrupe)->samoUBlokuVeza($citat, $tekst));
+    }
+
+    // Citat preko granice rečenice ne stoji ni u jednom delu: ovo pravilo ne kaže ništa, pa ostaje kako je bilo.
+    #[Test]
+    public function citat_preko_granice_recenice_nije_u_bloku_veza(): void
+    {
+        $this->assertFalse((new CitatGrupe)->samoUBlokuVeza('Rok je 28. oktobar. Predlog podnosi glavni', 'Rok je 28. oktobar. Predlog podnosi glavni predlagač. '.self::BLOK_POVEZANO));
+    }
 }
