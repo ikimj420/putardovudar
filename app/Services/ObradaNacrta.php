@@ -36,7 +36,7 @@ TEXT;
     // Verzija pravila upisana u predlog; nacrt obrađen starim pravilom je nema, pa ga uvoz:obradi --ponovo prepoznaje.
     public const PRAVILO = 4;
 
-    // Razlog objave kad je oglas za posao objavljen bez mišljenja modela (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md).
+    // Razlog objave oglasa za posao, uvek kodov (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md), a Ivan ga je prihvatio 11.10.2026.
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
     public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
@@ -98,7 +98,8 @@ TEXT;
             $prilika->vrsta = VrstaPrilike::from($forma['vrsta']);
             $prilika->grupe = array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene);
             $prilika->setAttribute('rok', $rok?->toDateString());
-            $prilika->razlog_objave = $forma['vazi_pravilo'] === true ? $forma['razlog'] : self::RAZLOG_POSAO;
+            // Za posao se čuva samo kodov razlog (paket 67): mišljenje modela ne računa, a njegov razlog je tvrdio grupu koja nije dokazana (izmereno u probi 63). Ostale vrste čuvaju modelov.
+            $prilika->razlog_objave = $prilika->vrsta === VrstaPrilike::Posao ? self::RAZLOG_POSAO : $forma['razlog'];
 
             try {
                 $prilika->objavi(KoJeObjavio::Ollama);

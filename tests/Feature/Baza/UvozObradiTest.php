@@ -660,24 +660,30 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame($razlog, $nacrt->fresh()->predlog['odbijeno']);
     }
 
-    /** @return array<string, array{0: bool}> mišljenje modela o tome da li tekst važi za objavu */
+    /** @return array<string, array{0: bool, 1: string}> mišljenje modela o tome da li tekst važi za objavu i razlog koji je model dao */
     public static function misljenjaModela(): array
     {
-        return ['model kaže da je prilika' => [true], 'model kaže da nije prilika' => [false]];
+        return [
+            'model kaže da je prilika' => [true, 'Model kaže.'],
+            'model kaže da nije prilika' => [false, 'Model kaže.'],
+            // Paket 67: razlog modela koji tvrdi grupu (izmereno u probi 63: 6 od 10 oglasa sa Infostuda) se ne čuva.
+            'model kaže da je prilika i tvrdi grupu' => [true, 'Oglas je namenjen nezaposlenim mladima i studentima.'],
+            'model kaže da nije prilika i tvrdi grupu' => [false, 'Oglas je namenjen studentima master i doktorskih studija.'],
+        ];
     }
 
     // Paket 63/T3: oglas za posao se objavljuje kad kod sam dokaže vrstu (reč na strani), rok (na strani, nije prošao) i naslov; mišljenje modela (vazi_pravilo) ne računa.
     #[Test]
     #[DataProvider('misljenjaModela')]
-    public function oglas_za_posao_se_objavljuje_bez_obzira_na_misljenje_modela(bool $vazi): void
+    public function oglas_za_posao_se_objavljuje_bez_obzira_na_misljenje_modela(bool $vazi, string $razlogModela): void
     {
         $nacrt = $this->nacrt(['naslov' => 'Magacioner']);
         Http::fake([
             self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p>'),
-            self::OLLAMA => $this->ollama(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => [], 'razlog' => 'Model kaže.']),
+            self::OLLAMA => $this->ollama(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => [], 'razlog' => $razlogModela]),
         ]);
 
-        $this->artisan('uvoz:obradi')->expectsOutputToContain('objavljen ('.($vazi ? 'Model kaže.' : ObradaNacrta::RAZLOG_POSAO).'): Magacioner');
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('objavljen ('.ObradaNacrta::RAZLOG_POSAO.'): Magacioner');
 
         $prilika = $nacrt->fresh();
 
@@ -686,9 +692,10 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame('2026-10-20', $prilika->rok->toDateString());
         $this->assertNull($prilika->grupe);
         $this->assertSame(KoJeObjavio::Ollama, $prilika->objavio);
-        // Razlog objave je modelov kad je model rekao da je prilika, a inače kodov; šta je model rekao ostaje zapisano u predlogu.
-        $this->assertSame($vazi ? 'Model kaže.' : ObradaNacrta::RAZLOG_POSAO, $prilika->razlog_objave);
-        $this->assertSame('Model kaže.', $prilika->predlog['razlog']);
+        // Razlog objave za posao je uvek kodov (Ivan, 11.10.2026.), i kad je model rekao da je prilika; šta je model rekao ostaje zapisano u predlogu.
+        $this->assertSame('Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.', $prilika->razlog_objave);
+        $this->assertSame(ObradaNacrta::RAZLOG_POSAO, $prilika->razlog_objave);
+        $this->assertSame($razlogModela, $prilika->predlog['razlog']);
         $this->assertSame(ObradaNacrta::PRAVILO, $prilika->predlog['pravilo']);
         $this->assertTrue(Prilika::javne()->whereKey($prilika->id)->exists());
     }
