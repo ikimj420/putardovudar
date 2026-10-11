@@ -30,8 +30,8 @@ class BojaVrataPoStraniTest extends BazaTestCase
         return [
             'početna, pomoćnik i ostale' => [null, self::ZLATNA],
             'prilike' => ['prilike', ['svetlo-1' => '#ffe2c6', 'svetlo-2' => '#f7a866', 'svetlo-3' => '#e07229', 'krilo-1' => '#e07229', 'krilo-2' => '#a8470f', 'oreol' => '#f0994c', 'pod' => '#ffc59a']],
-            'vodiči' => ['vodici', ['svetlo-1' => '#f1e6ff', 'svetlo-2' => '#c9a2fb', 'svetlo-3' => '#8d4ceb', 'krilo-1' => '#7d36e0', 'krilo-2' => '#4a1499', 'oreol' => '#a85ff2', 'pod' => '#d9c2ff']],
-            'organizacije' => ['organizacije', ['svetlo-1' => '#ffe0ef', 'svetlo-2' => '#e58ab9', 'svetlo-3' => '#b83c7e', 'krilo-1' => '#a82d6e', 'krilo-2' => '#6a1546', 'oreol' => '#b83c7e', 'pod' => '#f5b6d5']],
+            'vodiči' => ['vodici', ['svetlo-1' => '#f1e6ff', 'svetlo-2' => '#c9a2fb', 'svetlo-3' => '#9e65f0', 'krilo-1' => '#7d36e0', 'krilo-2' => '#4a1499', 'oreol' => '#a85ff2', 'pod' => '#d9c2ff']],
+            'organizacije' => ['organizacije', ['svetlo-1' => '#ffe0ef', 'svetlo-2' => '#e58ab9', 'svetlo-3' => '#cb5e97', 'krilo-1' => '#a82d6e', 'krilo-2' => '#6a1546', 'oreol' => '#b83c7e', 'pod' => '#f5b6d5']],
             'kalendar' => ['kalendar', ['svetlo-1' => '#fff6d6', 'svetlo-2' => '#f5d98a', 'svetlo-3' => '#e7b53c', 'krilo-1' => '#e7b53c', 'krilo-2' => '#b07f14', 'oreol' => '#e7b53c', 'pod' => '#fbe3a0']],
         ];
     }

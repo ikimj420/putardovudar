@@ -135,34 +135,38 @@ class OznakeUVratimaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\n\.u-svetlu \{[^}]*position: absolute;[^}]*top: 30%;[^}]*left: 26\.5%;/', $stil);
     }
 
-    // Kontrast tamnih slova na svetlu: izmereno u pregledaču (375 i 1280 px, svih šest oznaka) i ovde računom sa istim modelom. Prolazi na početnoj, prilikama i kalendaru;
-    // na vodičima ne prolazi šesta oznaka, a na organizacijama peta (samo na telefonu) i šesta. Predlog svetlije nijanse je u PITANJA-62.md.
+    // Kontrast tamnih slova na svetlu: izmereno u pregledaču (375 i 1280 px, svih šest oznaka) i ovde računom sa istim modelom. Posle paketa 67 (svetlija donja boja
+    // svetla na vodičima i organizacijama) je bar 4,5 : 1 na svih pet strana sa vratima, na obe širine, za svih šest oznaka.
     #[Test]
-    public function kontrast_je_bar_4_5_osim_za_donje_oznake_na_vodicima_i_organizacijama(): void
+    public function kontrast_je_bar_4_5_na_svih_pet_strana_za_svih_sest_oznaka(): void
     {
-        $ocekivano = [
-            // strana => [širina vrata => redni brojevi oznaka (od 1) čiji je kontrast ispod 4,5]
-            'pocetna' => [null, [343 => [], 380 => []]],
-            'prilike' => ['prilike', [343 => [], 380 => []]],
-            'kalendar' => ['kalendar', [343 => [], 380 => []]],
-            'vodici' => ['vodici', [343 => [6], 380 => [6]]],
-            'organizacije' => ['organizacije', [343 => [5, 6], 380 => [6]]],
-        ];
+        $strane = ['pocetna' => null, 'prilike' => 'prilike', 'kalendar' => 'kalendar', 'vodici' => 'vodici', 'organizacije' => 'organizacije'];
+        $proveren = 0;
 
-        foreach ($ocekivano as $ime => [$strana, $sirine]) {
-            foreach ($sirine as $sirina => $ispod) {
+        foreach ($strane as $ime => $strana) {
+            foreach ([343, 380] as $sirina) {
                 $kontrasti = $this->kontrasti($strana, $sirina);
 
                 $this->assertCount(6, $kontrasti);
-                $stvarno = array_keys(array_filter($kontrasti, fn (float $k) => $k < 4.5));
-                $this->assertSame($ispod, array_map(fn (int $i) => $i + 1, $stvarno), $ime.' '.$sirina.' px: '.implode(', ', array_map(fn (float $k) => number_format($k, 2), $kontrasti)));
+                foreach ($kontrasti as $i => $kontrast) {
+                    $this->assertGreaterThanOrEqual(4.5, $kontrast, $ime.' '.$sirina.' px, oznaka '.($i + 1).': '.number_format($kontrast, 2));
+                    $proveren++;
+                }
             }
         }
 
+        // Neprazan skup: 5 strana × 2 širine × 6 oznaka.
+        $this->assertSame(60, $proveren);
+
         // Ogledalo: model prati pravu boju — najsvetlija strana (kalendar) ima znatno veći kontrast od najtamnije (organizacije) na istoj oznaci.
         $this->assertGreaterThan($this->kontrasti('organizacije', 343)[5] + 4, $this->kontrasti('kalendar', 343)[5]);
-        // Izmereno u pregledaču za vodiče na 375 px: peta oznaka 4,69, šesta 3,53 (model se slaže na dve decimale).
-        $this->assertEqualsWithDelta(4.69, $this->kontrasti('vodici', 343)[4], 0.1);
-        $this->assertEqualsWithDelta(3.53, $this->kontrasti('vodici', 343)[5], 0.1);
+        // Izmereno u pregledaču posle paketa 67 (375 px): vodiči peta 5,54, šesta 4,51; organizacije peta 5,27, šesta 4,52 (model se slaže na dve decimale).
+        $this->assertEqualsWithDelta(5.54, $this->kontrasti('vodici', 343)[4], 0.01);
+        $this->assertEqualsWithDelta(4.51, $this->kontrasti('vodici', 343)[5], 0.01);
+        $this->assertEqualsWithDelta(5.27, $this->kontrasti('organizacije', 343)[4], 0.01);
+        $this->assertEqualsWithDelta(4.52, $this->kontrasti('organizacije', 343)[5], 0.01);
+        // Boje koje merilo čita su one iz stila: donja boja svetla na vodičima i organizacijama.
+        $this->assertSame('#9e65f0', $this->bojeVrata('vodici')['svetlo-3']);
+        $this->assertSame('#cb5e97', $this->bojeVrata('organizacije')['svetlo-3']);
     }
 }

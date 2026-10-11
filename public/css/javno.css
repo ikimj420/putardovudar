@@ -113,7 +113,7 @@ body[data-strana="vodici"] {
   --strana-nad: var(--noc);
   --vrata-svetlo-1: #f1e6ff;
   --vrata-svetlo-2: #c9a2fb;
-  --vrata-svetlo-3: #8d4ceb;
+  --vrata-svetlo-3: #9e65f0;
   --vrata-krilo-1: #7d36e0;
   --vrata-krilo-2: #4a1499;
   --vrata-oreol: #a85ff2;
@@ -129,7 +129,7 @@ body[data-strana="organizacije"] {
   --strana-nad: var(--noc);
   --vrata-svetlo-1: #ffe0ef;
   --vrata-svetlo-2: #e58ab9;
-  --vrata-svetlo-3: #b83c7e;
+  --vrata-svetlo-3: #cb5e97;
   --vrata-krilo-1: #a82d6e;
   --vrata-krilo-2: #6a1546;
   --vrata-oreol: #b83c7e;
