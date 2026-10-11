@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Baza;
 
+use App\Enums\Rod;
 use App\Enums\StatusObjave;
 use App\Models\Sablon;
 use App\Models\Vodic;
@@ -12,7 +13,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 
-// Paket 64/T1: seeder upisuje primere vodičima koji ih nemaju, dodaje šablone kao nacrt i vezuje vodič za šablon samo kad ga nema; ništa postojeće ne menja.
+// Paket 64/T1 i 69/T1: seeder upisuje primere vodičima koji ih nemaju, dodaje šablone kao nacrt i vezuje vodič za šablon samo kad ga nema; ništa postojeće ne menja.
 #[Group('baza')]
 class VodiciPrimeriSeederTest extends BazaTestCase
 {
@@ -78,11 +79,11 @@ class VodiciPrimeriSeederTest extends BazaTestCase
 
         $this->pokreni();
 
-        $this->assertEqualsCanonicalizing(['cv', 'email-uz-prijavu', 'molba-za-preporuku', 'motivaciono-pismo'], Sablon::query()->pluck('slug')->all());
+        $this->assertEqualsCanonicalizing(['cv', 'email-uz-prijavu', 'moje-predstavljanje', 'molba-za-preporuku', 'motivaciono-pismo', 'pitanje-o-dokumentu'], Sablon::query()->pluck('slug')->all());
         $this->assertSame('Moj CV', $svoj->fresh()->naslov);
         $this->assertSame('{ime}', $svoj->fresh()->tekst);
         $this->assertSame(StatusObjave::Objavljeno, $svoj->fresh()->status);
-        foreach (Sablon::query()->whereIn('slug', ['email-uz-prijavu', 'molba-za-preporuku', 'motivaciono-pismo'])->get() as $sablon) {
+        foreach (Sablon::query()->whereIn('slug', ['email-uz-prijavu', 'moje-predstavljanje', 'molba-za-preporuku', 'motivaciono-pismo', 'pitanje-o-dokumentu'])->get() as $sablon) {
             $this->assertSame(StatusObjave::Nacrt, $sablon->status, $sablon->slug);
         }
         // Samo nacrt: nijedan od novih šablona nije javan, pa „Napiši moj" ne postoji dok ga Ivan ne objavi.
@@ -126,7 +127,7 @@ class VodiciPrimeriSeederTest extends BazaTestCase
         $this->vodici();
         $this->pokreni();
 
-        $this->assertCount(4, VodiciPrimeriSeeder::sabloni());
+        $this->assertCount(6, VodiciPrimeriSeeder::sabloni());
         foreach (Sablon::query()->get() as $sablon) {
             $kljucevi = $sablon->kljucevi();
 
@@ -193,8 +194,116 @@ class VodiciPrimeriSeederTest extends BazaTestCase
             $poredjeno++;
         }
 
-        // Neprazan skup: poređeno je sedam primera (CV, četiri pisma, mejl i molba za preporuku) i četiri šablona.
-        $this->assertSame(7 + 4, $poredjeno);
+        // Neprazan skup: poređeno je petnaest primera (sedam iz paketa 64 i osam iz paketa 69) i šest šablona.
+        $this->assertSame(15 + 6, $poredjeno);
+    }
+
+    private const NOVI_VODICI = [
+        'kako-se-prijaviti-za-stipendiju', 'sta-ako-ti-fali-dokument', 'kako-se-pripremiti-za-razgovor', 'kako-razumeti-uslove-konkursa',
+        'kako-poslati-prijavu-online', 'kako-se-prijaviti-za-posao-ili-praksu', 'kako-pripremiti-osnovni-portfolio',
+    ];
+
+    /** @return array<string, Vodic> slug → vodič, svi bez primera i bez šablona */
+    private function noviVodici(): array
+    {
+        $vodici = [];
+
+        foreach (self::NOVI_VODICI as $slug) {
+            $vodici[$slug] = Vodic::factory()->create(['slug' => $slug, 'naslov' => 'Vodič '.$slug, 'koraci' => ['Prvi korak.'], 'primeri' => null]);
+        }
+
+        return $vodici;
+    }
+
+    // Paket 69/T1: odobreni primeri za sedam novih vodiča; naslovi i prvi i poslednji red su isti kao u dokumentu (ovo ne traži dokument, za razliku od testa ispod).
+    #[Test]
+    public function novi_vodici_dobijaju_odobrene_primere_redom_a_vodic_koji_ih_ima_se_ne_dira(): void
+    {
+        $vodici = $this->noviVodici();
+        $svoj = [['naslov' => 'Moj', 'tekst' => 'Primer koji je neko već upisao.']];
+        $vodici['kako-razumeti-uslove-konkursa']->update(['primeri' => $svoj]);
+
+        $this->pokreni();
+
+        $ocekivano = [
+            'kako-se-prijaviti-za-stipendiju' => [['Primer'], 'Moj spisak za učeničku stipendiju', 'Potvrdu o predaji sačuvala: da / ne'],
+            'sta-ako-ti-fali-dokument' => [['Primer'], 'Naslov: Pitanje o dokumentu za konkurs – Ana Marković', 'Ana Marković
+060 000 0000'],
+            'kako-se-pripremiti-za-razgovor' => [['Primer'], 'Moja priprema za razgovor', 'Ako ne mogu da dođem: javljam se telefonom dan ranije.'],
+            'kako-poslati-prijavu-online' => [['Primer'], 'Pre nego što klikneš „Pošalji":', '– Proveri e-poštu, i folder za neželjenu poštu.'],
+            'kako-se-prijaviti-za-posao-ili-praksu' => [['Primer'], 'Kad zoveš po oglasu:', '– ponesi ličnu kartu i diplomu ili svedočanstvo (original)'],
+            'kako-pripremiti-osnovni-portfolio' => [['Školski rad', 'Rad rukama'], 'Rad: plakat za školsku priredbu, 2025.', 'Šta sam naučio: da prvo dobro pokrijem pod, pa tek onda krečim.'],
+        ];
+
+        foreach ($ocekivano as $slug => [$naslovi, $prvi, $poslednji]) {
+            $primeri = $vodici[$slug]->fresh()->primeri;
+
+            $this->assertSame($naslovi, array_column($primeri, 'naslov'), $slug);
+            $this->assertStringStartsWith($prvi, $primeri[0]['tekst'], $slug);
+            $this->assertStringEndsWith($poslednji, $primeri[array_key_last($primeri)]['tekst'], $slug);
+        }
+
+        $this->assertStringStartsWith('Rad: okrečen stan kod komšije, 2026. (slike pre i posle)', $vodici['kako-pripremiti-osnovni-portfolio']->fresh()->primeri[1]['tekst']);
+        // Ogledalo: vodič koji već ima primer ga zadržava, a vodiča sa istim imenom kog nema seeder ne pravi.
+        $this->assertSame($svoj, $vodici['kako-razumeti-uslove-konkursa']->fresh()->primeri);
+        $this->assertSame(7, Vodic::query()->count());
+    }
+
+    // Paket 69/T1: dva nova šablona ulaze kao nacrt i vezuju se za svoj vodič samo kad on nema nijedan šablon.
+    #[Test]
+    public function novi_sabloni_se_vezuju_za_svoj_vodic_samo_kad_nema_sablon(): void
+    {
+        $vodici = $this->noviVodici();
+        $tudji = Sablon::factory()->create(['slug' => 'moj-sablon']);
+        $vodici['kako-se-pripremiti-za-razgovor']->update(['sablon_id' => $tudji->getKey()]);
+
+        $this->pokreni();
+
+        $dokument = Sablon::query()->where('slug', 'pitanje-o-dokumentu')->firstOrFail();
+
+        $this->assertSame(StatusObjave::Nacrt, $dokument->status);
+        $this->assertSame($dokument->getKey(), $vodici['sta-ako-ti-fali-dokument']->fresh()->sablon_id);
+        $this->assertSame(StatusObjave::Nacrt, Sablon::query()->where('slug', 'moje-predstavljanje')->firstOrFail()->status);
+        // Ogledalo: vodič koji već ima šablon ga zadržava; šablon se ipak pravi (kao nacrt), ali ga nijedan vodič ne dobija.
+        $this->assertSame($tudji->getKey(), $vodici['kako-se-pripremiti-za-razgovor']->fresh()->sablon_id);
+        $this->assertSame(0, Vodic::query()->where('sablon_id', Sablon::query()->where('slug', 'moje-predstavljanje')->value('id'))->count());
+    }
+
+    // Paket 69/T1: „Pitanje o dokumentu" ima oznaku roda {zatražio/zatražila}; provera šablona je prima bez polja za nju, a gotov tekst ima izabran oblik.
+    #[Test]
+    public function pitanje_o_dokumentu_prima_oznaku_roda_i_daje_izabran_oblik(): void
+    {
+        $this->pokreni();
+
+        $sablon = Sablon::query()->where('slug', 'pitanje-o-dokumentu')->firstOrFail();
+        $unosi = ['ime' => 'Ana Marković', 'konkurs' => 'konkurs za učeničke stipendije', 'dokument' => 'uverenje o državljanstvu', 'rok' => '20. oktobra', 'telefon' => '060 000 0000'];
+
+        $this->assertStringContainsString('{zatražio/zatražila}', $sablon->tekst);
+        $this->assertNotContains('zatražio/zatražila', $sablon->kljucevi());
+        $sablon->update(['status' => StatusObjave::Objavljeno]);
+        $this->assertSame(StatusObjave::Objavljeno, $sablon->fresh()->status);
+        $this->assertStringContainsString('uz potvrdu da sam ga zatražila?', SklapanjeSablona::sklopi($sablon, $unosi, Rod::Zenski));
+        $this->assertStringContainsString('uz potvrdu da sam ga zatražio?', SklapanjeSablona::sklopi($sablon, $unosi, Rod::Muski));
+        $this->assertStringNotContainsString('/', SklapanjeSablona::sklopi($sablon, $unosi, Rod::Muski));
+    }
+
+    // Paket 69/T1: prazno polje „skola" u „Moje predstavljanje" ne ostavlja prazan red; ostaje linija za olovku kao u svakom šablonu (PITANJA-69.md 1).
+    #[Test]
+    public function moje_predstavljanje_bez_skole_nema_prazan_red(): void
+    {
+        $this->pokreni();
+
+        $sablon = Sablon::query()->where('slug', 'moje-predstavljanje')->firstOrFail();
+        $unosi = ['ime' => 'Marko Jovanović', 'posao' => 'konobar u restoranu „Lipa"', 'skola' => '', 'iskustvo' => 'Tri meseca sam radio u kafani na Zlatiboru.', 'umem' => 'Volim posao sa ljudima.'];
+
+        $bez = SklapanjeSablona::sklopi($sablon, $unosi);
+        $sa = SklapanjeSablona::sklopi($sablon, [...$unosi, 'skola' => 'Srednja ugostiteljska škola u Leskovcu.']);
+
+        $this->assertSame("Zovem se Marko Jovanović.\n".SklapanjeSablona::PRAZNO."\nTri meseca sam radio u kafani na Zlatiboru.\nVolim posao sa ljudima.\nŽelim da radim kao konobar u restoranu „Lipa\".", $bez);
+        $this->assertDoesNotMatchRegularExpression('/^$/m', $bez);
+        // Ogledalo: sa upisanom školom red je njen tekst, a linije za olovku nema.
+        $this->assertStringContainsString("\nSrednja ugostiteljska škola u Leskovcu.\n", $sa);
+        $this->assertStringNotContainsString(SklapanjeSablona::PRAZNO, $sa);
     }
 
     // Od zaglavlja do sledećeg zaglavlja istog ili višeg nivoa („### " ili „## "); „#### " je deo odeljka.

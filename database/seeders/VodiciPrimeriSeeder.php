@@ -7,7 +7,7 @@ use App\Models\Sablon;
 use App\Models\Vodic;
 use Illuminate\Database\Seeder;
 
-// Primeri za vodiče i šabloni za „Napiši moj“ iz Dokumentacija/VODICI-PRIMERI.md, samo ono što je Ivan odobrio (paket 64). Tekstovi su prepisani doslovno.
+// Primeri za vodiče i šabloni za „Napiši moj“ iz Dokumentacija/VODICI-PRIMERI.md, samo ono što je Ivan odobrio (paketi 64 i 69). Tekstovi su prepisani doslovno.
 // Ništa postojeće se ne menja: primeri se upisuju samo vodiču koji ih još nema, šabloni ulaze kao nacrt (slug koji postoji se ne dira), a vodič se vezuje
 // za šablon samo kad još nema nijedan. Ivan pokreće seeder sam, pročita tekstove, i sam objavljuje šablone u adminu.
 class VodiciPrimeriSeeder extends Seeder
@@ -192,6 +192,128 @@ Ana Marković
 060 000 0000
 TEKST],
             ],
+            'kako-se-prijaviti-za-stipendiju' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Moj spisak za učeničku stipendiju
+
+Konkurs: Ministarstvo prosvete, stipendije za učenike srednjih škola
+Rok: od 1. do 30. septembra
+Prijava: na portalu kreditistipendije.prosveta.gov.rs, a papiri u mojoj školi
+
+Pre prijave:
+– javila sam se Nacionalnom savetu romske nacionalne manjine (ili Kancelariji za inkluziju Roma) radi verifikacije
+– pročitala sam uslove: za učenike Rome ne važi najmanji prosek 3,50
+
+Dokumenti:
+– prijava sa portala
+– uverenje o prihodima porodice za januar–jun
+– lična karta roditelja: odštampani podaci ili fotokopija
+– uverenje iz škole o razredu i uspehu
+– potvrde nisu starije od 90 dana
+
+Poslato na portalu: ________
+Papiri predati u školi: ________
+Potvrdu o predaji sačuvala: da / ne
+TEKST],
+            ],
+            'sta-ako-ti-fali-dokument' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Naslov: Pitanje o dokumentu za konkurs – Ana Marković
+
+Poštovani,
+
+prijavljujem se na konkurs za učeničke stipendije i u uslovima piše da treba uverenje o državljanstvu. Nemam ga, a rok za prijavu je za deset dana.
+
+Da li uverenje možete da pribavite vi, iz službene evidencije? Ako ne možete, da li mogu da ga dostavim posle roka, uz potvrdu da sam ga zatražila?
+
+Hvala,
+Ana Marković
+060 000 0000
+TEKST],
+            ],
+            'kako-se-pripremiti-za-razgovor' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Moja priprema za razgovor
+
+Posao: konobar u restoranu „Lipa", Leskovac
+Kada: utorak, 14. oktobar, u 10 sati
+Ponesem: CV, ličnu kartu, olovku
+Obučem: čistu i opeglanu košulju, pantalone i cipele (ne patike)
+
+Moje predstavljanje (oko 30 sekundi):
+„Zovem se Marko Jovanović. Završio sam srednju ugostiteljsku školu u Leskovcu. Tri meseca sam radio u kafani na Zlatiboru: služio sam goste i naplaćivao. Volim posao sa ljudima i mogu da radim u smenama."
+
+Šta iz oglasa sam već radio:
+– služio goste i naplaćivao
+– radio u smenama
+
+Pitanja koja ću postaviti:
+– Šta bih radio prvih nedelja?
+– Kakvo je radno vreme?
+– Kada mogu da očekujem odgovor?
+
+Ako ne mogu da dođem: javljam se telefonom dan ranije.
+TEKST],
+            ],
+            'kako-razumeti-uslove-konkursa' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Iz konkursa: „Rok za prijavljivanje na konkurs je od 1. do 30. septembra 2026. godine."
+Znači: prijava posle 30. septembra ne važi.
+
+Iz konkursa: „Potvrde ne mogu biti starije od devedeset (90) dana."
+Znači: potvrda mora da bude izdata u poslednja tri meseca. Starija ne važi.
+
+Iz konkursa: „…najmanje vrlo dobar uspeh u učenju (3,50), izuzev … učenika pripadnika romske nacionalne manjine…"
+Znači: drugi učenici iz osetljivih grupa moraju da imaju bar 3,50, a Romi ne moraju.
+TEKST],
+            ],
+            'kako-poslati-prijavu-online' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Pre nego što klikneš „Pošalji":
+– Ime, telefon i e-pošta su tačni, a e-poštu redovno proveravaš.
+– Dodati su svi traženi dokumenti.
+– Fajlovi su u traženom obliku, najčešće PDF.
+– Nazivi fajlova su jasni, na primer Ana_Markovic_CV.pdf.
+– Ako se prijava šalje preko eUprave, nalog si napravila ranije, ne poslednjeg dana.
+
+Posle slanja:
+– Sačuvaj potvrdu ili sliku ekrana.
+– Proveri e-poštu, i folder za neželjenu poštu.
+TEKST],
+            ],
+            'kako-se-prijaviti-za-posao-ili-praksu' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Kad zoveš po oglasu:
+„Dobar dan, zovem se Ana Marković. Zovem zbog oglasa za konobara koji sam videla na internetu. Da li je mesto još slobodno? Kako mogu da se prijavim?"
+
+Zapiši posle razgovora:
+– ime osobe sa kojom si pričala
+– šta treba da pošalješ
+– do kada
+
+Za prakse i obuke preko Nacionalne službe za zapošljavanje:
+– prijavi se na evidenciju lično, u filijali NSZ u svom mestu
+– ponesi ličnu kartu i diplomu ili svedočanstvo (original)
+TEKST],
+            ],
+            'kako-pripremiti-osnovni-portfolio' => [
+                ['naslov' => 'Školski rad', 'tekst' => <<<'TEKST'
+Rad: plakat za školsku priredbu, 2025.
+Cilj: da pozove roditelje na priredbu.
+Moj deo: sama sam napravila plakat na računaru.
+Veštine: Canva, kratak i jasan tekst.
+Rezultat: plakat je stajao u školi i u prodavnici u naselju.
+Šta sam naučila: tekst treba da bude kratak i da se vidi izdaleka.
+TEKST],
+                ['naslov' => 'Rad rukama', 'tekst' => <<<'TEKST'
+Rad: okrečen stan kod komšije, 2026. (slike pre i posle)
+Cilj: komšija je hteo svetliji i čist stan.
+Moj deo: sam sam okrečio dve sobe; ujak mi je pokazao kako.
+Veštine: kitovanje, krečenje valjkom, zaštita poda i nameštaja.
+Rezultat: komšija me je preporučio još dvojici.
+Šta sam naučio: da prvo dobro pokrijem pod, pa tek onda krečim.
+TEKST],
+            ],
         ];
     }
 
@@ -342,6 +464,52 @@ Hvala vam unapred.
 Srdačan pozdrav,
 {ime}
 {telefon}
+TEKST,
+            ],
+            [
+                'naslov' => 'Pitanje o dokumentu',
+                'slug' => 'pitanje-o-dokumentu',
+                'vodic' => 'sta-ako-ti-fali-dokument',
+                'objasnjenje' => 'Kratak mejl organizatoru konkursa kad ti fali dokument.',
+                'polja' => [
+                    ['kljuc' => 'ime', 'oznaka' => 'Kako se zoveš?', 'objasnjenje' => 'Ime i prezime.', 'dugo' => false],
+                    ['kljuc' => 'konkurs', 'oznaka' => 'Na koji konkurs se prijavljuješ?', 'objasnjenje' => 'Na primer „konkurs za učeničke stipendije".', 'dugo' => false],
+                    ['kljuc' => 'dokument', 'oznaka' => 'Koji dokument ti fali?', 'objasnjenje' => 'Tačno kako piše u uslovima, na primer „uverenje o državljanstvu".', 'dugo' => false],
+                    ['kljuc' => 'rok', 'oznaka' => 'Do kada je rok za prijavu?', 'objasnjenje' => 'Datum, na primer „20. oktobra".', 'dugo' => false],
+                    ['kljuc' => 'telefon', 'oznaka' => 'Broj telefona', 'objasnjenje' => '', 'dugo' => false],
+                ],
+                'tekst' => <<<'TEKST'
+Naslov: Pitanje o dokumentu za konkurs – {ime}
+
+Poštovani,
+
+prijavljujem se na {konkurs} i u uslovima piše da treba {dokument}. Nemam ga, a rok za prijavu je {rok}.
+
+Da li taj dokument možete da pribavite vi, iz službene evidencije? Ako ne možete, da li mogu da ga dostavim posle roka, uz potvrdu da sam ga {zatražio/zatražila}?
+
+Hvala,
+{ime}
+{telefon}
+TEKST,
+            ],
+            [
+                'naslov' => 'Moje predstavljanje',
+                'slug' => 'moje-predstavljanje',
+                'vodic' => 'kako-se-pripremiti-za-razgovor',
+                'objasnjenje' => 'Kratko predstavljanje za razgovor, oko 30 sekundi.',
+                'polja' => [
+                    ['kljuc' => 'ime', 'oznaka' => 'Kako se zoveš?', 'objasnjenje' => 'Ime i prezime.', 'dugo' => false],
+                    ['kljuc' => 'posao', 'oznaka' => 'Za koji posao ideš na razgovor?', 'objasnjenje' => 'Na primer „konobar u restoranu Lipa".', 'dugo' => false],
+                    ['kljuc' => 'skola', 'oznaka' => 'Koju školu imaš?', 'objasnjenje' => 'Može da ostane prazno.', 'dugo' => false],
+                    ['kljuc' => 'iskustvo', 'oznaka' => 'Gde imaš iskustva i šta je tamo bio tvoj posao?', 'objasnjenje' => 'Posao, praksa, volontiranje ili rad u porodici.', 'dugo' => true],
+                    ['kljuc' => 'umem', 'oznaka' => 'Šta voliš ili dobro umeš da radiš?', 'objasnjenje' => 'Na primer „posao sa ljudima", „rad u smenama".', 'dugo' => false],
+                ],
+                'tekst' => <<<'TEKST'
+Zovem se {ime}.
+{skola}
+{iskustvo}
+{umem}
+Želim da radim kao {posao}.
 TEKST,
             ],
         ];
