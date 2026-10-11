@@ -9,6 +9,7 @@ use App\Support\PrikazPomocnika;
 use Illuminate\Support\Collection;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
 use Tests\TestCase;
 
 // Paket 65/T1: gotovi tekstovi pomoćnika su ljudskiji (Ivan odobrio smer 10.10.2026., tekstovi su Coworkovi iz ZA-KASNIJE-POMOCNIK.md), a ne obećavaju:
@@ -26,7 +27,7 @@ class PomocnikGotoviTekstoviTest extends TestCase
             'kad ne sme' => [Pomocnik::NE_MOGU_DA_POMOGNEM, 'U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.'],
             'kad ne radi' => [PrikazPomocnika::NE_RADI, 'Izvini, trenutno ne radim. Probaj malo kasnije.'],
             // Paket 65/T3: pitanje samo sa vrstom, bez otvorenih prilika.
-            'nema otvorenih stipendija, uz pripremu' => [sprintf(Pomocnik::NEMA_OTVORENIH, 'stipendija').' '.Pomocnik::DOK_CEKAS, 'Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da budeš spreman:'],
+            'nema otvorenih stipendija, uz pripremu' => [sprintf(Pomocnik::NEMA_OTVORENIH, 'stipendija').' '.Pomocnik::DOK_CEKAS, 'Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da se pripremiš:'],
             'nema otvorenih poslova' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['posao']), 'Trenutno nema otvorenih poslova.'],
             'nema otvorenih praksi' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['praksa']), 'Trenutno nema otvorenih praksi.'],
             'nema otvorenih konkursa' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['konkurs']), 'Trenutno nema otvorenih konkursa.'],
@@ -76,5 +77,45 @@ class PomocnikGotoviTekstoviTest extends TestCase
             'obavestiće te' => ['Evo šta sam našao za tebe: obavestiće te kad se otvori.', 'odgovor predviđa budućnost'],
             'nema podatka' => ['Nemam podatak.', 'odgovor kaže da nema podatka'],
         ];
+    }
+
+    /** @return list<string> svi gotovi tekstovi pomoćnika koji su konstante (i elementi nizova) u klasama Pomocnik i PrikazPomocnika */
+    private function tekstoviIzKonstanti(): array
+    {
+        $tekstovi = [];
+
+        foreach ([Pomocnik::class, PrikazPomocnika::class] as $klasa) {
+            foreach ((new ReflectionClass($klasa))->getConstants() as $vrednost) {
+                foreach ((array) $vrednost as $deo) {
+                    if (is_string($deo)) {
+                        $tekstovi[] = $deo;
+                    }
+                }
+            }
+        }
+
+        return $tekstovi;
+    }
+
+    // Paket 67/T14: poruke korisniku su bez roda („da se pripremiš", ne „da budeš spreman"), pa nijedan gotov tekst pomoćnika nema „spreman" ni „spremna".
+    #[Test]
+    public function nijedan_gotov_tekst_pomocnika_nema_spreman_ni_spremna(): void
+    {
+        $tekstovi = $this->tekstoviIzKonstanti();
+        foreach (glob(dirname(__DIR__, 2).'/resources/views/javno/pomocnik*.blade.php') ?: [] as $pogled) {
+            $tekstovi[] = (string) file_get_contents($pogled);
+        }
+
+        // Merilo prvo dokazuje da je obišlo gotove tekstove i poglede, i da prepoznaje oba oblika.
+        $this->assertGreaterThan(30, count($tekstovi));
+        $this->assertContains(Pomocnik::DOK_CEKAS, $tekstovi);
+        $this->assertSame(1, preg_match('/\bsprem(?:an|na|no|ni|ne)\b/iu', 'Dok čekaš, ovo ti može pomoći da budeš spreman:'));
+        $this->assertSame(1, preg_match('/\bsprem(?:an|na|no|ni|ne)\b/iu', 'Budi spremna.'));
+
+        foreach ($tekstovi as $tekst) {
+            $this->assertSame(0, preg_match('/\bsprem(?:an|na|no|ni|ne)\b/iu', $tekst), mb_substr($tekst, 0, 80));
+        }
+
+        $this->assertSame('Dok čekaš, ovo ti može pomoći da se pripremiš:', Pomocnik::DOK_CEKAS);
     }
 }

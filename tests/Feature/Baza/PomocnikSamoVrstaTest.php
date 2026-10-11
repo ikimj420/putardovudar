@@ -22,7 +22,7 @@ use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
 
 // Paket 65/T3 (ZA-KASNIJE-POMOCNIK.md, tačka 2): pitanje samo sa vrstom („stipendije"), a otvorenih prilika te vrste nema, ne daje „nemam podatak" nego
-// „Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da budeš spreman:", pa vodiče čiji naslov ima tu reč i stavke kalendara sa tom rečju.
+// „Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da se pripremiš:", pa vodiče čiji naslov ima tu reč i stavke kalendara sa tom rečju.
 #[Group('baza')]
 class PomocnikSamoVrstaTest extends BazaTestCase
 {
@@ -79,7 +79,7 @@ class PomocnikSamoVrstaTest extends BazaTestCase
 
         $odgovor = $this->pitaj();
 
-        $this->assertSame('Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da budeš spreman:', $odgovor->tekst);
+        $this->assertSame('Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da se pripremiš:', $odgovor->tekst);
         $this->assertSame(['Kako se prijaviti za stipendiju', 'Stipendija Dositeja'], $this->naslovi($odgovor));
         $this->assertTrue($odgovor->izvori[0]->jeVodic);
         $this->assertTrue($odgovor->izvori[1]->jeKalendar);
@@ -207,7 +207,7 @@ class PomocnikSamoVrstaTest extends BazaTestCase
         foreach ([$this, $this->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])] as $zahtev) {
             $tekst = $this->vidljivTekst($zahtev->post(route('pomocnik.pitaj'), ['pitanje' => 'stipendije'])->assertOk()->getContent());
 
-            $this->assertStringContainsString('Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da budeš spreman:', $tekst);
+            $this->assertStringContainsString('Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da se pripremiš:', $tekst);
             $this->assertStringContainsString('Kako se prijaviti za stipendiju', $tekst);
             $this->assertStringContainsString('Stipendija Dositeja', $tekst);
             $this->assertStringContainsString('Prošli put: od 22.12.2025. do 26.01.2026.', $tekst);

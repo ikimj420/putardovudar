@@ -37,7 +37,7 @@ final class Pomocnik
     // sa množinom u genitivu (PITANJA-65.md).
     public const NEMA_OTVORENIH = 'Trenutno nema otvorenih %s.';
 
-    public const DOK_CEKAS = 'Dok čekaš, ovo ti može pomoći da budeš spreman:';
+    public const DOK_CEKAS = 'Dok čekaš, ovo ti može pomoći da se pripremiš:';
 
     public const VRSTE_U_GENITIVU = ['posao' => 'poslova', 'praksa' => 'praksi', 'stipendija' => 'stipendija', 'konkurs' => 'konkursa', 'obuka' => 'obuka'];
 
