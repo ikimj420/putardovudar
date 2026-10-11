@@ -312,7 +312,7 @@ class PomocnikVodiciTest extends BazaTestCase
         $this->model(['kljucne_reci' => ['CV']], 'Pročitaj na https://lazno.rs/cv.');
         $odgovor = $this->pitaj();
         $this->assertSame('link kog nema u zapisima', $odgovor->razlogSablona);
-        $this->assertSame(Pomocnik::SABLON_NASLOV_VODICI."\n• Kako napisati prvi CV", $odgovor->tekst);
+        $this->assertSame(Pomocnik::SABLON_NASLOV."\n• Kako napisati prvi CV", $odgovor->tekst);
 
         // Ogledalo: datum iz vodiča i adresa naše strane vodiča prolaze.
         $this->model(['kljucne_reci' => ['CV']], 'Do 20. oktobra 2026. pročitaj '.route('vodici.show', $cv->slug).'.');

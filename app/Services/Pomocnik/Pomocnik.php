@@ -25,14 +25,8 @@ final class Pomocnik
     // Predlog teksta; Ivan odobrava (PITANJA-23-25.md).
     public const NE_MOGU_DA_POMOGNEM = 'U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.';
 
+    // Jedan naslov za sve vrste kartica (paket 67; ranije po jedan za prilike, vodiče, organizacije i kalendar).
     public const SABLON_NASLOV = 'Evo šta sam našao za tebe:';
-
-    public const SABLON_NASLOV_VODICI = 'Evo šta sam našao za tebe:';
-
-    public const SABLON_NASLOV_ORGANIZACIJE = 'Evo šta sam našao za tebe:';
-
-    // Predlog teksta; Ivan odobrava (PITANJA-39-45.md, paket 45).
-    public const SABLON_NASLOV_KALENDAR = 'Evo šta sam našao za tebe:';
 
     // Predlog tekstova za „napiši mi ..." (paket 56); Ivan odobrava (PITANJA-55-56.md).
     public const PONUDA_SABLONA = 'Za to imam šablon. Odgovori na nekoliko pitanja, a ja pišem tekst.';
@@ -174,27 +168,17 @@ final class Pomocnik
         return mb_substr(trim(Latinica::izCirilice($pitanje)), 0, self::NAJVISE_ZNAKOVA_PITANJA);
     }
 
+    // Naslov stoji jednom na vrhu, a ispod su sve stavke redom: prilike, vodiči, organizacije, kalendar (paket 67); ranije se isti red ponavljao iznad svakog bloka.
     private function sablon(RezultatPretrage $rezultat): string
     {
-        $blokovi = [];
+        $stavke = [
+            ...$rezultat->zapisi->map(fn (Prilika $prilika) => '• '.$prilika->naslov.' — '.PrikazPrilike::rok($prilika))->all(),
+            ...$rezultat->vodici->map(fn (Vodic $vodic) => '• '.$vodic->naslov)->all(),
+            ...$rezultat->organizacije->map(fn (Organizacija $organizacija) => '• '.$organizacija->naziv)->all(),
+            ...$rezultat->kalendar->map(fn (KalendarStavka $stavka) => '• '.$stavka->naziv.' — '.PrikazKalendara::prosliPut($stavka))->all(),
+        ];
 
-        if ($rezultat->zapisi->isNotEmpty()) {
-            $blokovi[] = self::SABLON_NASLOV."\n".$rezultat->zapisi->map(fn (Prilika $prilika) => '• '.$prilika->naslov.' — '.PrikazPrilike::rok($prilika))->implode("\n");
-        }
-
-        if ($rezultat->vodici->isNotEmpty()) {
-            $blokovi[] = self::SABLON_NASLOV_VODICI."\n".$rezultat->vodici->map(fn (Vodic $vodic) => '• '.$vodic->naslov)->implode("\n");
-        }
-
-        if ($rezultat->organizacije->isNotEmpty()) {
-            $blokovi[] = self::SABLON_NASLOV_ORGANIZACIJE."\n".$rezultat->organizacije->map(fn (Organizacija $organizacija) => '• '.$organizacija->naziv)->implode("\n");
-        }
-
-        if ($rezultat->kalendar->isNotEmpty()) {
-            $blokovi[] = self::SABLON_NASLOV_KALENDAR."\n".$rezultat->kalendar->map(fn (KalendarStavka $stavka) => '• '.$stavka->naziv.' — '.PrikazKalendara::prosliPut($stavka))->implode("\n");
-        }
-
-        return implode("\n\n", $blokovi);
+        return $stavke === [] ? '' : self::SABLON_NASLOV."\n".implode("\n", $stavke);
     }
 
     // Izvor iz kalendara vodi na stranu kalendara, a zvanični izvor je link stavke; umesto roka piše „Prošli put: …".

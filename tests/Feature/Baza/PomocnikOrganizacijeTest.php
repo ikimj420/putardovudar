@@ -386,7 +386,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         $this->model(['kljucne_reci' => ['zapošljavanje']], 'Pročitaj na https://lazno.rs/nsz.');
         $odgovor = $this->pitaj();
         $this->assertSame('link kog nema u zapisima', $odgovor->razlogSablona);
-        $this->assertSame(Pomocnik::SABLON_NASLOV_ORGANIZACIJE."\n• Nacionalna služba za zapošljavanje", $odgovor->tekst);
+        $this->assertSame(Pomocnik::SABLON_NASLOV."\n• Nacionalna služba za zapošljavanje", $odgovor->tekst);
 
         // Ogledalo: datum iz kratkog opisa, adresa naše strane i adresa sajta organizacije prolaze.
         foreach ([
@@ -408,7 +408,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         $odgovor = $this->pitaj();
 
         $this->assertSame('odgovor kaže da nema podatka', $odgovor->razlogSablona);
-        $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV_ORGANIZACIJE, $odgovor->tekst);
+        $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV, $odgovor->tekst);
         $this->assertCount(1, $odgovor->izvori);
     }
 

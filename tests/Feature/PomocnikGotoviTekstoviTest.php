@@ -20,10 +20,8 @@ class PomocnikGotoviTekstoviTest extends TestCase
     {
         return [
             'uvod' => [PrikazPomocnika::UVOD, 'Ćao! Pitaj me za posao, stipendiju, konkurs ili gde da nađeš pomoć. Kažem ti samo ono što piše na sajtu.'],
-            'kad nađe prilike' => [Pomocnik::SABLON_NASLOV, 'Evo šta sam našao za tebe:'],
-            'kad nađe vodiče' => [Pomocnik::SABLON_NASLOV_VODICI, 'Evo šta sam našao za tebe:'],
-            'kad nađe organizacije' => [Pomocnik::SABLON_NASLOV_ORGANIZACIJE, 'Evo šta sam našao za tebe:'],
-            'kad nađe kalendar' => [Pomocnik::SABLON_NASLOV_KALENDAR, 'Evo šta sam našao za tebe:'],
+            // Isti naslov za prilike, vodiče, organizacije i kalendar, jednom na vrhu (paket 67).
+            'kad nađe' => [Pomocnik::SABLON_NASLOV, 'Evo šta sam našao za tebe:'],
             'kad nema ništa' => [Pomocnik::NEMAM_PODATAK, 'Za ovo trenutno nemam ništa na sajtu. Probaj da pitaš drugim rečima ili pogledaj Vodiče.'],
             'kad ne sme' => [Pomocnik::NE_MOGU_DA_POMOGNEM, 'U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.'],
             'kad ne radi' => [PrikazPomocnika::NE_RADI, 'Izvini, trenutno ne radim. Probaj malo kasnije.'],

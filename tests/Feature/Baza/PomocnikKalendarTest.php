@@ -290,7 +290,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $this->assertTrue($odgovor->jeIzSablona(), $tekst);
         $this->assertSame('datum kog nema u zapisima', $odgovor->razlogSablona);
-        $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV_KALENDAR, $odgovor->tekst);
+        $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV, $odgovor->tekst);
         $this->assertStringContainsString('• Stipendija Dositeja — Prošli put: od 22.12.2025. do 26.01.2026.', $odgovor->tekst);
         $this->assertCount(1, $odgovor->izvori);
     }
