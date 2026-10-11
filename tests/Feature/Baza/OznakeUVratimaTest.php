@@ -65,9 +65,9 @@ class OznakeUVratimaTest extends BazaTestCase
         $this->assertStringNotContainsString('<nav', $slika[0]);
     }
 
-    // Svaka veza vodi na pravu vrstu: spisak sa tom vrstom ima samo prilike te vrste, a njeno dugme je aktivno.
+    // Svaka veza vodi na pravu vrstu: spisak sa tom vrstom ima samo prilike te vrste, a njeno dugme je aktivno. „Drugo" nije u vratima (paket 67), ali ostaje izbor iznad kartica.
     #[Test]
-    public function svaka_oznaka_vodi_na_spisak_sa_svojom_vrstom(): void
+    public function svaka_oznaka_vodi_na_spisak_sa_svojom_vrstom_a_drugo_nije_u_vratima(): void
     {
         foreach (VrstaPrilike::cases() as $vrsta) {
             $this->prilika($vrsta);
@@ -75,16 +75,61 @@ class OznakeUVratimaTest extends BazaTestCase
 
         $oznake = $this->oznake($this->get(route('pocetna'))->assertOk()->getContent());
 
-        $this->assertCount(count(VrstaPrilike::cases()), $oznake);
+        $this->assertCount(count(VrstaPrilike::cases()) - 1, $oznake);
+        $this->assertCount(5, $oznake);
         foreach ($oznake as [$adresa, $naziv]) {
             $spisak = $this->get($adresa)->assertOk()->getContent();
             preg_match_all('#<article class="kartica redosled">\s*<h2><a [^>]*>([^<]+)</a></h2>#', $spisak, $kartice);
             $vrsta = VrstaPrilike::from(explode('=', (string) parse_url($adresa, PHP_URL_QUERY))[1]);
 
+            $this->assertNotSame(VrstaPrilike::Drugo, $vrsta);
             $this->assertSame($vrsta->getLabel(), $naziv);
             $this->assertSame(['Prilika '.$vrsta->value], $kartice[1], $adresa);
             $this->assertMatchesRegularExpression('#<a class="filter-pilula aktivno" href="[^"]+" aria-current="true">'.$naziv.'</a>#', $spisak, $adresa);
         }
+
+        $this->assertNotContains('Drugo', array_column($oznake, 1));
+        $this->assertNotContains(PrikazPrilike::adresaSpiska(VrstaPrilike::Drugo), array_column($oznake, 0));
+    }
+
+    // Iznad kartica na strani Prilike je šest izbora vrsta (i „Drugo"), kao pre; njena prilika se i dalje nalazi.
+    #[Test]
+    public function iznad_kartica_ostaje_izbor_drugo_kao_i_pre(): void
+    {
+        foreach (VrstaPrilike::cases() as $vrsta) {
+            $this->prilika($vrsta);
+        }
+
+        $html = $this->get(route('prilike.index'))->assertOk()->getContent();
+        preg_match_all('#<a class="filter-pilula[^"]*" href="([^"]+)"[^>]*>([^<]+)</a>#', $html, $pilule, PREG_SET_ORDER);
+        $vrste = array_map(fn (array $pilula) => $pilula[2], array_filter($pilule, fn (array $pilula) => str_contains(html_entity_decode($pilula[1]), 'vrsta=')));
+
+        $this->assertSame(['Posao', 'Praksa', 'Stipendija', 'Konkurs', 'Obuka', 'Drugo'], array_values($vrste));
+        $drugo = $this->get(PrikazPrilike::adresaSpiska(VrstaPrilike::Drugo))->assertOk()->getContent();
+        $this->assertStringContainsString('Prilika drugo', $drugo);
+        $this->assertMatchesRegularExpression('#<a class="filter-pilula aktivno" href="[^"]+" aria-current="true">Drugo</a>#', $drugo);
+    }
+
+    // Dno reda oznake u jedinicama slike vrata (270 visine, pod vrata je na 242): izmereno u pregledaču, šesta oznaka (kad bi je bilo) siđe ispod poda na telefonu (250 prema 242).
+    private function dnoOznake(int $broj, int $sirinaVrata): float
+    {
+        return 0.30 * 270 + $broj * 44 / ($sirinaVrata / 220);
+    }
+
+    #[Test]
+    public function poslednja_oznaka_je_iznad_poda_vrata_na_telefonu_i_na_laptopu(): void
+    {
+        $pod = 242;
+
+        foreach ([343, 380] as $sirina) {
+            $this->assertLessThanOrEqual($pod, $this->dnoOznake(5, $sirina), 'peta oznaka, '.$sirina.' px');
+        }
+
+        // Ogledalo: šesta oznaka na telefonu ne staje (zato je „Drugo" izašlo iz vrata), a na laptopu staje; merilo razlikuje oba slučaja.
+        $this->assertGreaterThan($pod, $this->dnoOznake(6, 343));
+        $this->assertLessThanOrEqual($pod, $this->dnoOznake(6, 380));
+        $this->assertEqualsWithDelta(250, $this->dnoOznake(6, 343), 1.0);
+        $this->assertEqualsWithDelta(234, $this->dnoOznake(6, 380), 1.0);
     }
 
     // Ogledalo: vrsta bez javne prilike (nacrt ili prošao rok) nema oznaku, a bez ijedne vrste nema ni nav, dok vrata stoje.

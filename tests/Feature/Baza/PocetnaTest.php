@@ -103,7 +103,7 @@ class PocetnaTest extends BazaTestCase
         $this->assertStringNotContainsString('hero-natpis', $hero);
     }
 
-    // Ogledalo: sa svim vrstama su sve oznake, pa i „Drugo"; bez prilika nema oznaka, a vrata stoje.
+    // Ogledalo: sa svim vrstama su oznake za pet (bez „Drugo", paket 67); bez prilika nema oznaka, a vrata stoje.
     #[Test]
     public function sve_vrste_daju_sve_oznake_a_bez_prilika_nema_oznaka(): void
     {
@@ -116,7 +116,7 @@ class PocetnaTest extends BazaTestCase
         }
         $hero = $this->hero($this->get(route('pocetna'))->assertOk()->getContent());
 
-        $this->assertSame(['posao', 'praksa', 'stipendija', 'konkurs', 'obuka', 'drugo'], $this->oznakeNaVratima($hero));
+        $this->assertSame(['posao', 'praksa', 'stipendija', 'konkurs', 'obuka'], $this->oznakeNaVratima($hero));
         $this->assertStringNotContainsString('hero-natpis', $hero);
     }
 
