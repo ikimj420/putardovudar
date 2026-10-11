@@ -93,7 +93,7 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
     {
         Http::fake([self::OLLAMA => function (Request $zahtev) use ($ishod) {
             return match (true) {
-                $ishod === 'radi' => Http::response(['message' => ['content' => 'Napisano o '.self::TRAG.'.']]),
+                $ishod === 'radi' => Http::response(['message' => ['content' => 'Ana Anić: napisano o '.self::TRAG.'.']]),
                 $ishod === 'ne radi' => throw new ConnectionException('nema veze'),
                 default => throw new $ishod('Pukao na tekstu '.self::TRAG),
             };

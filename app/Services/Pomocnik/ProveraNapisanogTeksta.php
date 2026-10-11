@@ -15,8 +15,11 @@ final class ProveraNapisanogTeksta
 
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 
-    /** Vraća razlog odbijanja, ili null kad je tekst proveren. $dozvoljeno je sve što model sme da ponovi. */
-    public function razlogOdbijanja(string $tekst, string $dozvoljeno): ?string
+    /**
+     * Vraća razlog odbijanja, ili null kad je tekst proveren. $dozvoljeno je sve što model sme da ponovi. $ime je ime i prezime koje je čovek upisao (kad šablon ima polje „ime"
+     * i ono nije prazno): mora bar jednom da stoji u tekstu isto kako je upisano, bez obzira na velika slova i višak razmaka (paket 67).
+     */
+    public function razlogOdbijanja(string $tekst, string $dozvoljeno, ?string $ime = null): ?string
     {
         if (trim($tekst) === '') {
             return 'prazan tekst';
@@ -28,6 +31,10 @@ final class ProveraNapisanogTeksta
 
         if (Latinica::imaSlovaVanLatinice($tekst)) {
             return 'slova koja nisu latinica';
+        }
+
+        if ($ime !== null && ! $this->imeJeKaoUpisano($tekst, $ime)) {
+            return 'ime nije kako je upisano';
         }
 
         // Neprazna mesta za polja bi ostala čoveku u pismu.
@@ -99,5 +106,15 @@ final class ProveraNapisanogTeksta
     private function normalizuj(string $tekst): string
     {
         return rtrim(mb_strtolower((string) preg_replace('~^(?:https?://)?(?:www\.)?~i', '', trim($tekst))), '/.,;:!?');
+    }
+
+    // Model ume da „popravi" ime (upisano „Marko Marković", napisano „Marka Marković"). Ćirilica upisanog imena se poredi kao latinica, jer je i tekst modela već latinica.
+    private function imeJeKaoUpisano(string $tekst, string $ime): bool
+    {
+        $uporedi = fn (string $v) => trim((string) preg_replace('/[\s\x{00A0}]+/u', ' ', mb_strtolower(Latinica::izCirilice($v))));
+        $ime = $uporedi($ime);
+
+        // Ime je cela reč (ili niz reči): „Marko Markovića" nije „Marko Marković".
+        return $ime === '' || preg_match('/(?<![\p{L}\d])'.preg_quote($ime, '/').'(?![\p{L}\d])/u', $uporedi($tekst)) === 1;
     }
 }

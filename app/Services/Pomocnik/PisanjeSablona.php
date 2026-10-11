@@ -7,6 +7,7 @@ use App\Models\Sablon;
 use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Latinica;
+use App\Support\RodIzImena;
 use App\Support\SklapanjeSablona;
 use App\Support\ZapisGreske;
 use Throwable;
@@ -40,7 +41,7 @@ TEXT;
 
         try {
             $tekst = Latinica::izCirilice($this->ollama->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $rod), (int) config('pomocnik.ukupno_za_pitanje')));
-            $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod));
+            $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), in_array(RodIzImena::POLJE, $sablon->kljucevi(), true) ? ($unosi[RodIzImena::POLJE] ?? '') : null);
         } catch (OllamaNedostupna) {
             return new NapisanTekst($slozen, false, 'model ne odgovara');
         } catch (Throwable $izuzetak) {

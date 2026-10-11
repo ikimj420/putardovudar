@@ -37,7 +37,12 @@ class NapisiMojRodTest extends BazaTestCase
         parent::setUp();
 
         Http::preventStrayRequests();
-        Http::fake([self::OLLAMA => fn () => $this->modelRadi ? Http::response(['message' => ['content' => 'Napisan tekst.']]) : throw new ConnectionException('nema veze')]);
+        // Tekst modela ponavlja upisano ime, jer ga provera traži (paket 67); šablon bez polja „ime" dobija tekst bez imena.
+        Http::fake([self::OLLAMA => function (Request $zahtev) {
+            preg_match('/\{ime\} \(Ime i prezime\): (.+)/', (string) $zahtev->data()['messages'][1]['content'], $ime);
+
+            return $this->modelRadi ? Http::response(['message' => ['content' => rtrim('Napisan tekst. '.($ime[1] ?? ''))]]) : throw new ConnectionException('nema veze');
+        }]);
     }
 
     /** @param  array<string, mixed>  $dopuna */
@@ -116,7 +121,7 @@ class NapisiMojRodTest extends BazaTestCase
     {
         $html = $this->napisi($this->sablon(), ['ime' => $ime, 'iskustvo' => 'Radim u školi.'])->assertOk()->getContent();
 
-        $this->assertSame('Napisan tekst.', $this->napisan($html));
+        $this->assertSame('Napisan tekst. '.$ime, $this->napisan($html));
         $this->assertSame($rod, $this->rodUPoruci());
         $this->assertSame($link, $this->linkZaPromenu($html));
         $this->assertFalse($this->jePitanje($html));
@@ -186,7 +191,7 @@ class NapisiMojRodTest extends BazaTestCase
 
             $this->assertFalse($this->jePitanje($html), $rod);
             $this->assertSame($rod, $this->rodUPoruci(), $rod);
-            $this->assertSame('Napisan tekst.', $this->napisan($html));
+            $this->assertSame('Napisan tekst. Saša Petrović', $this->napisan($html));
             $this->assertSame(($rod === 'muski' ? 'zenski|Promeni u ženski rod' : 'muski|Promeni u muški rod'), $this->linkZaPromenu($html));
         }
     }
