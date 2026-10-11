@@ -3,6 +3,7 @@
 namespace App\Services\Pomocnik;
 
 use App\Support\DatumiUTekstu;
+use App\Support\Latinica;
 
 // Tekst modela važi samo ako ne sadrži datum, broj, e-poštu ni vezu ka sajtu kojih nema u onome što je čovek upisao
 // ili u stalnom tekstu šablona; inače ga menja šablon sklopljen sa odgovorima.
@@ -23,6 +24,10 @@ final class ProveraNapisanogTeksta
 
         if (mb_strlen($tekst) > self::NAJVISE_ZNAKOVA) {
             return 'predug tekst';
+        }
+
+        if (Latinica::imaSlovaVanLatinice($tekst)) {
+            return 'slova koja nisu latinica';
         }
 
         // Neprazna mesta za polja bi ostala čoveku u pismu.

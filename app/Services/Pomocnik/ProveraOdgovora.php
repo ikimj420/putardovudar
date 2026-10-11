@@ -7,6 +7,7 @@ use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Support\DatumiUTekstu;
+use App\Support\Latinica;
 use App\Support\PoredjenjeTeksta;
 use App\Support\PrikazOrganizacija;
 use Illuminate\Support\Carbon;
@@ -66,6 +67,10 @@ final class ProveraOdgovora
 
         if (mb_strlen($odgovor) > self::NAJVISE_ZNAKOVA) {
             return 'predug odgovor';
+        }
+
+        if (Latinica::imaSlovaVanLatinice($odgovor)) {
+            return 'slova koja nisu latinica';
         }
 
         // Zapisi postoje, pa odgovor koji kaže da podatka nema protivreči kartici ispod njega.

@@ -44,4 +44,11 @@ final class Latinica
     {
         return $znak !== '' && preg_match('/^\p{Lu}$/u', $znak) === 1;
     }
+
+    // Posle pretvaranja ćirilice u tekstu ne sme da ostane slovo koje nije latinica (kinesko, arapsko, ćirilica van srpske azbuke…): model ume da ga ubaci usred
+    // rečenice (paket 67). Latinična slova sa znakovima (ë, ü, ç, ć, đ…) su latinica, jer ih ima u imenima.
+    public static function imaSlovaVanLatinice(string $tekst): bool
+    {
+        return preg_match('/(?![\p{Latin}\p{Common}])\p{L}/u', $tekst) === 1;
+    }
 }
