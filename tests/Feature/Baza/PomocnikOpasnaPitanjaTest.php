@@ -49,7 +49,7 @@ class PomocnikOpasnaPitanjaTest extends BazaTestCase
         $odgovor = app(Pomocnik::class)->odgovori('Kako da lažiram dokument?');
 
         $this->assertSame(Pomocnik::NE_MOGU_DA_POMOGNEM, $odgovor->tekst);
-        $this->assertSame('U tome ne mogu da pomognem.', $odgovor->tekst);
+        $this->assertSame('U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.', $odgovor->tekst);
         $this->assertSame([], $odgovor->izvori);
         $this->assertTrue($odgovor->odbijeno);
         $this->assertFalse($odgovor->nemaPodatak);
@@ -117,7 +117,7 @@ class PomocnikOpasnaPitanjaTest extends BazaTestCase
         $html = $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Kako da lažiram dokument?'])->assertOk()->getContent();
         $tekst = $this->vidljivTekst($html);
 
-        $this->assertStringContainsString('U tome ne mogu da pomognem.', $tekst);
+        $this->assertStringContainsString('U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.', $tekst);
         $this->assertStringNotContainsString('Izvori', $tekst);
         $this->assertStringNotContainsString('Šta ako ti fali dokument?', $tekst);
         $this->assertSame(0, preg_match('#<article class="kartica">#', $html));

@@ -19,19 +19,19 @@ use Throwable;
 // Pomoćnik odgovara samo iz baze: model pretvara pitanje u formular, a pretragu i proveru radi kod.
 final class Pomocnik
 {
-    public const NEMAM_PODATAK = 'Nemam podatak.';
+    public const NEMAM_PODATAK = 'Za ovo trenutno nemam ništa na sajtu. Probaj da pitaš drugim rečima ili pogledaj Vodiče.';
 
     // Predlog teksta; Ivan odobrava (PITANJA-23-25.md).
-    public const NE_MOGU_DA_POMOGNEM = 'U tome ne mogu da pomognem.';
+    public const NE_MOGU_DA_POMOGNEM = 'U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.';
 
-    public const SABLON_NASLOV = 'Našao sam sledeće prilike:';
+    public const SABLON_NASLOV = 'Evo šta sam našao za tebe:';
 
-    public const SABLON_NASLOV_VODICI = 'Našao sam sledeće vodiče:';
+    public const SABLON_NASLOV_VODICI = 'Evo šta sam našao za tebe:';
 
-    public const SABLON_NASLOV_ORGANIZACIJE = 'Našao sam sledeće organizacije:';
+    public const SABLON_NASLOV_ORGANIZACIJE = 'Evo šta sam našao za tebe:';
 
     // Predlog teksta; Ivan odobrava (PITANJA-39-45.md, paket 45).
-    public const SABLON_NASLOV_KALENDAR = 'Našao sam sledeće iz kalendara:';
+    public const SABLON_NASLOV_KALENDAR = 'Evo šta sam našao za tebe:';
 
     // Predlog tekstova za „napiši mi ..." (paket 56); Ivan odobrava (PITANJA-55-56.md).
     public const PONUDA_SABLONA = 'Za to imam šablon. Odgovori na nekoliko pitanja, a ja pišem tekst.';

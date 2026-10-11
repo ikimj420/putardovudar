@@ -179,7 +179,7 @@ class PlutajuciPomocnikTest extends BazaTestCase
             $strana = $this->vidljivTekst($this->post(route('pomocnik.pitaj'), ['pitanje' => 'Ima li posla u Nišu?'])->assertOk()->getContent());
 
             foreach ([$fragment, $strana] as $tekst) {
-                $this->assertStringContainsString(str_contains($tekstModela, '2027') ? 'Našao sam sledeće prilike:' : $tekstModela, $tekst);
+                $this->assertStringContainsString(str_contains($tekstModela, '2027') ? 'Evo šta sam našao za tebe:' : $tekstModela, $tekst);
                 $this->assertSame(str_contains($tekstModela, '2027'), ! str_contains($tekst, $tekstModela));
                 $this->assertStringContainsString('Radnik u skladištu', $tekst);
             }

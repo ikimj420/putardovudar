@@ -270,7 +270,7 @@ class PomocnikPretragaTest extends BazaTestCase
         $rezultat = $this->pitaj('Ima li stipendija u Nišu?');
 
         $this->assertTrue($rezultat->nemaPodatak());
-        $this->assertSame(Pomocnik::NEMAM_PODATAK, 'Nemam podatak.');
+        $this->assertSame(Pomocnik::NEMAM_PODATAK, 'Za ovo trenutno nemam ništa na sajtu. Probaj da pitaš drugim rečima ili pogledaj Vodiče.');
         $this->assertSame(1, $this->pozivaModela());
     }
 

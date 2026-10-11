@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Baza;
 
+use App\Services\Pomocnik\Pomocnik;
 use App\Support\PrikazPomocnika;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -25,7 +26,7 @@ class PomocnikOgranicenjeTest extends BazaTestCase
         parent::setUp();
 
         $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
-        // Nema objavljenih prilika, pa je svako pitanje tačno jedan poziv modela (formular), a odgovor je „Nemam podatak.".
+        // Nema objavljenih prilika, pa je svako pitanje tačno jedan poziv modela (formular), a odgovor je „nemam podatak" (Pomocnik::NEMAM_PODATAK).
         Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []])]])]);
     }
 
@@ -54,7 +55,7 @@ class PomocnikOgranicenjeTest extends BazaTestCase
         $this->assertStringContainsString('>Ima li prakse u Kragujevcu?</textarea>', $html);
         $this->assertStringNotContainsString(PrikazPomocnika::NE_RADI, $tekst);
         $this->assertStringNotContainsString('Too Many Attempts', $html);
-        $this->assertStringNotContainsString('Nemam podatak.', $tekst);
+        $this->assertStringNotContainsString(Pomocnik::NEMAM_PODATAK, $tekst);
         Http::assertSentCount(5);
 
         $sekundi = (int) $odgovor->headers->get('Retry-After');

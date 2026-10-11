@@ -17,6 +17,7 @@ class JednostavanJezikTest extends TestCase
     private const IZUZECI = [
         'Online' => ['strana reč: online'],
         'Brzi filteri' => ['strana reč: filteri'],
+        'Ćao! Pitaj me za posao, stipendiju, konkurs ili gde da nađeš pomoć. Kažem ti samo ono što piše na sajtu, i uvek uz link.' => ['strana reč: link'],
     ];
 
     /** @return array<string, list<string>> tekst => razlozi, za svaki tekst koji nije jednostavan */
