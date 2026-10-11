@@ -18,11 +18,16 @@ class JavnaPocetnaController extends Controller
     // Početna (paket 57): naslovni deo, pločice i najbliže prilike; sve što se vidi ide kroz Prilika::javne() i ostale javne opsege.
     public function index(): View
     {
+        // Deo „Zatvara se uskoro" (paket 61): isti opseg kao izbor na /prilike; bez ijedne prilike dela nema.
+        $uskoro = Prilika::javne()->rokUskoro()->poRoku()->limit(self::NAJVISE_USKORO)->get();
+
         return view('javno.pocetna', [
-            // Deo „Zatvara se uskoro" (paket 61): isti opseg kao izbor na /prilike; bez ijedne prilike dela nema. Ne zove se „uskoro": to ime nosi izbor na spisku,
-            // a forma pretrage nasleđuje promenljive pogleda.
-            'prilikeUskoro' => Prilika::javne()->rokUskoro()->poRoku()->limit(self::NAJVISE_USKORO)->get(),
-            'prilike' => Prilika::javne()->poRoku()->limit(6)->get(),
+            // Ne zove se „uskoro": to ime nosi izbor na spisku, a forma pretrage nasleđuje promenljive pogleda.
+            'prilikeUskoro' => $uskoro,
+            // Dugme ka celom izboru stoji samo kad deo ne pokazuje sve (paket 64).
+            'imaViseUskoro' => Prilika::javne()->rokUskoro()->count() > self::NAJVISE_USKORO,
+            // Prilika koja je već u delu „Zatvara se uskoro" se ovde ne ponavlja (paket 64).
+            'prilike' => Prilika::javne()->whereKeyNot($uskoro->modelKeys())->poRoku()->limit(6)->get(),
             'plocice' => $plocice = $this->plocice(),
             // Traka „Vodiči" postoji samo kad ima šta da se otvori.
             'imaVodica' => $plocice[1]['broj'] > 0,

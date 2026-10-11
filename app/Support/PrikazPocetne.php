@@ -18,6 +18,9 @@ final class PrikazPocetne
 
     public const PRILIKE = 'Prilike';
 
+    // Dugme ispod dela „Zatvara se uskoro", kad se uskoro zatvara više prilika nego što deo pokazuje (paket 64); tekst je predlog (PITANJA-64.md).
+    public const SVE_USKORO_DUGME = 'Sve koje se zatvaraju uskoro';
+
     // Traka „Vodiči" (predlog iz izgleda, prilagođen: nema svaki vodič primer; Ivan odobrava).
     public const TRAKA_NATPIS = 'Vodiči';
 

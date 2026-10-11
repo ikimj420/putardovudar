@@ -82,8 +82,8 @@ class OznakeIKarticeTest extends BazaTestCase
             $this->assertStringContainsString('<span class="oznaka" data-vrsta="stipendija">Stipendija</span>', $html, $adresa);
             $this->assertStringContainsString('<span class="oznaka" data-vrsta="posao">Posao</span>', $html, $adresa);
             $this->assertStringContainsString('<span class="oznaka" data-vrsta="obuka">Obuka</span>', $html, $adresa);
-            // Samo prilika sa rokom ima oznaku zatvaranja. Na početnoj je ta prilika i u delu „Zatvara se uskoro" (paket 61) i u delu „Prilike", pa ima dve kartice.
-            $this->assertSame($adresa === route('pocetna') ? 2 : 1, substr_count($html, 'class="oznaka oznaka-rok"'), $adresa);
+            // Samo prilika sa rokom ima oznaku zatvaranja, i to jednu: na početnoj je u delu „Zatvara se uskoro" (paket 61) i ne ponavlja se u delu „Prilike" (paket 64).
+            $this->assertSame(1, substr_count($html, 'class="oznaka oznaka-rok"'), $adresa);
             $this->assertStringContainsString('<span class="oznaka oznaka-rok">Zatvara se za 5 dana</span>', $html, $adresa);
         }
 

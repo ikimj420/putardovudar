@@ -29,6 +29,9 @@
                     @include('javno.kartica', ['prilika' => $prilika])
                 @endforeach
             </div>
+            @if ($imaViseUskoro)
+                <p class="hero-vise"><a class="dugme dugme-glavno" href="{{ \App\Support\PrikazPrilike::adresaSpiska(uskoro: true) }}">{{ \App\Support\PrikazPocetne::SVE_USKORO_DUGME }}</a></p>
+            @endif
         </section>
     @endif
 

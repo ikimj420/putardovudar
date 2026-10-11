@@ -6,6 +6,7 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Models\Vodic;
+use App\Support\PrikazPocetne;
 use App\Support\PrikazPrilike;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -37,6 +38,13 @@ class ZatvaraSeUskoroPocetnaTest extends BazaTestCase
     private function deo(string $html): string
     {
         preg_match('#<section aria-labelledby="uskoro-naslov">(.*?)</section>#s', $html, $nalaz);
+
+        return $nalaz[1] ?? '';
+    }
+
+    private function deoPrilike(string $html): string
+    {
+        preg_match('#<section aria-labelledby="prilike-naslov">(.*?)</section>#s', $html, $nalaz);
 
         return $nalaz[1] ?? '';
     }
@@ -92,6 +100,100 @@ class ZatvaraSeUskoroPocetnaTest extends BazaTestCase
         $this->assertSame(['Rok 1', 'Rok 2', 'Rok 3', 'Rok 4', 'Rok 5', 'Rok 6'], $naslovi);
         // Ogledalo: sedma i osma postoje u bazi i ulaze u opseg, ali ne staju u deo.
         $this->assertCount(8, Prilika::javne()->rokUskoro()->get());
+    }
+
+    // Paket 64 T4: ono što je u delu „Zatvara se uskoro" se ne ponavlja u delu „Prilike".
+    #[Test]
+    public function prilika_iz_dela_uskoro_se_ne_ponavlja_u_delu_prilike(): void
+    {
+        $this->prilika('Uskoro prva', '2026-10-12');
+        $this->prilika('Uskoro druga', '2026-10-20');
+        $this->prilika('Daleko', '2026-12-01');
+        $this->prilika('Bez roka', null);
+        $this->prilika('Stalno', null, ['rok_stalno_otvoren' => true]);
+
+        $html = $this->get(route('pocetna'))->assertOk()->getContent();
+
+        $this->assertSame(['Uskoro prva', 'Uskoro druga'], $this->naslovi($this->deo($html)));
+        $this->assertSame(['Daleko', 'Bez roka', 'Stalno'], $this->naslovi($this->deoPrilike($html)));
+        // Ogledalo: svaka prilika je na strani tačno jednom, a nijedna javna nije izgubljena.
+        $sve = $this->naslovi($html);
+        $this->assertCount(5, $sve);
+        $this->assertSame($sve, array_values(array_unique($sve)));
+    }
+
+    // Deo „Prilike" i dalje ima do šest kartica: preskočene se ne računaju u njih, a ostale ulaze na njihovo mesto.
+    #[Test]
+    public function deo_prilike_posle_preskakanja_i_dalje_ima_sest_kartica(): void
+    {
+        foreach (range(1, 6) as $i) {
+            $this->prilika('Uskoro '.$i, today()->addDays($i)->toDateString());
+        }
+        foreach (range(1, 8) as $i) {
+            $this->prilika('Kasnije '.$i, today()->addDays(30 + $i)->toDateString());
+        }
+
+        $html = $this->get(route('pocetna'))->assertOk()->getContent();
+
+        $this->assertCount(6, $this->naslovi($this->deo($html)));
+        $this->assertSame(['Kasnije 1', 'Kasnije 2', 'Kasnije 3', 'Kasnije 4', 'Kasnije 5', 'Kasnije 6'], $this->naslovi($this->deoPrilike($html)));
+    }
+
+    // Kad se uskoro zatvara više od šest: ono što deo ne pokazuje nije sakriveno, ide u deo „Prilike" (preskaču se samo prikazane).
+    #[Test]
+    public function prilike_koje_ne_staju_u_deo_uskoro_ostaju_u_delu_prilike(): void
+    {
+        foreach (range(1, 8) as $i) {
+            $this->prilika('Rok '.$i, today()->addDays($i)->toDateString());
+        }
+
+        $html = $this->get(route('pocetna'))->assertOk()->getContent();
+
+        $this->assertSame(['Rok 1', 'Rok 2', 'Rok 3', 'Rok 4', 'Rok 5', 'Rok 6'], $this->naslovi($this->deo($html)));
+        $this->assertSame(['Rok 7', 'Rok 8'], $this->naslovi($this->deoPrilike($html)));
+    }
+
+    // Dugme ka celom izboru stoji samo kad se zatvara više od šest; sa tačno šest nema šta da se doda.
+    #[Test]
+    public function dugme_sve_koje_se_zatvaraju_uskoro_stoji_samo_kad_ih_je_vise_od_sest(): void
+    {
+        // Tekst je Cowork-ov (paket 64 T4), ne konstanta koja se poredi sama sa sobom.
+        $this->assertSame('Sve koje se zatvaraju uskoro', PrikazPocetne::SVE_USKORO_DUGME);
+        $adresa = route('prilike.index', ['uskoro' => '1']);
+        $dugme = '<a class="dugme dugme-glavno" href="'.$adresa.'">'.PrikazPocetne::SVE_USKORO_DUGME.'</a>';
+
+        foreach (range(1, 6) as $i) {
+            $this->prilika('Rok '.$i, today()->addDays($i)->toDateString());
+        }
+        $sest = $this->get(route('pocetna'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString(PrikazPocetne::SVE_USKORO_DUGME, $sest);
+        $this->assertStringNotContainsString('?uskoro=1', $sest);
+
+        $this->prilika('Rok 7', today()->addDays(7)->toDateString());
+        $sedam = $this->get(route('pocetna'))->assertOk()->getContent();
+        $deo = $this->deo($sedam);
+
+        // Dugme je u delu „Zatvara se uskoro", posle kartica, a ne u delu „Prilike" (tamo je „Sve prilike").
+        $this->assertStringContainsString($dugme, $deo);
+        $this->assertGreaterThan(strrpos($deo, '</article>'), strpos($deo, $dugme));
+        $this->assertStringNotContainsString($adresa, $this->deoPrilike($sedam));
+        // Ogledalo: dugme „Sve prilike" ostaje i vodi na običan spisak.
+        $this->assertStringContainsString('<a class="dugme dugme-glavno" href="'.route('prilike.index').'">'.PrikazPocetne::SVE_PRILIKE_DUGME.'</a>', $this->deoPrilike($sedam));
+    }
+
+    // Dugme ne obećava ono čega nema: adresa kojom vodi pokazuje svih sedam, a početna samo šest.
+    #[Test]
+    public function dugme_vodi_na_spisak_sa_svim_prilikama_koje_se_zatvaraju_uskoro(): void
+    {
+        foreach (range(1, 7) as $i) {
+            $this->prilika('Rok '.$i, today()->addDays($i)->toDateString());
+        }
+        $this->prilika('Daleko', '2026-12-01');
+
+        $spisak = $this->get(route('prilike.index', ['uskoro' => '1']))->assertOk()->getContent();
+
+        $this->assertSame(array_map(fn (int $i) => 'Rok '.$i, range(1, 7)), $this->naslovi($spisak));
     }
 
     #[Test]
