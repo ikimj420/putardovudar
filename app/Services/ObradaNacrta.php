@@ -39,13 +39,14 @@ TEXT;
     // Razlog objave kad je oglas za posao objavljen bez mišljenja modela (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md).
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
-    public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe) {}
+    public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
 
     /** @throws OllamaNedostupna */
     public function obradi(Prilika $prilika): IshodObrade
     {
         try {
-            $tekst = $this->strana->preuzmi((string) $prilika->link_izvora, $this->ollama->najviseZnakova());
+            $preuzeta = $this->strana->preuzmi((string) $prilika->link_izvora, $this->ollama->najviseZnakova());
+            $tekst = $preuzeta->tekst;
         } catch (StranaNedostupna $izuzetak) {
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, $izuzetak->getMessage());
         }
@@ -63,6 +64,15 @@ TEXT;
         // Model ponekad izostavi vrstu, rok ili citat (izmereno: stavlja ih u objekat grupe); izostavljeno je isto što i null, a bez njih objave nema.
         $nedostajala = array_values(array_filter(['vrsta', 'rok', 'citat'], fn (string $kljuc) => ! array_key_exists($kljuc, $forma)));
         $forma = [...['vrsta' => null, 'rok' => null, 'citat' => null], ...$forma];
+        $rokModela = $forma['rok'];
+
+        // Kad model ne nađe rok, a strana je sa Infostuda, rok je datum isteka oglasa iz strane (samo ako piše i u tekstu); citat roka je taj datum.
+        $infostud = $forma['rok'] === null ? $this->rokInfostuda->izStrane((string) $prilika->link_izvora, $preuzeta->html, $tekst) : null;
+
+        if ($infostud !== null) {
+            $forma['rok'] = $infostud['rok'];
+            $forma['citat'] = $infostud['citat'];
+        }
 
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
         [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
@@ -70,7 +80,8 @@ TEXT;
             'pravilo' => self::PRAVILO,
             'vrsta' => $forma['vrsta'],
             'rok' => $rok?->toDateString() ?? $forma['rok'],
-            'rok_modela' => $forma['rok'],
+            'rok_modela' => $rokModela,
+            'rok_sa_infostuda' => $infostud !== null,
             'razlog' => $forma['razlog'],
             'citat' => $forma['citat'],
             'grupe' => $grupe,

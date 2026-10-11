@@ -6,11 +6,11 @@ use App\Support\Latinica;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-// Preuzima stranu izvora i vraća njen vidljiv tekst latinicom. Ista ograničenja kao uvoz (config/uvoz.php).
+// Preuzima stranu izvora i vraća njen vidljiv tekst latinicom (uz izvorni HTML). Ista ograničenja kao uvoz (config/uvoz.php).
 final class TekstStrane
 {
     /** @throws StranaNedostupna */
-    public function preuzmi(string $adresa, int $najviseZnakova): string
+    public function preuzmi(string $adresa, int $najviseZnakova): PreuzetaStrana
     {
         try {
             $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa);
@@ -32,7 +32,7 @@ final class TekstStrane
             throw new StranaNedostupna('strana nema teksta');
         }
 
-        return mb_substr($tekst, 0, $najviseZnakova);
+        return new PreuzetaStrana(mb_substr($tekst, 0, $najviseZnakova), $odgovor->body());
     }
 
     public static function izHtmla(string $html): string
