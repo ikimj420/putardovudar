@@ -686,7 +686,7 @@ html {
 
 .hero h1 {
   margin: 0;
-  font-size: 40px;
+  font-size: clamp(32px, 9.8vw, 40px);
   line-height: 1.05;
   letter-spacing: -0.01em;
   font-weight: 800;

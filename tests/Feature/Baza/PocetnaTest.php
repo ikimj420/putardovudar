@@ -172,6 +172,8 @@ class PocetnaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\n\.zrno::before \{[^}]*background-image: url\("\.\.\/img\/zrno\.svg"\);[^}]*mix-blend-mode: overlay;[^}]*opacity: 0\.1;[^}]*pointer-events: none;/', $stil);
         $this->assertFileExists(public_path('img/zrno.svg'));
         $this->assertMatchesRegularExpression('/\n\.hero h1 em \{[^}]*linear-gradient\(100deg, var\(--lila\), var\(--narandzasta-meka\) 70%, var\(--zlato\)\);[^}]*background-clip: text;[^}]*color: transparent;/', $stil);
+        // Naslov na telefonu raste sa širinom ekrana (32 do 40 px), pa staje u dva reda i na 320 i na 412 px; izmereno u pregledaču.
+        $this->assertMatchesRegularExpression('/\n\.hero h1 \{[^}]*font-size: clamp\(32px, 9\.8vw, 40px\);/', $this->stilBezUpita());
         // Telefon: jedna kolona, vrata na sredini široka koliko i sadržaj (najviše 380 px), tekst ispod naslova ne postoji.
         $this->assertMatchesRegularExpression('/\n\.hero-red \{[^}]*display: grid;/', $this->stilBezUpita());
         $this->assertMatchesRegularExpression('/\n\.vrata-okvir \{[^}]*justify-self: center;[^}]*width: min\(100%, 380px\);/', $this->stilBezUpita());
