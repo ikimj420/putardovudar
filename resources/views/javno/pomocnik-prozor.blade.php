@@ -17,6 +17,7 @@
             <label class="samo-citac" for="pomocnik-pitanje">{{ \App\Support\PrikazPomocnika::OZNAKA_POLJA }}</label>
             <textarea id="pomocnik-pitanje" name="pitanje" rows="1" maxlength="{{ \App\Services\Pomocnik\Pomocnik::NAJVISE_ZNAKOVA_PITANJA }}" required placeholder="{{ \App\Support\PrikazPomocnika::PRIMER }}"></textarea>
             <button type="submit">{{ \App\Support\PrikazPomocnika::DUGME }}</button>
+            <p class="privatnost">{{ \App\Support\PrikazPomocnika::NE_CUVAMO }}</p>
         </form>
     </section>
 </aside>

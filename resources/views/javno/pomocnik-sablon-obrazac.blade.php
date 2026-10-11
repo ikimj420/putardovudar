@@ -44,4 +44,5 @@
         </div>
     @endforeach
     <button type="submit">{{ \App\Support\PrikazPomocnika::NAPISI }}</button>
+    <p class="privatnost">{{ \App\Support\PrikazPomocnika::NE_CUVAMO }}</p>
 </form>

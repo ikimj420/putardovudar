@@ -1513,6 +1513,17 @@ section + section > .naslov-izvora {
   }
 }
 
+/* Mali natpis „ne čuvamo" uz polja za pisanje (paket 64); u prozoru pomoćnika ide u svoj red ispod polja i dugmeta. */
+.privatnost {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.plutajuci-forma .privatnost {
+  flex: 1 0 100%;
+}
+
 /* Pomoćnik: polje i dugme kao u prototipu (tamno dugme, belo polje), odgovor i izvori su kartice */
 .uvod {
   max-width: 720px;
@@ -1822,6 +1833,7 @@ section + section > .naslov-izvora {
 .plutajuci-forma {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 8px;
   margin: 0;

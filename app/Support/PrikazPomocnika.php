@@ -49,6 +49,9 @@ final class PrikazPomocnika
 
     public const NAPOMENA_SLOZEN = 'Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.';
 
+    // Mali natpis uz polja u koja čovek piše (paket 64, Ivan 11.10.2026.): ispod dugmeta „Napiši tekst" i ispod polja za pitanje.
+    public const NE_CUVAMO = 'Ono što upišeš ne čuvamo i ne koristimo ni za šta drugo.';
+
     // Rod u „Napiši moj" (paket 64): pitanje i link su Ivanov tekst (11.10.2026.), natpisi dugmadi su predlog (PITANJA-64.md).
     public const ROD_PITANJE = 'Da pišem „radio sam" ili „radila sam"?';
 

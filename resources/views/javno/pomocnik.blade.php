@@ -11,6 +11,7 @@
         @csrf
         <label for="pitanje">{{ \App\Support\PrikazPomocnika::OZNAKA_POLJA }}</label>
         <textarea id="pitanje" name="pitanje" rows="3" maxlength="{{ \App\Services\Pomocnik\Pomocnik::NAJVISE_ZNAKOVA_PITANJA }}" required placeholder="{{ \App\Support\PrikazPomocnika::PRIMER }}">{{ $pitanje ?? '' }}</textarea>
+        <p class="privatnost">{{ \App\Support\PrikazPomocnika::NE_CUVAMO }}</p>
         @isset($greska)
             <p class="greska" role="alert">{{ $greska }}</p>
         @endisset

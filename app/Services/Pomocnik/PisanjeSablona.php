@@ -8,6 +8,8 @@ use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Latinica;
 use App\Support\SklapanjeSablona;
+use App\Support\ZapisGreske;
+use Throwable;
 
 // „Napiši moj": model piše tekst po šablonu iz onoga što je čovek upisao, a kod proverava šta je napisao. Šta ne prođe proveru
 // (ili model ne radi), zamenjuje šablon sklopljen sa odgovorima. Ništa se ne čuva.
@@ -39,11 +41,15 @@ TEXT;
 
         try {
             $tekst = Latinica::izCirilice($this->ollama->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $primer, $rod), (int) config('pomocnik.ukupno_za_pitanje')));
+            $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod));
         } catch (OllamaNedostupna) {
             return new NapisanTekst($slozen, false, 'model ne odgovara');
-        }
+        } catch (Throwable $izuzetak) {
+            // Bilo koja druga greška ne sme do rukovaoca izuzecima, koji u log piše poruku i trag poziva sa onim što je čovek upisao (paket 64).
+            ZapisGreske::vrsta('Napiši moj', $izuzetak);
 
-        $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod));
+            return new NapisanTekst($slozen, false, 'neočekivana greška');
+        }
 
         return $razlog === null ? new NapisanTekst($tekst, true) : new NapisanTekst($slozen, false, $razlog);
     }

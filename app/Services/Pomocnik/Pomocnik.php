@@ -12,7 +12,9 @@ use App\Support\LinkSajta;
 use App\Support\PrikazKalendara;
 use App\Support\PrikazOrganizacija;
 use App\Support\PrikazPrilike;
+use App\Support\ZapisGreske;
 use Illuminate\Support\Collection;
+use Throwable;
 
 // Pomoćnik odgovara samo iz baze: model pretvara pitanje u formular, a pretragu i proveru radi kod.
 final class Pomocnik
@@ -118,6 +120,11 @@ final class Pomocnik
             $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $rezultat->kalendar, $ostalo);
         } catch (OllamaNedostupna) {
             return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'model ne odgovara');
+        } catch (Throwable $izuzetak) {
+            // Kao kad model ne radi, ali sa zapisom samo vrste greške: poruka i trag poziva mogu da nose pitanje i odgovor (paket 64).
+            ZapisGreske::vrsta('Pomoćnik', $izuzetak);
+
+            return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'neočekivana greška');
         }
 
         $razlog = $this->provera->razlogOdbijanja($tekst, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $rezultat->kalendar);

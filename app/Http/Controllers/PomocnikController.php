@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Services\Pomocnik\Pomocnik;
 use App\Support\PrikazPomocnika;
+use App\Support\ZapisGreske;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Validator;
+use Throwable;
 
 class PomocnikController extends Controller
 {
@@ -37,6 +39,11 @@ class PomocnikController extends Controller
         try {
             $odgovor = $pomocnik->odgovori($pitanje);
         } catch (OllamaNedostupna) {
+            return view($pogled, ['pitanje' => $pitanje, 'nijeDostupan' => true]);
+        } catch (Throwable $izuzetak) {
+            // Isto što i kad model ne radi; neočekivana greška ne ide do rukovaoca izuzecima, koji bi u log upisao poruku i trag sa pitanjem (paket 64).
+            ZapisGreske::vrsta('Pomoćnik', $izuzetak);
+
             return view($pogled, ['pitanje' => $pitanje, 'nijeDostupan' => true]);
         }
 
