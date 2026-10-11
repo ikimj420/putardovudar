@@ -178,6 +178,52 @@ class UvozRssNacrtiTest extends BazaTestCase
         $this->assertSame(3, Prilika::query()->count());
     }
 
+    // Paket 64 T5: veza sa Infostuda se čuva kao https (RSS je daje kao http); ostale veze ostaju kakve su, i one koje samo liče na Infostud.
+    #[Test]
+    public function veza_sa_infostuda_se_cuva_kao_https_a_ostale_ostaju_kakve_su(): void
+    {
+        Http::fake([self::A => Http::response($this->feed([
+            ['Infostud', 'http://poslovi.infostud.com/posao/Firma-Beograd/Firma/760883?utm_source=poslovi.infostud.com&amp;utm_medium=rss'],
+            ['Velika slova', 'HTTP://Poslovi.Infostud.com/posao/2'],
+            ['Već https', 'https://poslovi.infostud.com/posao/3'],
+            ['Drugi server', 'http://drugi.test/posao/4'],
+            ['Sličan naziv', 'http://poslovi.infostud.com.lazni.test/posao/5'],
+            ['Podstrana', 'http://www.poslovi.infostud.com/posao/6'],
+            ['Naziv u putanji', 'http://drugi.test/poslovi.infostud.com/posao/7'],
+            ['Infostud u upitu', 'http://drugi.test/?na=http://poslovi.infostud.com/posao/8'],
+        ]))]);
+
+        $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 8, preskočeno 0, greška: nema')->assertExitCode(0);
+
+        $this->assertSame([
+            'Infostud' => 'https://poslovi.infostud.com/posao/Firma-Beograd/Firma/760883?utm_source=poslovi.infostud.com&utm_medium=rss',
+            'Velika slova' => 'https://Poslovi.Infostud.com/posao/2',
+            'Već https' => 'https://poslovi.infostud.com/posao/3',
+            'Drugi server' => 'http://drugi.test/posao/4',
+            'Sličan naziv' => 'http://poslovi.infostud.com.lazni.test/posao/5',
+            'Podstrana' => 'http://www.poslovi.infostud.com/posao/6',
+            'Naziv u putanji' => 'http://drugi.test/poslovi.infostud.com/posao/7',
+            'Infostud u upitu' => 'http://drugi.test/?na=http://poslovi.infostud.com/posao/8',
+        ], Prilika::query()->orderBy('id')->pluck('link_izvora', 'naslov')->all());
+    }
+
+    // Oglas uvezen pre ove izmene ima http adresu; isti oglas iz RSS-a (sad https) se ne uvozi drugi put, a postojeći zapis se ne menja.
+    #[Test]
+    public function oglas_sa_infostuda_uvezen_ranije_kao_http_se_ne_uvozi_ponovo(): void
+    {
+        $stari = Prilika::factory()->create(['naslov' => 'Stari oglas', 'link_izvora' => 'http://poslovi.infostud.com/posao/1']);
+        Http::fake([self::A => Http::response($this->feed([['Isti oglas', 'http://poslovi.infostud.com/posao/1'], ['Novi oglas', 'http://poslovi.infostud.com/posao/2']]))]);
+
+        $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 1, preskočeno 1, greška: nema');
+
+        $this->assertSame(0, Prilika::query()->where('naslov', 'Isti oglas')->count());
+        $this->assertSame('https://poslovi.infostud.com/posao/2', Prilika::query()->where('naslov', 'Novi oglas')->sole()->link_izvora);
+        $this->assertSame('http://poslovi.infostud.com/posao/1', $stari->fresh()->link_izvora);
+        // Ogledalo: drugi oglas sa http adresom ne gasi uvoz prvog, a već uvezen https se i dalje preskače u narednom pokretanju.
+        $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 0, preskočeno 2, greška: nema');
+        $this->assertSame(2, Prilika::query()->count());
+    }
+
     #[Test]
     public function isti_link_dvaput_u_istom_izvoru_pravi_jedan_nacrt(): void
     {

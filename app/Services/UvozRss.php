@@ -14,6 +14,11 @@ use Throwable;
 // Uvozi jedan RSS 2.0 izvor kao nacrte. Ništa ne objavljuje i ne menja postojeće prilike: samo dodaje nove.
 final class UvozRss
 {
+    // Infostud u RSS-u daje http, a oglas se otvara i preko https: veza se čuva kao https (paket 64, PITANJA-58-61.md 4). Jedino mesto sa tim pravilom.
+    private const INFOSTUD_HTTP = '#^http://(poslovi\.infostud\.com/)#i';
+
+    private const INFOSTUD_HTTPS = '#^https://(poslovi\.infostud\.com/)#i';
+
     public function uvezi(string $ime, string $adresa): RezultatUvoza
     {
         $novih = 0;
@@ -39,7 +44,8 @@ final class UvozRss
             foreach (array_slice($stavke, 0, config('uvoz.najvise_stavki')) as $stavka) {
                 $podaci = $this->podaci($stavka, $ime);
 
-                if ($podaci === null || Prilika::query()->where('link_izvora', $podaci['link_izvora'])->exists()) {
+                // Oglas uvezen ranije sa http adresom je isti oglas: ne uvozi se ponovo samo zato što se veza sad čuva kao https.
+                if ($podaci === null || Prilika::query()->whereIn('link_izvora', [$podaci['link_izvora'], preg_replace(self::INFOSTUD_HTTPS, 'http://$1', $podaci['link_izvora'])])->exists()) {
                     $preskoceno++;
 
                     continue;
@@ -94,7 +100,7 @@ final class UvozRss
             'status' => StatusPrilike::Nacrt,
             'kratak_opis' => mb_strimwidth($opis === '' ? $naslov : $opis, 0, 300, '…'),
             'naziv_izvora' => $imeIzvora,
-            'link_izvora' => $link,
+            'link_izvora' => preg_replace(self::INFOSTUD_HTTP, 'https://$1', $link),
             'izvor_objavljen' => $this->objavljeno((string) $stavka->pubDate),
         ];
     }

@@ -59,7 +59,7 @@ class UvozNovihIzvoraTest extends BazaTestCase
             'Infostud' => [
                 'Infostud Poslovi', 'https://rss.infostud.com/poslovi/rss.php', 'infostud-poslovi',
                 ['Roštilj majstor', 'Medicinska sestra/tehničar sa iskustvom', 'Specijalista za High Bay skladište'],
-                ['2026-10-10', '2026-10-10', '2026-10-10'], 'http://poslovi.infostud.com/posao/',
+                ['2026-10-10', '2026-10-10', '2026-10-10'], 'https://poslovi.infostud.com/posao/',
             ],
         ];
     }

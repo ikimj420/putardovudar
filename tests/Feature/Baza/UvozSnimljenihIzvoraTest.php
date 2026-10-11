@@ -31,8 +31,8 @@ class UvozSnimljenihIzvoraTest extends BazaTestCase
         'Infostud Poslovi' => 'infostud-poslovi',
     ];
 
-    // Veze iz izvora su https, osim Infostuda koji ih u RSS-u daje kao http (sa oznakama izvora); svaki izvor ima svoje pravilo.
-    private const POSEBNE_VEZE = ['Infostud Poslovi' => '#^http://poslovi\.infostud\.com/posao/\S+$#'];
+    // Sve veze su https; Infostud ih u RSS-u daje kao http, pa se pri uvozu prepisuju (paket 64); svaki izvor ima svoje pravilo.
+    private const POSEBNE_VEZE = ['Infostud Poslovi' => '#^https://poslovi\.infostud\.com/posao/\S+$#'];
 
     protected function setUp(): void
     {
