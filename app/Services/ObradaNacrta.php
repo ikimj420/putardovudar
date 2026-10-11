@@ -69,6 +69,9 @@ TEXT;
         $forma = [...['vrsta' => null, 'rok' => null, 'citat' => null], ...$forma];
         $rokModela = $forma['rok'];
 
+        $vrstaModela = $forma['vrsta'];
+        [$forma, $vrstaIzvor] = $this->vrstaSaStrane($forma, $tekst);
+
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
         [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
 
@@ -89,6 +92,8 @@ TEXT;
         $predlog = [
             'pravilo' => self::PRAVILO,
             'vrsta' => $forma['vrsta'],
+            'vrsta_modela' => $vrstaModela,
+            'vrsta_izvor' => $vrstaIzvor,
             'rok' => $rok?->toDateString() ?? $forma['rok'],
             'rok_modela' => $rokModela,
             'rok_sa_infostuda' => $infostud !== null,
@@ -195,6 +200,25 @@ TEXT;
         }
 
         return [Grupa::izVrednosti(array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene)), $stavke];
+    }
+
+    // Model ponekad pogreši vrstu (izmereno: „praksa" za poziv programu, a reč „praksa" ne piše na strani). Kad on kaže da je prilika, a njegova vrsta nije
+    // dokazana rečju sa strane, uzima se jedina vrsta koja jeste dokazana; kad ih je više ili nijedna, ostaje njegova, pa nacrt kao do sada (paket 68).
+    /**
+     * @param  array<string, mixed>  $forma
+     * @return array{0: array<string, mixed>, 1: string} oblik sa vrstom i ko je vrstu odredio („model" ili „kod")
+     */
+    private function vrstaSaStrane(array $forma, string $tekst): array
+    {
+        $vrsta = is_string($forma['vrsta']) ? VrstaPrilike::tryFrom($forma['vrsta']) : null;
+
+        $dokazane = array_values(array_filter(VrstaPrilike::cases(), fn (VrstaPrilike $druga) => $druga->potkrepljenaTekstom($tekst)));
+
+        if ($vrsta === null || $forma['vazi_pravilo'] !== true || count($dokazane) !== 1 || $dokazane[0] === $vrsta) {
+            return [$forma, 'model'];
+        }
+
+        return [[...$forma, 'vrsta' => $dokazane[0]->value], 'kod'];
     }
 
     // Citat piše na strani samo kao cele reči: „roma" nije na strani na kojoj piše samo „Romania".

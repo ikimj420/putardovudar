@@ -115,8 +115,6 @@ class UvozObradiTest extends BazaTestCase
             'rok bez citata' => [['citat' => ''], 'rok ne piše u tekstu strane', 'rok'],
             'prošao rok' => [['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'], 'rok je prošao', 'rok'],
             'vrsta van spiska' => [['vrsta' => 'posao-na-crno'], 'vrsta nije sa spiska', 'vrsta'],
-            'vrsta bez reči na strani' => [['vrsta' => 'obuka'], 'vrsta nije potkrepljena', 'vrsta'],
-            'vrsta drugo se ne može dokazati' => [['vrsta' => 'drugo'], 'vrsta nije potkrepljena', 'vrsta'],
             'bez roka' => [['rok' => null, 'citat' => ''], 'nema ispravnog roka', 'rok'],
             'nepostojeći datum' => [['rok' => '2026-02-31'], 'nema ispravnog roka', 'rok'],
         ];
@@ -232,12 +230,12 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
     }
 
-    // Paket 40: vrsta se dokazuje rečju sa strane. „Drugo" nema reč, pa ostaje nacrt (ranije je prolazilo kao vrsta sa spiska).
+    // Paket 40: vrsta se dokazuje rečju sa strane. „Drugo" nema reč, pa ostaje nacrt (ranije je prolazilo kao vrsta sa spiska); paket 68: i kad na strani nije dokazana nijedna druga vrsta.
     #[Test]
     public function vrsta_drugo_ostaje_nacrt_jer_se_ne_moze_dokazati(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vrsta' => 'drugo'])]);
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Otvoreno je za sve studente.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['vrsta' => 'drugo', 'grupe' => [['grupa' => 'studenti', 'citat' => 'Otvoreno je za sve studente']]])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (vrsta nije potkrepljena)');
 
@@ -907,11 +905,12 @@ class UvozObradiTest extends BazaTestCase
         $bezVrste = $this->nacrt(['naslov' => 'Bez vrste', 'link_izvora' => 'https://a.test/bez-vrste']);
         $bezGrupe = $this->nacrt(['naslov' => 'Bez grupe', 'link_izvora' => 'https://a.test/bez-grupe']);
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p>';
+        // Na strani bez vrste su dokazane dve vrste (konkurs i obuka), pa kod ne bira umesto modela (paket 68/T5), a model kaže treću.
         Http::fake([
-            'https://a.test/bez-vrste' => Http::response($strana),
+            'https://a.test/bez-vrste' => Http::response('<p>Konkurs i radionica. Rok za prijavu je 20. oktobra 2026. godine.</p>'),
             'https://a.test/bez-grupe' => Http::response($strana),
             self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez vrste')
-                ? $this->ollama(['vrsta' => 'obuka', 'grupe' => []])
+                ? $this->ollama(['vrsta' => 'stipendija', 'grupe' => []])
                 : $this->ollama(['vrsta' => 'konkurs', 'grupe' => []]),
         ]);
 
