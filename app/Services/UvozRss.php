@@ -99,7 +99,8 @@ final class UvozRss
         ];
     }
 
-    // Dan objave u zoni aplikacije; šta se ne može pročitati ostaje prazno, pa se rok bez godine tada ne prima.
+    // Dan objave u zoni aplikacije; šta se ne može pročitati ostaje prazno, pa se rok bez godine tada ne prima. Neki izvori pišu i datum ćirilicom
+    // (dan u nedelji i mesec), pa se pretvara u latinicu pre čitanja.
     private function objavljeno(string $pubDate): ?string
     {
         if (trim($pubDate) === '') {
@@ -107,7 +108,7 @@ final class UvozRss
         }
 
         try {
-            return Carbon::parse($pubDate)->setTimezone(config('app.timezone'))->toDateString();
+            return Carbon::parse(Latinica::izCirilice($pubDate))->setTimezone(config('app.timezone'))->toDateString();
         } catch (Throwable) {
             return null;
         }

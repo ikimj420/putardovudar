@@ -46,7 +46,7 @@ class UvozNovihIzvoraTest extends BazaTestCase
                 ],
                 ['2026-10-09', '2026-10-02', '2026-10-02'], 'https://prosveta.gov.rs/vesti/',
             ],
-            // Snimak je ćirilicom, i naslovi i opisi i datum objave („Тху, 01 Оцт 2026"): nacrti su latinicom, a dan objave se ne može pročitati, pa ostaje prazan.
+            // Snimak je ćirilicom, i naslovi i opisi i datum objave („Тху, 01 Оцт 2026"): nacrti su latinicom, a dan objave se čita posle pretvaranja u latinicu (paket 63).
             'Ministarstvo za ljudska i manjinska prava' => [
                 'Ministarstvo za ljudska i manjinska prava', 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/', 'ministarstvo-ljudska-prava',
                 [
@@ -54,7 +54,7 @@ class UvozNovihIzvoraTest extends BazaTestCase
                     'JAVNI KONKURS ZA POPUNJAVANJE IZVRŠILAČKIH RADNIH MESTA',
                     'Javni poziv organizacijama civilnog društva za predlaganje kandidata za članstvo u Komisiji za rešavanje pritužbi u sedištu Ministarstva unutrašnjih poslova',
                 ],
-                [null, null, null], 'https://minljmpdd.gov.rs/',
+                ['2026-10-01', '2026-09-30', '2026-08-31'], 'https://minljmpdd.gov.rs/',
             ],
             'Infostud' => [
                 'Infostud Poslovi', 'https://rss.infostud.com/poslovi/rss.php', 'infostud-poslovi',
@@ -136,6 +136,43 @@ class UvozNovihIzvoraTest extends BazaTestCase
             $this->assertSame(0, preg_match('/\p{Cyrillic}/u', $this->snimak($snimak)), $snimak);
         }
         $this->assertStringContainsString('Тху, 01 Оцт 2026', $this->snimak('ministarstvo-ljudska-prava'));
+    }
+
+    /** @return array<string, array{0: string, 1: string|null}> datum objave kako ga piše izvor i dan koji se čita */
+    public static function datumiObjave(): array
+    {
+        return [
+            // Svih deset datuma iz RSS-a ministarstva za ljudska prava (izmereno 11.10.2026.): ćirilica, a u dva slučaja i latinično „W" i „y".
+            'četvrtak, oktobar' => ['Тху, 01 Оцт 2026 11:50:54 +0000', '2026-10-01'],
+            'sreda, septembar (latinično W)' => ['Wед, 30 Сеп 2026 12:27:30 +0000', '2026-09-30'],
+            'ponedeljak, avgust' => ['Мон, 31 Ауг 2026 07:31:30 +0000', '2026-08-31'],
+            'ponedeljak, 17. avgust' => ['Мон, 17 Ауг 2026 12:38:09 +0000', '2026-08-17'],
+            'ponedeljak, 3. avgust' => ['Мон, 03 Ауг 2026 13:02:16 +0000', '2026-08-03'],
+            'ponedeljak, 20. jul' => ['Мон, 20 Јул 2026 13:40:05 +0000', '2026-07-20'],
+            'utorak, jul' => ['Туе, 07 Јул 2026 13:39:00 +0000', '2026-07-07'],
+            'ponedeljak, jun' => ['Мон, 01 Јун 2026 07:40:25 +0000', '2026-06-01'],
+            'petak, maj (latinično y)' => ['Фри, 22 Маy 2026 13:44:46 +0000', '2026-05-22'],
+            'petak, maj, ranije' => ['Фри, 22 Маy 2026 08:21:13 +0000', '2026-05-22'],
+            // Ogledalo: latinica se čita kao i do sada, a ono što se ne može pročitati ostaje prazno.
+            'latinica' => ['Fri, 09 Oct 2026 12:26:56 +0000', '2026-10-09'],
+            'ćirilica koja nije datum' => ['Нешто sasvim drugo', null],
+        ];
+    }
+
+    // Paket 63/T2: datum objave ćirilicom se pretvara u latinicu pre čitanja, pa dan objave ostaje upisan (za rok bez godine).
+    #[Test]
+    #[DataProvider('datumiObjave')]
+    public function datum_objave_se_cita_i_kad_je_cirilicom(string $pubDate, ?string $dan): void
+    {
+        $adresa = 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/';
+        config()->set('uvoz.izvori', [['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => $adresa]]);
+        $rss = '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Тест</title><item><title>Јавни позив</title><link>https://minljmpdd.gov.rs/javni-poziv/</link>'
+            .'<pubDate>'.$pubDate.'</pubDate><description>Опис</description></item></channel></rss>';
+        Http::fake([$adresa => Http::response($rss)]);
+
+        $this->artisan('uvoz:rss')->expectsOutput('Ministarstvo za ljudska i manjinska prava: novih 1, preskočeno 0, greška: nema');
+
+        $this->assertSame($dan, Prilika::query()->firstOrFail()->izvor_objavljen?->toDateString(), $pubDate);
     }
 
     // Izvor koji ne odgovara kao u pregledaču (drugi kod, prazno, nije RSS) ne ruši uvoz ostalih i ne pravi nacrte.
