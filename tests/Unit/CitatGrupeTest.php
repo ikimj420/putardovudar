@@ -96,12 +96,18 @@ class CitatGrupeTest extends TestCase
         $this->assertLessThanOrEqual(300, mb_strlen($citat));
     }
 
+    /** @return string niz različitih reči (paket 63: isti niz od četiri reči dvaput nije rečenica), svaka sa brojem */
+    private function razlicitiRecnik(string $osnova, int $od, int $do): string
+    {
+        return implode(' ', array_map(fn (int $i) => $osnova.$i, range($od, $do)));
+    }
+
     // Prozor ne prelazi 300 znakova ni kad su reči duge.
     #[Test]
     public function prozor_se_skracuje_kad_prelazi_najvise_znakova(): void
     {
-        $duga = str_repeat('dugačkarečdugačkarečdugačkareč ', 1);
-        $recenica = str_repeat($duga, 12).'studente '.str_repeat($duga, 12).'kraj.';
+        $duga = 'dugačkarečdugačkarečdugačkareč';
+        $recenica = $this->razlicitiRecnik($duga, 1, 12).' studente '.$this->razlicitiRecnik($duga, 13, 24).' kraj.';
 
         $citat = $this->naStrani(Grupa::Studenti, $recenica);
 
@@ -115,13 +121,47 @@ class CitatGrupeTest extends TestCase
     #[Test]
     public function levo_se_staje_posle_natpisa_i_pre_menija(): void
     {
-        $sirina = str_repeat('o raznim stvarima i događajima ', 8);
+        $sirina = $this->razlicitiRecnik('stvar', 1, 40).' ';
         $meni = 'Skip to content Facebook Instagram Linkedin Lista preliminarnih rezultata za nagrađivanje studenata '.$sirina.'do kraja.';
         $natpis = 'Finansijska podrška: do 10.000 evra po projektu Oblast: studenti i nastavnici '.$sirina.'do kraja.';
 
         $this->assertStringStartsWith('Lista preliminarnih', (string) $this->naStrani(Grupa::Studenti, $meni));
         $this->assertStringNotContainsString('Facebook', (string) $this->naStrani(Grupa::Studenti, $meni));
         $this->assertStringStartsWith('studenti i nastavnici', (string) $this->naStrani(Grupa::Studenti, $natpis));
+    }
+
+    // Paket 63/T1: blok „Povezano" i podnožje (u tekstu strane bez tačaka, pa liče na jednu dugu rečenicu) ne daju citat; izmereno na snimku COST poziva.
+    private const BLOK_POVEZANO = 'Podeli sa drugima Povezano COST poziv 2026: Podrška za nove evropske mreže istraživača COST poziv 2026: Podrška za nove evropske mreže istraživača Dve stipendije za punu školarinu za master studije Umetnost i dizajn video-igara Dve stipendije za punu školarinu za master studije Umetnost i dizajn video-igara Poziv za dostavljanje ponuda: EU VALUES AND POLICIES IN SERBIA Search for: Sektori BIZNIS I INOVACIJE Naša web stranica koristi kolačiće kako bi vam pružila najbolje moguće iskustvo.';
+
+    #[Test]
+    public function blok_povezano_ne_daje_citat_i_kad_pominje_grupu(): void
+    {
+        $poziv = 'Rok za podnošenje predloga je 28. oktobar 2026. godine. Predlog podnosi glavni predlagač u ime međunarodne mreže pojedinaca. ';
+
+        $this->assertNull($this->naStrani(Grupa::MasterDoktorski, $poziv.self::BLOK_POVEZANO));
+        // Ogledalo: ista strana, ali sa rečenicom u pozivu koja pominje grupu — citat je ta rečenica, ne blok.
+        $this->assertSame('Konkurs je otvoren za master studente iz Srbije.', $this->naStrani(Grupa::MasterDoktorski, $poziv.'Konkurs je otvoren za master studente iz Srbije. '.self::BLOK_POVEZANO));
+    }
+
+    /** @return array<string, array{0: string, 1: bool}> „rečenica" i da li daje citat za grupu studenti */
+    public static function recenicaSaBlokom(): array
+    {
+        return [
+            'reč Povezano velikim slovom' => ['Povezano sa ovim programom je i konkurs za studente koji studiraju u inostranstvu.', false],
+            'ista reč malim slovom je obična reč' => ['Ovaj konkurs za studente je povezano sa programom razmene u inostranstvu.', true],
+            'isti niz od tačno četiri reči dvaput' => ['Konkurs za studente prve godine je otvoren, a konkurs za studente prve nije.', false],
+            'isti niz od tri reči dvaput' => ['Konkurs za studente prve godine je otvoren, a ovaj za studente prve nije.', true],
+            'dve iste reči nisu niz' => ['Konkurs je za studente, a nagrada za studente je velika.', true],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('recenicaSaBlokom')]
+    public function recenica_je_blok_veza_samo_sa_recju_povezano_ili_istim_nizom_od_cetiri_reci_dvaput(string $recenica, bool $dajeCitat): void
+    {
+        $citat = $this->naStrani(Grupa::Studenti, $recenica);
+
+        $this->assertSame($dajeCitat, $citat !== null, $recenica);
     }
 
     #[Test]

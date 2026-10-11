@@ -15,6 +15,9 @@ final class CitatGrupe
 
     private const NAJVISE_RECI_U_RECENICI = 250;
 
+    // Isti niz od ovoliko reči dvaput u istoj „rečenici" znači da je to blok naslova, ne rečenica.
+    private const RECI_U_PONOVLJENOM_NIZU = 4;
+
     // Reči oko pronađene reči grupe koje ulaze u citat (ne prelaze granicu rečenice).
     private const RECI_PRE = 10;
 
@@ -47,7 +50,7 @@ final class CitatGrupe
         return $prvi;
     }
 
-    /** @return list<string> delovi teksta koji liče na rečenicu: završavaju se tačkom, uzvičnikom ili upitnikom i nisu spisak naslova */
+    /** @return list<string> delovi teksta koji liče na rečenicu: završavaju se tačkom, uzvičnikom ili upitnikom i nisu spisak naslova ni blok veza */
     private function recenice(string $tekst): array
     {
         $recenice = [];
@@ -59,12 +62,36 @@ final class CitatGrupe
             $velika = count(array_filter($reci[0], fn (string $rec) => preg_match('/^\p{Lu}/u', $rec) === 1));
 
             // Spisak naslova (meni, oznake) ima gotovo sve reči velikim slovom; rečenica ima najviše svaku drugu.
-            if (preg_match('/[.!?]$/u', $deo) === 1 && $broj >= self::NAJMANJE_RECI && $broj <= self::NAJVISE_RECI_U_RECENICI && $velika * 2 <= $broj + 1) {
+            if (preg_match('/[.!?]$/u', $deo) === 1 && $broj >= self::NAJMANJE_RECI && $broj <= self::NAJVISE_RECI_U_RECENICI && $velika * 2 <= $broj + 1 && ! $this->jeBlokVeza($deo, $reci[0])) {
                 $recenice[] = $deo;
             }
         }
 
         return $recenice;
+    }
+
+    // Blok „Povezano" sa naslovima drugih vesti (svaki napisan dvaput) i podnožje stoje u tekstu strane bez tačaka, pa liče na jednu dugu rečenicu; to nije citat.
+    /** @param  list<string>  $reci */
+    private function jeBlokVeza(string $deo, array $reci): bool
+    {
+        if (preg_match('/\bPovezano\b/u', $deo) === 1) {
+            return true;
+        }
+
+        $reci = array_map(mb_strtolower(...), $reci);
+        $viđeno = [];
+
+        for ($i = 0; $i + self::RECI_U_PONOVLJENOM_NIZU <= count($reci); $i++) {
+            $niz = implode(' ', array_slice($reci, $i, self::RECI_U_PONOVLJENOM_NIZU));
+
+            if (isset($viđeno[$niz])) {
+                return true;
+            }
+
+            $viđeno[$niz] = true;
+        }
+
+        return false;
     }
 
     // Cela rečenica ako staje u NAJVISE_ZNAKOVA; inače deo oko najkraćeg niza reči koji potkrepljuje grupu: najviše RECI_PRE reči pre i RECI_POSLE

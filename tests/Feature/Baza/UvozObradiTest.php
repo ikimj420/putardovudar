@@ -68,6 +68,12 @@ class UvozObradiTest extends BazaTestCase
         return Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]]);
     }
 
+    // Niz različitih reči, svaka sa brojem: isti niz od četiri reči dvaput bi duga „rečenica" u ovim probama postala blok veza (paket 63).
+    private function razlicitiRecnik(string $osnova, int $od, int $do): string
+    {
+        return implode(' ', array_map(fn (int $i) => $osnova.$i, range($od, $do)));
+    }
+
     private function pozivaOllame(): int
     {
         return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count();
@@ -414,6 +420,33 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame('pravilo nije potkrepljeno citatom', $bez->fresh()->predlog['odbijeno']);
     }
 
+    // Paket 63/T1 (snimak COST poziva, #21 iz probe 59): blok „Povezano" na dnu strane pominje master studije u naslovu druge vesti. To nije citat poziva, pa grupa ne prolazi.
+    private const POVEZANO_NA_DNU = 'Podeli sa drugima Povezano COST poziv 2026: Podrška za nove evropske mreže istraživača COST poziv 2026: Podrška za nove evropske mreže istraživača Dve stipendije za punu školarinu za master studije Umetnost i dizajn video-igara Dve stipendije za punu školarinu za master studije Umetnost i dizajn video-igara Search for: Sektori BIZNIS I INOVACIJE Naša web stranica koristi kolačiće kako bi vam pružila najbolje moguće iskustvo.';
+
+    #[Test]
+    public function grupa_koju_dokazuje_samo_blok_povezano_ne_prolazi_a_ona_iz_poziva_prolazi(): void
+    {
+        $poziv = '<p>Konkurs je otvoren. Rok za prijavu je 20. oktobra 2026. godine. Predlog podnosi glavni predlagač u ime mreže istraživača.</p>';
+        $bez = $this->nacrt(['naslov' => 'Samo blok', 'link_izvora' => 'https://a.test/blok']);
+        $sa = $this->nacrt(['naslov' => 'Sa rečenicom', 'link_izvora' => 'https://a.test/recenica']);
+        Http::fake([
+            'https://a.test/blok' => Http::response($poziv.'<p>'.self::POVEZANO_NA_DNU.'</p>'),
+            'https://a.test/recenica' => Http::response($poziv.'<p>Konkurs je otvoren za master studente iz Srbije.</p><p>'.self::POVEZANO_NA_DNU.'</p>'),
+            // Citat modela ne piše na strani (kao kod COST poziva), pa grupu traži kod.
+            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'master-doktorski', 'citat' => 'Poziv je otvoren za master i doktorske studente']]]),
+        ]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Nacrt, $bez->fresh()->status);
+        $this->assertSame('pravilo nije potkrepljeno citatom', $bez->fresh()->predlog['odbijeno']);
+        $this->assertNull($bez->fresh()->grupe);
+        // Ogledalo: isti blok na strani sa pravom rečenicom u pozivu — grupa se dokazuje tom rečenicom.
+        $this->assertSame(StatusPrilike::Objavljeno, $sa->fresh()->status);
+        $this->assertSame(['master-doktorski'], $sa->fresh()->grupe);
+        $this->assertSame([['grupa' => 'master-doktorski', 'citat' => 'Konkurs je otvoren za master studente iz Srbije.', 'izvor_citata' => 'kod']], $sa->fresh()->predlog['grupe']);
+    }
+
     // Rečenica sa namenom ima prednost nad prvom koja grupu samo pominje; citat je doslovan deo strane i kad je rečenica duga.
     #[Test]
     public function kod_bira_recenicu_koja_kaze_kome_je_namenjeno_a_dugu_secie_oko_reci_grupe(): void
@@ -421,7 +454,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt();
         $uvod = 'Prošle godine je bilo mnogo studenata na predavanju.';
         $namena = 'Konkurs je otvoren za sve studente.';
-        $dugacka = 'Ovo je jedna veoma dugačka rečenica '.str_repeat('o raznim stvarima i događajima ', 20).'koja pominje studente tek pri kraju '.str_repeat('i nastavlja se dalje ', 20).'.';
+        $dugacka = 'Ovo je jedna veoma dugačka rečenica '.$this->razlicitiRecnik('stvar', 1, 100).' koja pominje studente tek pri kraju '.$this->razlicitiRecnik('nastavak', 1, 80).' .';
         Http::fake([self::STRANA => Http::response('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p><p>'.$uvod.'</p><p>'.$namena.'</p>'), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
 
         $this->artisan('uvoz:obradi');
@@ -436,7 +469,7 @@ class UvozObradiTest extends BazaTestCase
     public function duga_recenica_se_seče_oko_reci_grupe_i_ostaje_doslovan_deo_strane(): void
     {
         $nacrt = $this->nacrt();
-        $dugacka = 'Ovo je jedna veoma dugačka rečenica '.str_repeat('o raznim stvarima i događajima ', 20).'koja pominje studente tek pri kraju '.str_repeat('i nastavlja se dalje ', 20).'do kraja.';
+        $dugacka = 'Ovo je jedna veoma dugačka rečenica '.$this->razlicitiRecnik('stvar', 1, 100).' koja pominje studente tek pri kraju '.$this->razlicitiRecnik('nastavak', 1, 80).' do kraja.';
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p>';
         Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
 
