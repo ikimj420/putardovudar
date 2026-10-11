@@ -34,7 +34,10 @@ citat (tačan isečak iz teksta u kome piše rok, ili prazan tekst).
 TEXT;
 
     // Verzija pravila upisana u predlog; nacrt obrađen starim pravilom je nema, pa ga uvoz:obradi --ponovo prepoznaje.
-    public const PRAVILO = 3;
+    public const PRAVILO = 4;
+
+    // Razlog objave kad je oglas za posao objavljen bez mišljenja modela (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md).
+    public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
     public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe) {}
 
@@ -62,7 +65,7 @@ TEXT;
         $forma = [...['vrsta' => null, 'rok' => null, 'citat' => null], ...$forma];
 
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
-        [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen);
+        [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
         $predlog = [
             'pravilo' => self::PRAVILO,
             'vrsta' => $forma['vrsta'],
@@ -84,12 +87,12 @@ TEXT;
             $prilika->vrsta = VrstaPrilike::from($forma['vrsta']);
             $prilika->grupe = array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene);
             $prilika->setAttribute('rok', $rok?->toDateString());
-            $prilika->razlog_objave = $forma['razlog'];
+            $prilika->razlog_objave = $forma['vazi_pravilo'] === true ? $forma['razlog'] : self::RAZLOG_POSAO;
 
             try {
                 $prilika->objavi(KoJeObjavio::Ollama);
 
-                return new IshodObrade(IshodObrade::OBJAVA, $forma['razlog']);
+                return new IshodObrade(IshodObrade::OBJAVA, $prilika->razlog_objave);
             } catch (ValidationException) {
                 $prilika->refresh();
                 $prilika->forceFill(['obradeno_at' => now(), 'predlog' => [...$predlog, 'odbijeno' => 'izvor']])->save();
@@ -179,20 +182,20 @@ TEXT;
 
     /**
      * Vraća razlog zbog kog nacrt ostaje nacrt (ili null kad je sve proverivo) i rok koji važi: datum iz odgovora, ili, kad na strani piše dan i
-     * mesec bez godine, prvi takav dan posle datuma objave u izvoru. Godinu ne bira model.
+     * mesec bez godine, prvi takav dan posle datuma objave u izvoru. Godinu ne bira model. Za vrstu „posao" mišljenje modela (vazi_pravilo) ne računa.
      *
      * @param  array<string, mixed>  $forma
      * @param  list<Grupa>  $prihvacene
      * @return array{0: ?string, 1: ?CarbonImmutable}
      */
-    private function zasto(array $forma, string $tekst, array $prihvacene, ?CarbonInterface $objavljeno): array
+    private function zasto(array $forma, string $tekst, array $prihvacene, ?CarbonInterface $objavljeno, string $naslov): array
     {
-        if ($forma['vazi_pravilo'] !== true) {
-            return ['pravilo za objavu ne važi', null];
-        }
-
         $strana = TekstStrane::normalizuj($tekst);
         $vrsta = is_string($forma['vrsta']) ? VrstaPrilike::tryFrom($forma['vrsta']) : null;
+
+        if ($forma['vazi_pravilo'] !== true && $vrsta !== VrstaPrilike::Posao) {
+            return ['pravilo za objavu ne važi', null];
+        }
 
         if ($vrsta === null) {
             return ['vrsta nije sa spiska', null];
@@ -201,6 +204,11 @@ TEXT;
         // Vrsta se dokazuje rečju sa strane (ne samo citatom): „stipendija" bez ijedne reči o stipendiji ostaje nacrt.
         if (! $vrsta->potkrepljenaTekstom($tekst)) {
             return ['vrsta nije potkrepljena', null];
+        }
+
+        // Oglas za posao: naslov koji kaže da je rezultat ili spisak nije oglas.
+        if ($vrsta === VrstaPrilike::Posao && NaslovOglasa::jeRezultatIliSpisak($naslov)) {
+            return ['naslov je rezultat ili spisak', null];
         }
 
         // Grupu dokazuje kod; samo oglas za posao (vrsta dokazana rečju sa strane) važi i bez grupe.

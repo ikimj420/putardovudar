@@ -78,25 +78,28 @@ class UvozObradiPonovoTest extends BazaTestCase
         $this->assertSame(1, $this->pozivaOllame());
     }
 
-    // Paket 59/T5: verzija pravila je 3; nacrt obrađen verzijom 2 (ili bez verzije) se ponovo obrađuje, a obrađen verzijom 3 ne.
+    // Paket 59/T5 i 63/T3: verzija pravila je 4; nacrt obrađen bilo kojom manjom verzijom (ili bez verzije) se ponovo obrađuje, a obrađen tekućom ne.
     #[Test]
     public function ponovo_obradjuje_i_nacrt_obradjen_prethodnom_verzijom_pravila_a_tekucom_ne(): void
     {
-        $this->assertSame(3, ObradaNacrta::PRAVILO);
+        $this->assertSame(4, ObradaNacrta::PRAVILO);
 
-        $dva = $this->starNacrt(['naslov' => 'Verzija dva', 'link_izvora' => 'https://a.test/dva', 'predlog' => ['pravilo' => 2, 'odbijeno' => 'pravilo za objavu ne važi', 'model' => 'qwen2.5:7b']]);
-        $tri = $this->starNacrt(['naslov' => 'Verzija tri', 'link_izvora' => 'https://a.test/tri', 'predlog' => ['pravilo' => 3, 'odbijeno' => 'pravilo za objavu ne važi', 'model' => 'qwen2.5:7b']]);
+        $odbijen = fn (int $verzija) => ['pravilo' => $verzija, 'odbijeno' => 'pravilo za objavu ne važi', 'model' => 'qwen2.5:7b'];
+        $starija = $this->starNacrt(['naslov' => 'Starija verzija', 'link_izvora' => 'https://a.test/starija', 'predlog' => $odbijen(ObradaNacrta::PRAVILO - 2)]);
+        $prethodna = $this->starNacrt(['naslov' => 'Prethodna verzija', 'link_izvora' => 'https://a.test/prethodna', 'predlog' => $odbijen(ObradaNacrta::PRAVILO - 1)]);
+        $tekuca = $this->starNacrt(['naslov' => 'Tekuća verzija', 'link_izvora' => 'https://a.test/tekuca', 'predlog' => $odbijen(ObradaNacrta::PRAVILO)]);
         $bez = $this->starNacrt(['naslov' => 'Bez verzije', 'link_izvora' => 'https://a.test/bez']);
-        Http::fake(['https://a.test/dva' => $this->strana(), 'https://a.test/bez' => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake(['https://a.test/starija' => $this->strana(), 'https://a.test/prethodna' => $this->strana(), 'https://a.test/bez' => $this->strana(), self::OLLAMA => $this->ollama()]);
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->assertExitCode(0);
 
-        $this->assertSame(2, $this->pozivaOllame());
-        $this->assertSame(StatusPrilike::Objavljeno, $dva->fresh()->status);
-        $this->assertSame(StatusPrilike::Objavljeno, $bez->fresh()->status);
-        $this->assertSame(ObradaNacrta::PRAVILO, $dva->fresh()->predlog['pravilo']);
-        $this->assertSame(StatusPrilike::Nacrt, $tri->fresh()->status);
-        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === 'https://a.test/tri');
+        $this->assertSame(3, $this->pozivaOllame());
+        foreach ([$starija, $prethodna, $bez] as $nacrt) {
+            $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status, $nacrt->naslov);
+            $this->assertSame(ObradaNacrta::PRAVILO, $nacrt->fresh()->predlog['pravilo'], $nacrt->naslov);
+        }
+        $this->assertSame(StatusPrilike::Nacrt, $tekuca->fresh()->status);
+        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === 'https://a.test/tekuca');
     }
 
     // Ogledalo: bez --ponovo, obrađeni nacrt se ne uzima ni po starom pravilu.

@@ -640,7 +640,6 @@ class UvozObradiTest extends BazaTestCase
 
         return [
             'vrsta nije dokazana rečju sa strane' => ['<p>Besplatno predavanje u skladištu.</p>'.$rok, [], 'vrsta nije potkrepljena'],
-            'model ne kaže da je prilika' => ['<p>Oglas za posao.</p>'.$rok, ['vazi_pravilo' => false], 'pravilo za objavu ne važi'],
             'rok ne piše na strani' => ['<p>Oglas za posao. Prijave su otvorene.</p>', [], 'rok ne piše u tekstu strane'],
             'rok je prošao' => ['<p>Oglas za posao. Rok za prijavu je 4. oktobra 2026. godine.</p>', ['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'], 'rok je prošao'],
             'bez roka' => ['<p>Oglas za posao.</p>', ['rok' => null, 'citat' => ''], 'nema ispravnog roka'],
@@ -650,7 +649,7 @@ class UvozObradiTest extends BazaTestCase
     /** @param  array<string, mixed>  $dopuna */
     #[Test]
     #[DataProvider('oglasiZaPosaoKojiOstajuNacrt')]
-    public function oglas_za_posao_bez_grupe_i_dalje_trazi_vrstu_rok_i_prilika_od_modela(string $strana, array $dopuna, string $razlog): void
+    public function oglas_za_posao_bez_grupe_i_dalje_trazi_vrstu_i_rok(string $strana, array $dopuna, string $razlog): void
     {
         $nacrt = $this->nacrt();
         Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
@@ -659,6 +658,123 @@ class UvozObradiTest extends BazaTestCase
 
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
         $this->assertSame($razlog, $nacrt->fresh()->predlog['odbijeno']);
+    }
+
+    /** @return array<string, array{0: bool}> mišljenje modela o tome da li tekst važi za objavu */
+    public static function misljenjaModela(): array
+    {
+        return ['model kaže da je prilika' => [true], 'model kaže da nije prilika' => [false]];
+    }
+
+    // Paket 63/T3: oglas za posao se objavljuje kad kod sam dokaže vrstu (reč na strani), rok (na strani, nije prošao) i naslov; mišljenje modela (vazi_pravilo) ne računa.
+    #[Test]
+    #[DataProvider('misljenjaModela')]
+    public function oglas_za_posao_se_objavljuje_bez_obzira_na_misljenje_modela(bool $vazi): void
+    {
+        $nacrt = $this->nacrt(['naslov' => 'Magacioner']);
+        Http::fake([
+            self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p>'),
+            self::OLLAMA => $this->ollama(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => [], 'razlog' => 'Model kaže.']),
+        ]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('objavljen ('.($vazi ? 'Model kaže.' : ObradaNacrta::RAZLOG_POSAO).'): Magacioner');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
+        $this->assertSame('2026-10-20', $prilika->rok->toDateString());
+        $this->assertNull($prilika->grupe);
+        $this->assertSame(KoJeObjavio::Ollama, $prilika->objavio);
+        // Razlog objave je modelov kad je model rekao da je prilika, a inače kodov; šta je model rekao ostaje zapisano u predlogu.
+        $this->assertSame($vazi ? 'Model kaže.' : ObradaNacrta::RAZLOG_POSAO, $prilika->razlog_objave);
+        $this->assertSame('Model kaže.', $prilika->predlog['razlog']);
+        $this->assertSame(ObradaNacrta::PRAVILO, $prilika->predlog['pravilo']);
+        $this->assertTrue(Prilika::javne()->whereKey($prilika->id)->exists());
+    }
+
+    /** @return array<string, array{0: string}> vrste koje nisu posao */
+    public static function vrsteKojeNisuPosao(): array
+    {
+        return ['konkurs' => ['konkurs'], 'stipendija' => ['stipendija'], 'praksa' => ['praksa'], 'obuka' => ['obuka']];
+    }
+
+    // Ogledalo: za sve ostale vrste mišljenje modela važi kao do sada, i kad strana ima sve ostalo (reči vrsta, grupu, rok).
+    #[Test]
+    #[DataProvider('vrsteKojeNisuPosao')]
+    public function za_ostale_vrste_model_i_dalje_odlucuje_da_li_je_prilika(string $vrsta): void
+    {
+        $nacrt = $this->nacrt();
+        $strana = '<p>Oglas za posao, praksu, stipendiju, konkurs i obuku. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.self::PRAVILO_NA_STRANI.'.</p>';
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'vrsta' => $vrsta])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo za objavu ne važi)');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status, $vrsta);
+        $this->assertSame('pravilo za objavu ne važi', $nacrt->fresh()->predlog['odbijeno']);
+    }
+
+    /** @return array<string, array{0: string, 1: array<string, mixed>, 2: string}> strana, odgovor modela, razlog zbog kog oglas za posao ostaje nacrt */
+    public static function oglasiZaPosaoBezModelaKojiOstajuNacrt(): array
+    {
+        $rok = '<p>Rok za prijavu je 20. oktobra 2026. godine.</p>';
+
+        return [
+            'vrsta ne piše na strani' => ['<p>Besplatno predavanje.</p>'.$rok, [], 'vrsta nije potkrepljena'],
+            'rok ne piše na strani' => ['<p>Oglas za posao. Prijave su otvorene.</p>', [], 'rok ne piše u tekstu strane'],
+            'rok je prošao' => ['<p>Oglas za posao. Rok za prijavu je 4. oktobra 2026. godine.</p>', ['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'], 'rok je prošao'],
+            'model nije našao rok' => ['<p>Oglas za posao.</p>', ['rok' => null, 'citat' => ''], 'nema ispravnog roka'],
+        ];
+    }
+
+    /** @param  array<string, mixed>  $dopuna */
+    #[Test]
+    #[DataProvider('oglasiZaPosaoBezModelaKojiOstajuNacrt')]
+    public function oglas_za_posao_bez_dokaza_ostaje_nacrt_i_kad_model_kaze_da_nije_prilika(string $strana, array $dopuna, string $razlog): void
+    {
+        $nacrt = $this->nacrt(['naslov' => 'Magacioner']);
+        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.'): Magacioner');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertSame($razlog, $nacrt->fresh()->predlog['odbijeno']);
+    }
+
+    /** @return array<string, array{0: string, 1: bool, 2: bool}> naslov, da li oglas za posao sa tim naslovom prolazi i šta je model rekao */
+    public static function naslovi(): array
+    {
+        $naslovi = [
+            'rezultati' => ['Rezultati konkursa za radno mesto', false],
+            'lista' => ['Lista kandidata za posao u školi', false],
+            'izabrani' => ['Izabrani kandidati za radno mesto', false],
+            'dobitnici' => ['Dobitnici stipendije i posla', false],
+            'velika slova' => ['LISTA PRIJAVLJENIH KANDIDATA', false],
+            'običan oglas' => ['Magacioner', true],
+            'oglas sa rečju slične dužine' => ['Rad na kasi u prodavnici', true],
+        ];
+        $slucajevi = [];
+
+        foreach ($naslovi as $ime => [$naslov, $prolazi]) {
+            $slucajevi[$ime.' (model: prilika)'] = [$naslov, $prolazi, true];
+            $slucajevi[$ime.' (model: nije prilika)'] = [$naslov, $prolazi, false];
+        }
+
+        return $slucajevi;
+    }
+
+    // Naslov koji kaže da je rezultat ili spisak nije oglas za posao: nacrt, i kad model kaže da je prilika; običan naslov prolazi.
+    #[Test]
+    #[DataProvider('naslovi')]
+    public function naslov_rezultata_ili_spiska_nije_oglas_za_posao(string $naslov, bool $prolazi, bool $vazi): void
+    {
+        $nacrt = $this->nacrt(['naslov' => $naslov]);
+        Http::fake([self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p>'), self::OLLAMA => $this->ollama(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => []])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame($prolazi ? StatusPrilike::Objavljeno : StatusPrilike::Nacrt, $nacrt->fresh()->status, $naslov);
+        $this->assertSame($prolazi ? null : 'naslov je rezultat ili spisak', $nacrt->fresh()->predlog['odbijeno'], $naslov);
     }
 
     // Grupe se i dalje upisuju kad ih kod nađe: oglas za posao sa grupom koju strana dokazuje nosi i vrstu i grupu; izmišljena grupa se ne upisuje, a oglas prolazi.
