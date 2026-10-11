@@ -1879,6 +1879,12 @@ section + section > .naslov-izvora {
   display: none;
 }
 
+/* Na početnoj dok je dugme „Pitaj Vudar pomoćnika" iz naslovnog dela na ekranu (klasu postavlja skript, pa bez njega oba ostaju): plutajuće se ne vidi, a pošto je
+   bez prikaza nije ni u redosledu tastature. */
+.pitaj-na-ekranu .plutajuci-dugme {
+  display: none;
+}
+
 @media (min-width: 720px) {
   .plutajuci-forma textarea {
     min-height: 108px;

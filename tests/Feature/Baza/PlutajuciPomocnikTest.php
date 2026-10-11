@@ -240,6 +240,34 @@ class PlutajuciPomocnikTest extends BazaTestCase
         $this->assertStringNotContainsString('eval(', $skript);
     }
 
+    // Paket 67 T6: na početnoj je jedno dugme „Pitaj Vudar pomoćnika" na ekranu. Dok je dugme iz naslovnog dela vidljivo, plutajuće se ne vidi (skript samo menja klasu na html),
+    // a kad se skroluje ispod, pojavi se. Dugme iz naslovnog dela postoji samo na početnoj, pa ostale strane ostaju iste; bez skripta oba ostaju.
+    #[Test]
+    public function na_pocetnoj_plutajuce_dugme_se_krije_dok_je_glavno_na_ekranu_a_ostale_strane_su_iste(): void
+    {
+        $skript = (string) file_get_contents(public_path('js/javno.js'));
+        $stil = $this->stilBezKomentara();
+
+        foreach ([
+            "document.querySelector('.hero-pitaj')", 'glavnoDugme.getBoundingClientRect()', "classList.toggle('pitaj-na-ekranu', okvir.bottom > 0 && okvir.top < window.innerHeight)",
+            "window.addEventListener('scroll', osveziDugme, { passive: true });", "window.addEventListener('resize', osveziDugme);",
+        ] as $trag) {
+            $this->assertStringContainsString($trag, $skript, $trag);
+        }
+        $this->assertMatchesRegularExpression('/\n\.pitaj-na-ekranu \.plutajuci-dugme \{\s*display: none;\s*\}/', $stil);
+        // Skript ne dira prozor: nigde se klasa „pitaj-na-ekranu" ne vezuje za zatvaranje.
+        $this->assertSame(1, substr_count($skript, 'pitaj-na-ekranu'));
+
+        // Dugme iz naslovnog dela je samo na početnoj, a klasu ne piše nijedan pogled (bez skripta oba dugmeta ostaju).
+        $pocetna = $this->get(route('pocetna'))->assertOk()->getContent();
+        $this->assertSame(1, substr_count($pocetna, 'hero-pitaj'));
+        $this->assertStringNotContainsString('pitaj-na-ekranu', $pocetna);
+        foreach ([route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index'), route('pomocnik.index')] as $adresa) {
+            $this->assertStringNotContainsString('hero-pitaj', $this->get($adresa)->assertOk()->getContent(), $adresa);
+        }
+        $this->assertStringContainsString('class="plutajuci-dugme"', $this->get(route('prilike.index'))->getContent());
+    }
+
     // Razgovor (paket 57 T9): Enter šalje, Shift+Enter pravi nov red (a dok se slovo sastavlja Enter ostaje običan); polje se prazni pre odgovora,
     // pitanje se odmah vidi kao poruka čoveka (tekst, ne HTML), odgovor stiže ispod, a kad ne uspe pitanje se vraća u polje i ide običnom formom.
     #[Test]

@@ -147,6 +147,22 @@
 
         zatvori.addEventListener('click', zatvoriProzor);
 
+        // Na početnoj je isto dugme i u naslovnom delu: dok je ono na ekranu, plutajuće se ne vidi, a kad se skroluje ispod njega, pojavi se (paket 67).
+        // Bez skripta oba ostaju. Skriveno dugme nije u redosledu tastature, a otvoren prozor se ovim ne zatvara.
+        var glavnoDugme = document.querySelector('.hero-pitaj');
+
+        if (glavnoDugme) {
+            var osveziDugme = function () {
+                var okvir = glavnoDugme.getBoundingClientRect();
+
+                document.documentElement.classList.toggle('pitaj-na-ekranu', okvir.bottom > 0 && okvir.top < window.innerHeight);
+            };
+
+            osveziDugme();
+            window.addEventListener('scroll', osveziDugme, { passive: true });
+            window.addEventListener('resize', osveziDugme);
+        }
+
         // „Napiši moj": pitanja šablona stižu u isti prozor kao poruka pomoćnika, a napisan tekst u njoj. Ako ne uspe, veza i obrazac rade
         // običnim putem, na strani pomoćnika.
         function zatrazi(adresa, opcije) {
