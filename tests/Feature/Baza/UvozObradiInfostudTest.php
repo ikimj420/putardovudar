@@ -155,15 +155,73 @@ class UvozObradiInfostudTest extends BazaTestCase
         $this->assertFalse($prilika->predlog['rok_sa_infostuda']);
     }
 
-    // „Kad model ne nađe rok": nedokazan rok modela nije „nema roka", pa se ne zamenjuje datumom isteka i oglas ostaje nacrt.
-    #[Test]
-    public function nedokazan_rok_modela_se_ne_zamenjuje_datumom_isteka(): void
+    /** @return array<string, array{0: array<string, mixed>}> rok koji model vraća, a nije dokazan citatom sa strane */
+    public static function nedokazaniRokoviModela(): array
     {
-        $prilika = $this->obradi($this->nacrt(), $this->strana(), ['rok' => '2026-10-25', 'citat' => 'Rok je 25. oktobra, ne piše nigde']);
+        return [
+            'citat koga nema na strani' => [['rok' => '2026-10-30', 'citat' => 'Rok je 30. oktobra, ne piše nigde']],
+            'datum koji ne postoji' => [['rok' => '2026-13-45', 'citat' => 'Rok za prijavu je 45. 13. 2026.']],
+            'rok sa citatom koji ne sadrži datum' => [['rok' => '2026-10-30', 'citat' => 'Traži se magacioner']],
+            'prazan citat' => [['rok' => '2026-10-30', 'citat' => '']],
+            'rok bez citata' => [['rok' => '2026-10-30', 'citat' => null]],
+        ];
+    }
+
+    // Paket 67 (PITANJA-63.md 4, Ivan „da" 11.10.2026.): rok koji je model vratio, a nije dokazan citatom sa strane, ne drži oglas u nacrtu: uzima se datum isteka iz
+    // strane, uz isti uslov kao pre (isti datum piše i u tekstu). Šta je model rekao ostaje u predlogu (rok_modela).
+    /** @param  array<string, mixed>  $model */
+    #[Test]
+    #[DataProvider('nedokazaniRokoviModela')]
+    public function nedokazan_rok_modela_se_zamenjuje_datumom_isteka_koji_piše_i_u_tekstu(array $model): void
+    {
+        $prilika = $this->obradi($this->nacrt(), $this->strana(), $model);
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame('2026-10-25', $prilika->rok->toDateString());
+        $this->assertSame('25.10.2026.', $prilika->predlog['citat']);
+        $this->assertSame($model['rok'], $prilika->predlog['rok_modela']);
+        $this->assertTrue($prilika->predlog['rok_sa_infostuda']);
+        $this->assertNull($prilika->predlog['odbijeno']);
+    }
+
+    // Ogledalo: datum isteka koji ne piše u tekstu strane ne pomaže ni kad je rok modela nedokazan: nacrt, kao pre, a rok modela ostaje zapisan.
+    #[Test]
+    public function datum_isteka_koji_ne_piše_u_tekstu_ne_pomaže_nedokazanom_roku_modela(): void
+    {
+        $prilika = $this->obradi($this->nacrt(), $this->strana('<span>25.10.2026.</span>=><span></span>'), ['rok' => '2026-10-30', 'citat' => 'Rok je 30. oktobra, ne piše nigde']);
 
         $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
         $this->assertSame('rok ne piše u tekstu strane', $prilika->predlog['odbijeno']);
+        $this->assertSame('2026-10-30', $prilika->predlog['rok_modela']);
         $this->assertFalse($prilika->predlog['rok_sa_infostuda']);
+        $this->assertNull($prilika->rok);
+    }
+
+    // Dokazan rok modela se ne menja, ni kad je prošao: datum isteka ga ne „spasava".
+    #[Test]
+    public function dokazan_rok_modela_koji_je_prosao_ostaje_nacrt_a_datum_isteka_ga_ne_menja(): void
+    {
+        $sa = $this->strana('<p>Traži se magacioner=><p>Rok za prijavu je bio 1. oktobra 2026. godine. Traži se magacioner');
+        $prilika = $this->obradi($this->nacrt(), $sa, ['rok' => '2026-10-01', 'citat' => 'Rok za prijavu je bio 1. oktobra 2026. godine']);
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertSame('rok je prošao', $prilika->predlog['odbijeno']);
+        $this->assertSame('2026-10-01', $prilika->predlog['rok']);
+        $this->assertFalse($prilika->predlog['rok_sa_infostuda']);
+    }
+
+    // Sa drugog sajta ne važi ni novo pravilo: nedokazan rok modela tamo ostaje nacrt.
+    #[Test]
+    public function nedokazan_rok_modela_sa_drugog_sajta_ostaje_nacrt(): void
+    {
+        foreach (['https://a.test/oglas', 'https://poslovi.infostud.com.lazni.test/oglas'] as $adresa) {
+            Prilika::query()->delete();
+            $prilika = $this->obradi($this->nacrt($adresa), $this->strana(), ['rok' => '2026-10-30', 'citat' => 'Rok je 30. oktobra, ne piše nigde']);
+
+            $this->assertSame(StatusPrilike::Nacrt, $prilika->status, $adresa);
+            $this->assertSame('rok ne piše u tekstu strane', $prilika->predlog['odbijeno'], $adresa);
+            $this->assertFalse($prilika->predlog['rok_sa_infostuda'], $adresa);
+        }
     }
 
     // Ostalo ostaje isto i sa rokom iz strane: vrsta se dokazuje rečju sa strane.

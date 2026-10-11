@@ -39,6 +39,9 @@ TEXT;
     // Razlog objave oglasa za posao, uvek kodov (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md), a Ivan ga je prihvatio 11.10.2026.
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
+    // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
+    private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', 'rok ne piše u tekstu strane'];
+
     public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
 
     /** @throws OllamaNedostupna */
@@ -66,16 +69,23 @@ TEXT;
         $forma = [...['vrsta' => null, 'rok' => null, 'citat' => null], ...$forma];
         $rokModela = $forma['rok'];
 
-        // Kad model ne nađe rok, a strana je sa Infostuda, rok je datum isteka oglasa iz strane (samo ako piše i u tekstu); citat roka je taj datum.
-        $infostud = $forma['rok'] === null ? $this->rokInfostuda->izStrane((string) $prilika->link_izvora, $preuzeta->html, $tekst) : null;
-
-        if ($infostud !== null) {
-            $forma['rok'] = $infostud['rok'];
-            $forma['citat'] = $infostud['citat'];
-        }
-
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
         [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
+
+        // Kad model ne nađe rok ili rok koji je vratio nije dokazan citatom sa strane, a strana je sa Infostuda, rok je datum isteka oglasa iz strane (samo ako piše i u tekstu);
+        // citat roka je taj datum (paket 67). Rok modela koji je dokazan se ne menja.
+        $infostud = null;
+
+        if (in_array($odbijeno, self::RAZLOZI_BEZ_ROKA, true)) {
+            $infostud = $this->rokInfostuda->izStrane((string) $prilika->link_izvora, $preuzeta->html, $tekst);
+
+            if ($infostud !== null) {
+                $forma['rok'] = $infostud['rok'];
+                $forma['citat'] = $infostud['citat'];
+                [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
+            }
+        }
+
         $predlog = [
             'pravilo' => self::PRAVILO,
             'vrsta' => $forma['vrsta'],
