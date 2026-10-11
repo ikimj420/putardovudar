@@ -135,6 +135,25 @@ class SabloniAdminTest extends AdminBazaTestCase
         $this->assertSame(0, Sablon::query()->count());
     }
 
+    // Oznaka roda {radio/radila} nije mesto za polje, pa provera ne traži polje za nju; {nepostoji} i dalje traži.
+    #[Test]
+    public function oznaka_roda_u_tekstu_ne_trazi_polje_a_mesto_bez_polja_i_dalje_trazi(): void
+    {
+        Livewire::test(CreateSablon::class)
+            ->fillForm(['naslov' => 'A', 'objasnjenje' => 'B', 'polja' => self::polja(), 'tekst' => '{ime}, {radio/radila} sam u firmi.'])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, Sablon::query()->count());
+
+        Livewire::test(CreateSablon::class)
+            ->fillForm(['naslov' => 'C', 'objasnjenje' => 'D', 'polja' => self::polja(), 'tekst' => '{ime}, {radio/radila} sam u {nepostoji}.'])
+            ->call('create')
+            ->assertHasFormErrors(['tekst']);
+
+        $this->assertSame(0, Sablon::query()->where('naslov', 'C')->count());
+    }
+
     // Isto i mimo forme: objava šablona sa mestom bez polja ne prolazi, a nacrt se snima (Ivan ga još piše).
     #[Test]
     public function objava_mimo_forme_sa_mestom_bez_polja_ne_prolazi_a_nacrt_prolazi(): void
@@ -182,7 +201,7 @@ class SabloniAdminTest extends AdminBazaTestCase
             'Slug' => 'Deo adrese strane; ako ostane prazno, pravi se iz naslova.',
             'Objašnjenje' => 'Jedna do dve rečenice za spisak, npr. „Za dopis u kojem nešto tražiš od ustanove.“',
             'Polja' => 'Šta čovek popunjava, redom; svako polje ima ključ koji u tekstu stoji u zagradama, npr. {ime}.',
-            'Tekst' => 'Opšti oblik dopisa; mesto za polje je ključ u velikim zagradama, npr. {ime}, i svako mesto mora da ima svoje polje. Novi red je novi red na strani.',
+            'Tekst' => 'Opšti oblik dopisa; mesto za polje je ključ u velikim zagradama, npr. {ime}, i svako mesto mora da ima svoje polje. Gde reč zavisi od roda, piši oba oblika ovako: {radio/radila}. Novi red je novi red na strani.',
             'Status' => 'Nacrt se ne vidi javno, a Objavljeno se vidi na sajtu.',
         ] as $oznaka => $objasnjenje) {
             $this->assertSame(1, preg_match('#<span class="fi-fo-field-label-content">\s*'.preg_quote($oznaka, '#').'\s*(?:<[^>]+>[^<]*</[^>]+>\s*)?</span>#', $stranica->html()), $oznaka);

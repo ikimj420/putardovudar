@@ -69,7 +69,7 @@ class SablonForm
                     ->columnSpanFull(),
                 Textarea::make('tekst')
                     ->label('Tekst')
-                    ->helperText('Opšti oblik dopisa; mesto za polje je ključ u velikim zagradama, npr. {ime}, i svako mesto mora da ima svoje polje. Novi red je novi red na strani.')
+                    ->helperText('Opšti oblik dopisa; mesto za polje je ključ u velikim zagradama, npr. {ime}, i svako mesto mora da ima svoje polje. Gde reč zavisi od roda, piši oba oblika ovako: {radio/radila}. Novi red je novi red na strani.')
                     ->required()
                     ->rows(12)
                     ->autosize()
