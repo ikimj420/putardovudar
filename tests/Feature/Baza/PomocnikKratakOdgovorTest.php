@@ -63,6 +63,7 @@ class PomocnikKratakOdgovorTest extends BazaTestCase
         $this->assertStringContainsString('Reci šta si našao i za koga je.', $uputstvo);
         $this->assertStringContainsString('Ne prepričavaj rok, mesto ni uslove: oni su u karticama ispod odgovora.', $uputstvo);
         $this->assertStringContainsString('Piši toplo i jednostavno, na ti, kao drug koji pomaže, kratkim rečenicama.', $uputstvo);
+        $this->assertStringContainsString('Počni sa rečima „Našao sam“ i reci o čemu su prilike. Ne piši koliko ih ima.', $uputstvo);
         // Ogledalo: stara granica od tri rečenice je otišla, a pravila provere nisu.
         $this->assertStringNotContainsString('najviše tri rečenice', $uputstvo);
         $this->assertStringContainsString('Ne navodi linkove i ne dodaj ništa iz sopstvenog znanja.', $uputstvo);
@@ -120,5 +121,8 @@ class PomocnikKratakOdgovorTest extends BazaTestCase
 
         $this->assertStringContainsString('u jednoj ili dve kratke rečenice', $uputstvo);
         $this->assertStringContainsString('Kalendar kaže samo šta je bilo prošli put', $uputstvo);
+        // „Našao sam da se otvara" bi rekao budućnost: uz kalendar red „Počni sa rečima" ne ide, a ostala pravila ostaju.
+        $this->assertStringNotContainsString('Počni sa rečima', $uputstvo);
+        $this->assertStringContainsString('Ne navodi linkove i ne dodaj ništa iz sopstvenog znanja.', $uputstvo);
     }
 }

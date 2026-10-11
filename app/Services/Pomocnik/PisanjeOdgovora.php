@@ -16,10 +16,16 @@ use Illuminate\Support\Collection;
 // Drugi posao pomoćnika: model prepričava pronađene zapise, i ništa drugo.
 final class PisanjeOdgovora
 {
-    private const UPUTSTVO = <<<'TEXT'
+    private const UPUTSTVO_DUZINA = <<<'TEXT'
 Odgovori na pitanje u jednoj ili dve kratke rečenice, na srpskom jeziku latinicom, samo iz priloženih prilika, vodiča i organizacija.
 Reci šta si našao i za koga je. Ne prepričavaj rok, mesto ni uslove: oni su u karticama ispod odgovora.
 Piši toplo i jednostavno, na ti, kao drug koji pomaže, kratkim rečenicama.
+TEXT;
+
+    // Izmereno na pravom modelu: s ovim redom pravilno piše „Našao sam" i ne nabraja; uz kalendar se ne dodaje, jer bi „Našao sam da se otvara" rekao budućnost.
+    private const UPUTSTVO_NASAO = 'Počni sa rečima „Našao sam“ i reci o čemu su prilike. Ne piši koliko ih ima.';
+
+    private const UPUTSTVO_PRAVILA = <<<'TEXT'
 Ne navodi linkove i ne dodaj ništa iz sopstvenog znanja. Datum piši samo ako piše u prilikama, vodičima ili organizacijama.
 Ako prilike, vodiči i organizacije ne odgovaraju pitanju, reci samo da nemaš podatak.
 TEXT;
@@ -75,7 +81,14 @@ TEXT;
         }
 
         // Model ume da pređe na ćirilicu ili da je pomeša sa latinicom; sajt piše samo latinicom. Dužinu odgovora kod ograničava, jer model uputstvo ne drži.
-        return KratakOdgovor::skrati(Latinica::izCirilice($this->ollama->odgovoriTekstom($kalendar->isNotEmpty() ? self::UPUTSTVO."\n".self::UPUTSTVO_KALENDAR : self::UPUTSTVO, $tekst, $vremeCekanja)));
+        return KratakOdgovor::skrati(Latinica::izCirilice($this->ollama->odgovoriTekstom($this->uputstvo($kalendar->isNotEmpty()), $tekst, $vremeCekanja)));
+    }
+
+    private function uputstvo(bool $imaKalendar): string
+    {
+        return implode("\n", $imaKalendar
+            ? [self::UPUTSTVO_DUZINA, self::UPUTSTVO_PRAVILA, self::UPUTSTVO_KALENDAR]
+            : [self::UPUTSTVO_DUZINA, self::UPUTSTVO_NASAO, self::UPUTSTVO_PRAVILA]);
     }
 
     /** @param  Collection<int, Prilika>  $zapisi */

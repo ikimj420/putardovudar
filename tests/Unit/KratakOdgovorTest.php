@@ -29,6 +29,9 @@ class KratakOdgovorTest extends TestCase
             'novi red usred rečenice je razmak' => ["Našao sam posao\nu Nišu.", 'Našao sam posao u Nišu.'],
             'razmaci oko teksta' => ["  \n Našao sam posao.  \n", 'Našao sam posao.'],
             'crtica usred rečenice nije nabrajanje' => ['Posao je u Nišu - za radnika. Ima smene.', 'Posao je u Nišu - za radnika. Ima smene.'],
+            'datum na kraju rečenice ne dobija drugu tačku' => ['Prva je do 16.10.2026., a druga do 30.10.2026..', 'Prva je do 16.10.2026., a druga do 30.10.2026.'],
+            'dve tačke usred rečenice posle datuma' => ['Do 16.10.2026.. Pa još ovo.', 'Do 16.10.2026. Pa još ovo.'],
+            'tri tačke ostaju' => ['Pogledaj i to... Pa ono.', 'Pogledaj i to... Pa ono.'],
             'prazan tekst' => ['', ''],
         ];
     }

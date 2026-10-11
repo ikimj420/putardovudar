@@ -16,7 +16,9 @@ final class KratakOdgovor
         // Rečenica se završava tačkom, upitnikom ili uzvičnikom iza kojih sledi veliko slovo; „15. novembra" i „2026. do" ne dele rečenicu.
         $recenice = preg_split('/(?<=[.!?])\s+(?=\p{Lu})/u', (string) preg_replace('/\s*\R\s*/u', ' ', $uvod), -1, PREG_SPLIT_NO_EMPTY) ?: [];
 
-        // Uvod koji je stajao ispred nabrajanja („Našao sam tri konkursa:") posle odsecanja je obična rečenica.
-        return (string) preg_replace('/[:;,]$/u', '.', implode(' ', array_slice($recenice, 0, self::NAJVISE_RECENICA)));
+        // Uvod koji je stajao ispred nabrajanja („Našao sam tri konkursa:") posle odsecanja je obična rečenica; datum na kraju rečenice ne dobija drugu tačku.
+        $kratko = (string) preg_replace('/[:;,]$/u', '.', implode(' ', array_slice($recenice, 0, self::NAJVISE_RECENICA)));
+
+        return (string) preg_replace('/(\d)\.\.(?!\.)/u', '$1.', $kratko);
     }
 }
