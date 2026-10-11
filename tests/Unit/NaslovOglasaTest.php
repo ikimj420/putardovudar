@@ -26,6 +26,34 @@ class NaslovOglasaTest extends TestCase
             'dobitnica' => ['Dobitnica nagrade', true],
             'velika slova' => ['REZULTATI KONKURSA', true],
             'sa dijakriticima' => ['Lista kandidata za šefa smene', true],
+            // Paket 67 (PITANJA-63.md 1, Ivan „ok" 11.10.2026.): spisak, pobednik, nagrađen, odabran; „izabran" samo uz „kandidat".
+            'spisak kandidata' => ['Spisak kandidata', true],
+            'spisak sam' => ['Spisak', true],
+            'spiskovi' => ['Spiskovi prijavljenih', true],
+            'spiska' => ['Objavljen je spisak, pa dopuna spiska', true],
+            'spiskom' => ['Prijava sa spiskom dokumenata za posao', true],
+            'pobednici' => ['Pobednici konkursa', true],
+            'pobednik' => ['Pobednik takmičenja', true],
+            'pobednica' => ['Pobednica nagradnog konkursa', true],
+            'nagrađeni' => ['Nagrađeni učenici', true],
+            'nagrađena' => ['Nagrađena učenica', true],
+            'nagrađeni bez dijakritika' => ['Nagradjeni ucenici', true],
+            'nagraden bez đ' => ['Nagraden ucenik', true],
+            'odabrani' => ['Odabrani kandidati', true],
+            'odabrana' => ['Odabrana mesta', true],
+            'lista izabranih kandidata' => ['Lista izabranih kandidata', true],
+            'izabrani kandidati za praksu' => ['Izabrani kandidati za praksu', true],
+            'kandidat pre izabranog' => ['Kandidat izabran za praksu', true],
+            'izabrana kandidatkinja' => ['Izabrana kandidatkinja', true],
+            // Ogledalo za nove reči: naziv radnog mesta i reči koje samo liče.
+            'izabrani lekar' => ['Izabrani lekar u domu zdravlja', false],
+            'izabrani lekar velika slova' => ['IZABRANI LEKAR', false],
+            'izabrani sam' => ['Izabrani', false],
+            'kandidati bez izabranog' => ['Kandidati za praksu', false],
+            'nagrada nije nagrađen' => ['Nagrada za najbolju priču', false],
+            'nagradni konkurs' => ['Nagradni konkurs za učenike', false],
+            'odabir nije odabran' => ['Odabir kandidata za praksu', false],
+            'spisak ne počinje usred reči' => ['Radnik za ispisivanje računa', false],
             // Ogledalo: obični naslovi oglasa prolaze, i reči koje samo liče na spisak.
             'oglas' => ['Magacioner', false],
             'šef smene' => ['Šef smene u proizvodnom pogonu', false],
@@ -37,7 +65,7 @@ class NaslovOglasaTest extends TestCase
 
     #[Test]
     #[DataProvider('naslovi')]
-    public function reci_rezultat_lista_izabran_i_dobitnik_u_naslovu_nisu_oglas(string $naslov, bool $jeRezultat): void
+    public function reci_rezultat_lista_spisak_i_slicne_u_naslovu_nisu_oglas(string $naslov, bool $jeRezultat): void
     {
         $this->assertSame($jeRezultat, NaslovOglasa::jeRezultatIliSpisak($naslov), $naslov);
     }
