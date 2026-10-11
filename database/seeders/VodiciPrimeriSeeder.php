@@ -170,6 +170,28 @@ Marko Jovanović
 marko.jovanovic@example.com
 TEKST],
             ],
+            'kako-traziti-pismo-preporuke' => [
+                ['naslov' => 'Primer', 'tekst' => <<<'TEKST'
+Naslov: Molba za pismo preporuke – Ana Marković
+
+Poštovana profesorko Petrović,
+
+prijavljujem se za stipendiju za učenike srednjih škola. Uz prijavu je potrebno pismo preporuke, pa vas molim da mi ga vi napišete.
+
+Dve godine ste mi bili razredna i znate kako radim. Ako se slažete, u preporuci bi bilo dobro da piše:
+– da redovno dolazim na nastavu i imam odličan uspeh;
+– da sam pomagala drugarima iz odeljenja da nauče matematiku;
+– da sam učestvovala u školskoj akciji prikupljanja knjiga.
+
+Preporuka mi treba do 25. novembra. Prilažem je ja, uz svoju prijavu, pa mi je možete dati u školi ili poslati mejlom. U prilogu šaljem uslove konkursa i svoj CV.
+
+Hvala vam unapred.
+
+Srdačan pozdrav,
+Ana Marković
+060 000 0000
+TEKST],
+            ],
         ];
     }
 
@@ -286,6 +308,40 @@ Jezici
 
 Preporuke
 {preporuke}
+TEKST,
+            ],
+            [
+                'naslov' => 'Molba za pismo preporuke',
+                'slug' => 'molba-za-preporuku',
+                'vodic' => 'kako-traziti-pismo-preporuke',
+                'objasnjenje' => 'Kratka poruka nastavniku, profesoru ili poslodavcu kojeg moliš za preporuku.',
+                'polja' => [
+                    ['kljuc' => 'ime', 'oznaka' => 'Kako se zoveš?', 'objasnjenje' => 'Ime i prezime.', 'dugo' => false],
+                    ['kljuc' => 'kome', 'oznaka' => 'Kome pišeš?', 'objasnjenje' => 'Kako se obraćaš toj osobi, na primer „Poštovana profesorko Petrović" ili „Poštovani gospodine Iliću".', 'dugo' => false],
+                    ['kljuc' => 'prilika', 'oznaka' => 'Za šta se prijavljuješ?', 'objasnjenje' => 'Na primer „stipendija za učenike srednjih škola".', 'dugo' => false],
+                    ['kljuc' => 'odakle', 'oznaka' => 'Odakle te ta osoba poznaje i koliko dugo?', 'objasnjenje' => 'Na primer „dve godine mi je bila razredna".', 'dugo' => false],
+                    ['kljuc' => 'istakni', 'oznaka' => 'Šta ta osoba zna o tebi, a dobro je da piše u preporuci?', 'objasnjenje' => 'Dve ili tri stvari: uspeh, rad, pomoć drugima.', 'dugo' => true],
+                    ['kljuc' => 'rok', 'oznaka' => 'Do kada ti treba preporuka?', 'objasnjenje' => 'Datum, na primer „25. novembra".', 'dugo' => false],
+                    ['kljuc' => 'predaja', 'oznaka' => 'Ko predaje preporuku?', 'objasnjenje' => 'Piše u uslovima konkursa: ti uz svoju prijavu, ili ta osoba sama.', 'dugo' => false],
+                    ['kljuc' => 'telefon', 'oznaka' => 'Broj telefona', 'objasnjenje' => '', 'dugo' => false],
+                ],
+                'tekst' => <<<'TEKST'
+Naslov: Molba za pismo preporuke – {ime}
+
+{kome},
+
+prijavljujem se za {prilika}. Uz prijavu je potrebno pismo preporuke, pa vas molim da mi ga vi napišete.
+
+Poznajete me ovako: {odakle}. Ako se slažete, u preporuci bi bilo dobro da piše:
+{istakni}
+
+Preporuka mi treba do {rok}. Ko predaje preporuku: {predaja}. U prilogu šaljem uslove konkursa i svoj CV.
+
+Hvala vam unapred.
+
+Srdačan pozdrav,
+{ime}
+{telefon}
 TEKST,
             ],
         ];

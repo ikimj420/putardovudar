@@ -18,7 +18,7 @@ class VodiciPrimeriSeederTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const VODICI = ['kako-napisati-prvi-cv', 'kako-napisati-motivaciono-pismo', 'kako-napisati-email-uz-prijavu'];
+    private const VODICI = ['kako-napisati-prvi-cv', 'kako-napisati-motivaciono-pismo', 'kako-napisati-email-uz-prijavu', 'kako-traziti-pismo-preporuke'];
 
     /** @return array<string, Vodic> slug → vodič, svi bez primera i bez šablona */
     private function vodici(): array
@@ -48,6 +48,7 @@ class VodiciPrimeriSeederTest extends BazaTestCase
 
         $this->assertSame(['Za stipendiju', 'Za praksu', 'Za posao', 'Za program ili obuku'], array_column($vodici['kako-napisati-motivaciono-pismo']->fresh()->primeri, 'naslov'));
         $this->assertSame(['Primer'], array_column($vodici['kako-napisati-prvi-cv']->fresh()->primeri, 'naslov'));
+        $this->assertStringStartsWith('Naslov: Molba za pismo preporuke – Ana Marković', $vodici['kako-traziti-pismo-preporuke']->fresh()->primeri[0]['tekst']);
         $this->assertStringStartsWith('Ana Marković', $vodici['kako-napisati-prvi-cv']->fresh()->primeri[0]['tekst']);
         // Ogledalo: vodič koji već ima primer ga zadržava, ma šta seeder nudi.
         $this->assertSame($svoj, $vodici['kako-napisati-email-uz-prijavu']->fresh()->primeri);
@@ -77,11 +78,11 @@ class VodiciPrimeriSeederTest extends BazaTestCase
 
         $this->pokreni();
 
-        $this->assertEqualsCanonicalizing(['cv', 'email-uz-prijavu', 'motivaciono-pismo'], Sablon::query()->pluck('slug')->all());
+        $this->assertEqualsCanonicalizing(['cv', 'email-uz-prijavu', 'molba-za-preporuku', 'motivaciono-pismo'], Sablon::query()->pluck('slug')->all());
         $this->assertSame('Moj CV', $svoj->fresh()->naslov);
         $this->assertSame('{ime}', $svoj->fresh()->tekst);
         $this->assertSame(StatusObjave::Objavljeno, $svoj->fresh()->status);
-        foreach (Sablon::query()->whereIn('slug', ['email-uz-prijavu', 'motivaciono-pismo'])->get() as $sablon) {
+        foreach (Sablon::query()->whereIn('slug', ['email-uz-prijavu', 'molba-za-preporuku', 'motivaciono-pismo'])->get() as $sablon) {
             $this->assertSame(StatusObjave::Nacrt, $sablon->status, $sablon->slug);
         }
         // Samo nacrt: nijedan od novih šablona nije javan, pa „Napiši moj" ne postoji dok ga Ivan ne objavi.
@@ -100,6 +101,7 @@ class VodiciPrimeriSeederTest extends BazaTestCase
 
         $this->assertSame(Sablon::query()->where('slug', 'cv')->value('id'), $vodici['kako-napisati-prvi-cv']->fresh()->sablon_id);
         $this->assertSame(Sablon::query()->where('slug', 'motivaciono-pismo')->value('id'), $vodici['kako-napisati-motivaciono-pismo']->fresh()->sablon_id);
+        $this->assertSame(Sablon::query()->where('slug', 'molba-za-preporuku')->value('id'), $vodici['kako-traziti-pismo-preporuke']->fresh()->sablon_id);
         // Ogledalo: vodič koji je već imao šablon ga zadržava.
         $this->assertSame($tudji->getKey(), $vodici['kako-napisati-email-uz-prijavu']->fresh()->sablon_id);
     }
@@ -124,7 +126,7 @@ class VodiciPrimeriSeederTest extends BazaTestCase
         $this->vodici();
         $this->pokreni();
 
-        $this->assertCount(3, VodiciPrimeriSeeder::sabloni());
+        $this->assertCount(4, VodiciPrimeriSeeder::sabloni());
         foreach (Sablon::query()->get() as $sablon) {
             $kljucevi = $sablon->kljucevi();
 
@@ -191,8 +193,8 @@ class VodiciPrimeriSeederTest extends BazaTestCase
             $poredjeno++;
         }
 
-        // Neprazan skup: poređeno je pet primera (CV, četiri pisma i mejl: šest) i tri šablona.
-        $this->assertSame(6 + 3, $poredjeno);
+        // Neprazan skup: poređeno je sedam primera (CV, četiri pisma, mejl i molba za preporuku) i četiri šablona.
+        $this->assertSame(7 + 4, $poredjeno);
     }
 
     // Od zaglavlja do sledećeg zaglavlja istog ili višeg nivoa („### " ili „## "); „#### " je deo odeljka.
