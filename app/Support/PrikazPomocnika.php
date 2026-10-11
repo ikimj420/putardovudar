@@ -8,7 +8,7 @@ final class PrikazPomocnika
     // Ime pomoćnika (Ivan, 10.10.2026.): naslov prozora i strane je „Vudar pomoćnik", kao na starom sajtu; dugme je „Pitaj Vudar pomoćnika".
     public const NASLOV = 'Vudar pomoćnik';
 
-    public const UVOD = 'Ćao! Pitaj me za posao, stipendiju, konkurs ili gde da nađeš pomoć. Kažem ti samo ono što piše na sajtu, i uvek uz link.';
+    public const UVOD = 'Ćao! Pitaj me za posao, stipendiju, konkurs ili gde da nađeš pomoć. Kažem ti samo ono što piše na sajtu.';
 
     public const OZNAKA_POLJA = 'Tvoje pitanje';
 

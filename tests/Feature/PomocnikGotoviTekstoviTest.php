@@ -19,7 +19,7 @@ class PomocnikGotoviTekstoviTest extends TestCase
     public static function tekstovi(): array
     {
         return [
-            'uvod' => [PrikazPomocnika::UVOD, 'Ćao! Pitaj me za posao, stipendiju, konkurs ili gde da nađeš pomoć. Kažem ti samo ono što piše na sajtu, i uvek uz link.'],
+            'uvod' => [PrikazPomocnika::UVOD, 'Ćao! Pitaj me za posao, stipendiju, konkurs ili gde da nađeš pomoć. Kažem ti samo ono što piše na sajtu.'],
             'kad nađe prilike' => [Pomocnik::SABLON_NASLOV, 'Evo šta sam našao za tebe:'],
             'kad nađe vodiče' => [Pomocnik::SABLON_NASLOV_VODICI, 'Evo šta sam našao za tebe:'],
             'kad nađe organizacije' => [Pomocnik::SABLON_NASLOV_ORGANIZACIJE, 'Evo šta sam našao za tebe:'],
