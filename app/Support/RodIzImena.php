@@ -15,13 +15,13 @@ final class RodIzImena
     public const OBA = ['Saša', 'Vanja', 'Andrea', 'Dobrica'];
 
     // Muška imena na „a", koja bi po kraju bila ženska.
-    public const MUSKA_NA_A = ['Nikola', 'Luka', 'Jovica', 'Bora', 'Mika', 'Žika', 'Pera', 'Sava', 'Kosta', 'Andrija', 'Ilija', 'Matija', 'Tadija', 'Sima', 'Boža', 'Rista', 'Mita', 'Miša', 'Aleksa', 'Vasa', 'Nemanja', 'Nebojša', 'Siniša', 'Dragiša', 'Mališa', 'Boriša'];
+    public const MUSKA_NA_A = ['Nikola', 'Luka', 'Jovica', 'Bora', 'Mika', 'Žika', 'Pera', 'Sava', 'Kosta', 'Andrija', 'Ilija', 'Matija', 'Tadija', 'Sima', 'Boža', 'Rista', 'Mita', 'Miša', 'Aleksa', 'Vasa', 'Nemanja', 'Nebojša', 'Siniša', 'Dragiša', 'Mališa', 'Boriša', 'Toma', 'Jova', 'Steva', 'Laza', 'Đura', 'Aca', 'Raša', 'Mustafa', 'Hamza', 'Alija', 'Mirza', 'Isa', 'Musa', 'Jahja'];
 
     // Muška imena na „e".
-    public const MUSKA_NA_E = ['Đorđe', 'Vasilije', 'Mile', 'Rade'];
+    public const MUSKA_NA_E = ['Đorđe', 'Vasilije', 'Mile', 'Rade', 'Pavle', 'Blagoje', 'Radoje', 'Milivoje', 'Spasoje', 'Sale', 'Bane', 'Đole'];
 
-    // Ženska imena koja ne završavaju na „a".
-    public const ZENSKA_BEZ_A = ['Ines', 'Nives', 'Karmen', 'Ester', 'Miriam', 'Mirjam', 'Iris', 'Ingrid', 'Margit'];
+    // Ženska imena koja ne završavaju na „a" (Eržebet je na spisku najčešćih ženskih imena, RZS, Popis 2022; Ildiko se završava na „o", pa bi po kraju bila muško).
+    public const ZENSKA_BEZ_A = ['Ines', 'Nives', 'Karmen', 'Ester', 'Miriam', 'Mirjam', 'Iris', 'Ingrid', 'Margit', 'Eržebet', 'Katalin', 'Edit', 'Agneš', 'Agnes', 'Ildiko'];
 
     public static function odredi(string $imeIPrezime): ?Rod
     {

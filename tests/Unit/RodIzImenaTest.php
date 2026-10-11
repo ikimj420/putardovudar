@@ -72,6 +72,63 @@ class RodIzImenaTest extends TestCase
         ];
     }
 
+    /** @return array<string, array{0: string, 1: Rod}> ime dodato u paketu 67 (PITANJA-64.md 2) i rod koji sad daje */
+    public static function dodataImena(): array
+    {
+        $z = Rod::Zenski;
+        $m = Rod::Muski;
+        $imena = [];
+
+        foreach ([
+            'Eržebet' => $z, 'Katalin' => $z, 'Edit' => $z, 'Agneš' => $z, 'Agnes' => $z, 'Ildiko' => $z,
+            'Toma' => $m, 'Jova' => $m, 'Steva' => $m, 'Laza' => $m, 'Đura' => $m, 'Aca' => $m, 'Raša' => $m, 'Mustafa' => $m, 'Hamza' => $m, 'Alija' => $m, 'Mirza' => $m, 'Isa' => $m, 'Musa' => $m, 'Jahja' => $m,
+            'Pavle' => $m, 'Blagoje' => $m, 'Radoje' => $m, 'Milivoje' => $m, 'Spasoje' => $m, 'Sale' => $m, 'Bane' => $m, 'Đole' => $m,
+        ] as $ime => $rod) {
+            $imena[$ime] = [$ime, $rod];
+            $imena[$ime.' sa prezimenom'] = [$ime.' Petrović', $rod];
+            $imena[$ime.' malim slovima'] = [mb_strtolower($ime), $rod];
+        }
+
+        // Bez dijakritika, kako ljudi često kucaju.
+        foreach (['Erzebet' => $z, 'Djura' => $m, 'Rasa' => $m, 'Djole' => $m, 'Agnes' => $z, 'DJURA' => $m, 'ERZEBET' => $z] as $ime => $rod) {
+            $imena[$ime.' bez dijakritika'] = [$ime, $rod];
+        }
+
+        return $imena;
+    }
+
+    #[Test]
+    #[DataProvider('dodataImena')]
+    public function dodato_ime_daje_svoj_rod_i_sa_prezimenom_i_bez_dijakritika(string $ime, Rod $rod): void
+    {
+        $this->assertSame($rod, RodIzImena::odredi($ime), $ime);
+    }
+
+    // Merilo prvo dokazuje da je obišlo i muška i ženska imena, i oblike bez dijakritika.
+    #[Test]
+    public function merilo_dodatih_imena_obilazi_sve_tri_liste(): void
+    {
+        $this->assertCount(6 * 3 + 14 * 3 + 8 * 3 + 7, self::dodataImena());
+        $this->assertCount(6, array_intersect(RodIzImena::ZENSKA_BEZ_A, ['Eržebet', 'Katalin', 'Edit', 'Agneš', 'Agnes', 'Ildiko']));
+        $this->assertCount(14, array_intersect(RodIzImena::MUSKA_NA_A, ['Toma', 'Jova', 'Steva', 'Laza', 'Đura', 'Aca', 'Raša', 'Mustafa', 'Hamza', 'Alija', 'Mirza', 'Isa', 'Musa', 'Jahja']));
+        $this->assertCount(8, array_intersect(RodIzImena::MUSKA_NA_E, ['Pavle', 'Blagoje', 'Radoje', 'Milivoje', 'Spasoje', 'Sale', 'Bane', 'Đole']));
+    }
+
+    // Ogledalo: spisak menja ono što bi dalo samo pravilo po kraju imena. Ime sa istim krajem, a bez spiska, daje rod po kraju: Edin (suglasnik) muško, Zoma („a") žensko,
+    // Marle („e") pitanje, Zoltano („o") muško; a Edit, Toma, Pavle i Ildiko su na spisku sa suprotnim ishodom.
+    #[Test]
+    public function spisak_menja_ishod_koji_bi_dalo_samo_pravilo_po_kraju_imena(): void
+    {
+        $this->assertSame(Rod::Muski, RodIzImena::odredi('Edin'));
+        $this->assertSame(Rod::Zenski, RodIzImena::odredi('Edit'));
+        $this->assertSame(Rod::Zenski, RodIzImena::odredi('Zoma'));
+        $this->assertSame(Rod::Muski, RodIzImena::odredi('Toma'));
+        $this->assertNull(RodIzImena::odredi('Marle'));
+        $this->assertSame(Rod::Muski, RodIzImena::odredi('Pavle'));
+        $this->assertSame(Rod::Muski, RodIzImena::odredi('Zoltano'));
+        $this->assertSame(Rod::Zenski, RodIzImena::odredi('Ildiko'));
+    }
+
     #[Test]
     #[DataProvider('imena')]
     public function rod_se_zna_iz_imena_a_nejasno_ime_ne_daje_rod(string $ime, ?Rod $ocekivano): void
