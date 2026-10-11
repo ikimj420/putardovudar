@@ -344,6 +344,21 @@ class UvozObradiTest extends BazaTestCase
         $this->assertStringNotContainsStringIgnoringCase('srbij', (string) $nacrt->fresh()->predlog['grupe'][0]['citat']);
     }
 
+    // Paket 68/T3: grupa „Nezaposleni" važi za sve uzraste, pa je za dokaz dovoljna reč „nezaposleni", bez „mladi".
+    #[Test]
+    public function javni_radovi_za_nezaposlene_bez_reci_mladi_dokazuju_grupu_nezaposleni(): void
+    {
+        $nacrt = $this->nacrt(['naslov' => 'Javni radovi']);
+        $citat = 'Javni radovi za nezaposlene';
+        Http::fake([self::STRANA => $this->strana('<p>Poziv za javne radove. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['vrsta' => 'konkurs', 'grupe' => [['grupa' => 'nezaposleni-mladi', 'citat' => $citat]]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame(['nezaposleni-mladi'], $nacrt->fresh()->grupe);
+        $this->assertSame('Nezaposleni', Grupa::NezaposleniMladi->getLabel());
+    }
+
     // Paket 68/T2: strana programa za odrasle bez završene škole, sa rokom, objavljuje se sa grupom odrasli-bez-skole.
     #[Test]
     public function program_za_odrasle_bez_zavrsene_skole_se_objavljuje_sa_tom_grupom(): void
@@ -1230,10 +1245,10 @@ class UvozObradiTest extends BazaTestCase
 
             $poruke = $zahtev->data()['messages'];
 
-            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni mladi, mladi, povratnici iz inostranstva, organizacije, odrasli bez završene škole — ili ono što je namenjeno Romima.')
+            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni (bilo kog uzrasta), mladi, povratnici iz inostranstva, organizacije, odrasli bez završene škole — ili ono što je namenjeno Romima.')
                 && str_contains($poruke[0]['content'], 'Organizacije su udruženja i organizacije civilnog društva, ne firme')
                 && str_contains($poruke[0]['content'], 'grupe (lista objekata')
-                && str_contains($poruke[0]['content'], 'nezaposleni-mladi, mladi (samo kad tekst kaže')
+                && str_contains($poruke[0]['content'], 'nezaposleni-mladi (nezaposleni svih uzrasta, ne samo mladi), mladi (samo kad tekst kaže')
                 && str_contains($poruke[0]['content'], 'romi, odrasli-bez-skole (odrasli bez završene osnovne ili srednje škole, nepismeni, bez kvalifikacija); citat')
                 && str_contains($poruke[0]['content'], 'vazi_pravilo (true')
                 && strpos($poruke[0]['content'], 'grupe (lista objekata') < strpos($poruke[0]['content'], 'vazi_pravilo (true')

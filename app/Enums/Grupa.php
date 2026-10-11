@@ -27,7 +27,7 @@ enum Grupa: string implements HasLabel
             self::Srednjoskolci => 'Srednjoškolci',
             self::Studenti => 'Studenti',
             self::MasterDoktorski => 'Master i doktorski studenti',
-            self::NezaposleniMladi => 'Nezaposleni mladi',
+            self::NezaposleniMladi => 'Nezaposleni',
             self::Mladi => 'Mladi',
             self::Povratnici => 'Povratnici iz inostranstva',
             self::Organizacije => 'Organizacije',

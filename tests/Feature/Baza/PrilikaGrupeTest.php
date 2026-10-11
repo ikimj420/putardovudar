@@ -42,7 +42,7 @@ class PrilikaGrupeTest extends AdminBazaTestCase
     public function grupe_su_deset_i_imaju_nazive_iz_paketa(): void
     {
         $this->assertSame(
-            ['Osnovci', 'Srednjoškolci', 'Studenti', 'Master i doktorski studenti', 'Nezaposleni mladi', 'Mladi', 'Povratnici iz inostranstva', 'Organizacije', 'Romi i Romkinje', 'Odrasli bez završene škole'],
+            ['Osnovci', 'Srednjoškolci', 'Studenti', 'Master i doktorski studenti', 'Nezaposleni', 'Mladi', 'Povratnici iz inostranstva', 'Organizacije', 'Romi i Romkinje', 'Odrasli bez završene škole'],
             array_map(fn (Grupa $grupa) => $grupa->getLabel(), Grupa::cases()),
         );
     }
@@ -119,9 +119,9 @@ class PrilikaGrupeTest extends AdminBazaTestCase
         $this->assertNull($prilika->fresh()->grupe);
     }
 
-    // Polje nudi tačno devet grupa (ništa drugo nije za izbor) i dozvoljava više izbora.
+    // Polje nudi tačno deset grupa (ništa drugo nije za izbor) i dozvoljava više izbora.
     #[Test]
-    public function polje_nudi_tacno_devet_grupa_i_vise_izbora(): void
+    public function polje_nudi_tacno_deset_grupa_i_vise_izbora(): void
     {
         $prilika = Prilika::factory()->create();
 
@@ -149,7 +149,7 @@ class PrilikaGrupeTest extends AdminBazaTestCase
     {
         Prilika::factory()->zaGrupe(Grupa::Studenti, Grupa::NezaposleniMladi)->create(['naslov' => 'Sa grupama']);
 
-        Livewire::test(ListPrilike::class)->assertSeeInOrder(['Sa grupama', 'Kome je namenjeno', 'Studenti, Nezaposleni mladi']);
+        Livewire::test(ListPrilike::class)->assertSeeInOrder(['Sa grupama', 'Kome je namenjeno', 'Studenti, Nezaposleni'])->assertDontSee('Nezaposleni mladi');
 
         // Ogledalo: kartica bez grupa ne crta red.
         Prilika::query()->delete();
