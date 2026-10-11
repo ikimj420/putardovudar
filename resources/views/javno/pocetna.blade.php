@@ -8,11 +8,13 @@
         </div>
         <x-vrata />
         <a class="dugme dugme-staklo hero-pitaj" href="{{ route('pomocnik.index') }}" data-pomocnik-otvori aria-controls="pomocnik-prozor">{{ \App\Support\PrikazPomocnika::PITAJ_VUDAR }}</a>
-        @include('javno.pretraga')
     </div>
 @endsection
 
 @section('sadrzaj')
+    {{-- Pretraga je prvo na strani, odmah ispod naslovnog dela (paket 64): ista forma kao na /prilike, u svetloj varijanti jer stoji na papiru. --}}
+    @include('javno.pretraga', ['svetla' => true])
+
     <ul class="plocice" aria-label="{{ \App\Support\PrikazPocetne::PLOCICE_NAZIV }}">
         @foreach ($plocice as $plocica)
             <li><a class="plocica" data-strana="{{ $plocica['strana'] }}" href="{{ $plocica['adresa'] }}"><b>{{ $plocica['broj'] }}</b> <span>{{ $plocica['tekst'] }}</span></a></li>

@@ -125,26 +125,33 @@ class PretragaPrilikaTest extends BazaTestCase
         $this->assertStringNotContainsString(PrikazPrilike::NEMA_REZULTATA, $prazno);
     }
 
+    // Paket 64/T3: na početnoj je pretraga prvo na strani, odmah ispod naslovnog dela (svetla varijanta), a na spisku u traci (staklena).
     #[Test]
     public function forma_je_obicna_get_forma_na_pocetnoj_i_na_vrhu_spiska(): void
     {
-        $forma = '<form class="pretraga" method="get" action="'.route('prilike.index').'" role="search">';
+        $oblik = '" method="get" action="'.route('prilike.index').'" role="search">';
+        $formaPocetna = '<form class="pretraga pretraga-svetla'.$oblik;
+        $forma = '<form class="pretraga'.$oblik;
 
-        foreach ([route('pocetna'), route('prilike.index')] as $adresa) {
+        foreach ([route('pocetna') => $formaPocetna, route('prilike.index') => $forma] as $adresa => $ocekivana) {
             $html = $this->get($adresa)->assertOk()->getContent();
 
-            $this->assertSame(1, substr_count($html, $forma), $adresa);
+            $this->assertSame(1, substr_count($html, $ocekivana), $adresa);
+            $this->assertSame(1, substr_count($html, 'role="search"'), $adresa);
             $this->assertStringContainsString('<input type="search" name="q" value="" maxlength="100" placeholder="'.PrikazPrilike::PRETRAGA_PRIMER.'" aria-label="'.PrikazPrilike::PRETRAGA_NAZIV.'">', $html, $adresa);
             $this->assertStringContainsString('<button class="dugme dugme-glavno dugme-malo" type="submit">'.PrikazPrilike::PRETRAGA_DUGME.'</button>', $html, $adresa);
             // Bez skripta: nema obrade događaja ni drugih podataka u formi.
-            preg_match('#<form class="pretraga".*?</form>#s', $html, $unutra);
+            preg_match('#<form class="pretraga[ "].*?</form>#s', $html, $unutra);
             $this->assertStringNotContainsString('onsubmit', $unutra[0], $adresa);
             $this->assertStringNotContainsString('name="vrsta"', $unutra[0], $adresa);
         }
 
-        // Polje je u naslovnom delu: na početnoj u hero, na spisku u traci.
-        preg_match('#<section class="hero zrno">(.*?)</section>#s', $this->get(route('pocetna'))->getContent(), $hero);
-        $this->assertStringContainsString($forma, $hero[1]);
+        // Na početnoj polje nije u naslovnom delu nego je prvo u sadržaju, pre pločica; na spisku je u traci.
+        $pocetna = $this->get(route('pocetna'))->getContent();
+        preg_match('#<section class="hero zrno">(.*?)</section>#s', $pocetna, $hero);
+        $this->assertStringNotContainsString('role="search"', $hero[1]);
+        $this->assertSame(1, preg_match('#</section>\s*<div class="sirina sadrzaj">\s*'.preg_quote($formaPocetna, '#').'#', $pocetna));
+        $this->assertLessThan(strpos($pocetna, '<ul class="plocice"'), strpos($pocetna, $formaPocetna));
         preg_match('#<section class="naslovna-traka">(.*?)</section>#s', $this->get(route('prilike.index'))->getContent(), $traka);
         $this->assertStringContainsString($forma, $traka[1]);
     }
@@ -196,5 +203,10 @@ class PretragaPrilikaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\n\.pretraga input\[type="search"\]::-webkit-search-cancel-button \{\s*-webkit-appearance: none;\s*appearance: none;/', $stil);
         // U traci stranice polje ide posle naslova i oznaka, ne pre putanje.
         $this->assertMatchesRegularExpression('/\n\.naslovna-traka \.pretraga \{\s*order: 5;/', $stil);
+        // Svetla varijanta (početna, ispod naslovnog dela): bela kartica sa okvirom polja, bez stakla, tamna slova; uputni tekst u polju je sive boje sa kontrastom.
+        $this->assertMatchesRegularExpression('/\n\.pretraga-svetla \{[^}]*max-width: none;[^}]*background: var\(--card-bg\);[^}]*border-color: var\(--input-border\);[^}]*backdrop-filter: none;[^}]*color: var\(--text\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.pretraga-svetla input\[type="search"\] \{\s*color: var\(--input-text\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.pretraga-svetla input::placeholder \{\s*color: var\(--muted\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.pretraga-svetla input\[type="search"\]:focus-visible \{\s*outline-color: var\(--fokus\);/', $stil);
     }
 }

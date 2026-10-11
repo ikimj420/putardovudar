@@ -895,6 +895,30 @@ html {
   margin-top: 22px;
 }
 
+/* Pretraga na početnoj stoji ispod naslovnog dela, na svetloj pozadini: bela kartica sa okvirom polja i tamnim slovima (paket 64). */
+.pretraga-svetla {
+  max-width: none;
+  margin: 0 0 28px;
+  background: var(--card-bg);
+  border-color: var(--input-border);
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--text);
+}
+
+.pretraga-svetla input[type="search"] {
+  color: var(--input-text);
+}
+
+.pretraga-svetla input::placeholder {
+  color: var(--muted);
+}
+
+.pretraga-svetla input[type="search"]:focus-visible {
+  outline-color: var(--fokus);
+}
+
 .hero-vise {
   margin-top: 22px;
 }
@@ -1431,8 +1455,7 @@ section + section > .naslov-izvora {
     grid-template-columns: minmax(0, 1fr) 380px;
     grid-template-areas:
       "tekst vrata"
-      "pitaj pitaj"
-      "pretraga pretraga";
+      "pitaj pitaj";
     column-gap: 48px;
     align-items: center;
   }
@@ -1472,10 +1495,6 @@ section + section > .naslov-izvora {
   .hero-pitaj {
     grid-area: pitaj;
     max-width: 360px;
-  }
-
-  .hero .pretraga {
-    grid-area: pretraga;
   }
 }
 
