@@ -169,7 +169,6 @@ class NapisiMojTest extends BazaTestCase
     public function tekst_modela_koji_prolazi_proveru_se_prikazuje_i_ide_jedan_poziv(): void
     {
         $sablon = $this->sablon();
-        Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => "Poštovani,\n\nPrimer pisma."]]]);
         $this->model("Ana Anić\n\nMolim vas za pomoć. Hvala.\n\n11.10.2026.");
 
         $html = $this->napisi($sablon)->assertOk()->getContent();
@@ -189,45 +188,46 @@ class NapisiMojTest extends BazaTestCase
                 && ! array_key_exists('format', $zahtev->data())
                 && str_contains($poruke[0]['content'], 'Koristi samo ono što je čovek upisao')
                 && str_contains($poruke[1]['content'], "Šablon:\n{ime}\n\nMolim: {tekst}\n\n{datum}")
-                && str_contains($poruke[1]['content'], "Primer oblika:\nPoštovani,\n\nPrimer pisma.")
                 && str_contains($poruke[1]['content'], "Upisano:\n{ime} (Ime i prezime): Ana Anić\n{tekst} (Šta moliš): Molim za pomoć.\nHvala.\n{datum} (Datum): 11.10.2026.");
         });
     }
 
-    // Paket 64: vodič ima više primera; modelu ide samo prvi primer koji ima tekst (uzor oblika), nikad ostali.
+    // Paket 67 (Ivan, 11.10.2026.): primer vodiča se modelu ne šalje, jer je prepisivao rečenice koje čovek nije upisao. Primer ostaje na strani vodiča, za ljude.
+    // Poruka ima samo šablon, upisano i rod, a uputstvo ne pominje primer; ni nacrt vodiča ni vodič sa drugim šablonom ne menjaju ništa.
     #[Test]
-    public function modelu_ide_samo_prvi_primer_vodica_sa_vise_primera(): void
+    public function modelu_ne_ide_nijedan_primer_vodica_a_poruka_ima_samo_sablon_i_popunjena_polja(): void
     {
         $sablon = $this->sablon();
         Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Prazan', 'tekst' => ' '], ['naslov' => 'Za stipendiju', 'tekst' => 'Prvi primer sa tekstom.'], ['naslov' => 'Za praksu', 'tekst' => 'Drugi primer.']]]);
-        $this->model('x');
-
-        $this->napisi($sablon)->assertOk();
-
-        Http::assertSent(function (Request $zahtev) {
-            $poruka = $zahtev->data()['messages'][1]['content'];
-
-            return str_contains($poruka, "Primer oblika:\nPrvi primer sa tekstom.") && ! str_contains($poruka, 'Drugi primer') && ! str_contains($poruka, 'Za stipendiju');
-        });
-    }
-
-    // Ogledalo: primer nacrta vodiča ili vodiča sa drugim šablonom model ne vidi, a polje koje čovek nije popunio ne ide u „Upisano".
-    #[Test]
-    public function modelu_ide_samo_primer_objavljenog_vodica_sa_istim_sablonom_i_samo_popunjena_polja(): void
-    {
-        $sablon = $this->sablon();
         Vodic::factory()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer iz nacrta.']]]);
         Vodic::factory()->objavljen()->create(['sablon_id' => $this->sablon(['naslov' => 'Zahtev'])->getKey(), 'primeri' => [['naslov' => 'Primer', 'tekst' => 'Primer drugog šablona.']]]);
         $this->model('x');
 
         $this->napisi($sablon, ['ime' => 'Ana Anić', 'tekst' => '', 'datum' => ''])->assertOk();
 
+        Http::assertSentCount(1);
         Http::assertSent(function (Request $zahtev) {
-            $poruka = $zahtev->data()['messages'][1]['content'];
+            [$uputstvo, $poruka] = array_column($zahtev->data()['messages'], 'content');
 
-            return ! str_contains($poruka, 'Primer oblika') && ! str_contains($poruka, 'Primer iz nacrta') && ! str_contains($poruka, 'Primer drugog')
+            return ! str_contains($poruka, 'Primer') && ! str_contains($poruka, 'primer')
+                && ! str_contains($uputstvo, 'primer') && ! str_contains($uputstvo, 'Primer')
+                && str_starts_with($poruka, "Šablon:\n{ime}\n\nMolim: {tekst}\n\n{datum}")
                 && str_ends_with($poruka, "Upisano:\n{ime} (Ime i prezime): Ana Anić");
         });
+    }
+
+    // Ogledalo: primer jeste na strani vodiča, za ljude; merilo ne bi prošlo kad bi primeri bili prazni.
+    #[Test]
+    public function primer_ostaje_na_strani_vodica_a_model_ga_ne_dobija(): void
+    {
+        $sablon = $this->sablon();
+        $vodic = Vodic::factory()->objavljen()->create(['sablon_id' => $sablon->getKey(), 'primeri' => [['naslov' => 'Za stipendiju', 'tekst' => 'Prvi primer sa tekstom.']]]);
+        $this->model('x');
+
+        $this->assertStringContainsString('Prvi primer sa tekstom.', $this->get(route('vodici.show', $vodic->slug))->assertOk()->getContent());
+        $this->napisi($sablon)->assertOk();
+
+        Http::assertSent(fn (Request $zahtev) => ! str_contains(json_encode($zahtev->data(), JSON_UNESCAPED_UNICODE), 'Prvi primer sa tekstom.'));
     }
 
     /** @return array<string, array{0: string}> */
@@ -272,7 +272,7 @@ class NapisiMojTest extends BazaTestCase
         $this->assertStringContainsString(PrikazPomocnika::NAPOMENA_NAPISAN, $html);
     }
 
-    // Model sme da ponovi stalni tekst šablona (i broj u njemu), ali ne ono što stoji samo u primeru vodiča ni u polju kog šablon nema.
+    // Model sme da ponovi stalni tekst šablona (i broj u njemu), ali ne ono što stoji samo u primeru vodiča (koji mu se i ne šalje) ni u polju kog šablon nema.
     #[Test]
     public function dozvoljeno_je_upisano_i_stalni_tekst_sablona_a_ne_primer_ni_tude_polje(): void
     {

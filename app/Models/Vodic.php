@@ -72,12 +72,6 @@ class Vodic extends Model
         return $primeri;
     }
 
-    // Prvi primer je uzor oblika kad pomoćnik piše tekst po šablonu ovog vodiča; nikad izvor podataka.
-    public function prviPrimer(): ?string
-    {
-        return $this->primeriZaPrikaz()[0]['tekst'] ?? null;
-    }
-
     // Šablon uz vodič, ali samo ako je javan (objavljen): nacrt šablona se ne nudi nikome.
     public function javniSablon(): ?Sablon
     {

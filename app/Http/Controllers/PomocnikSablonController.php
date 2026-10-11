@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\Rod;
 use App\Models\Sablon;
-use App\Models\Vodic;
 use App\Services\Pomocnik\PisanjeSablona;
 use App\Support\Prikaz;
 use App\Support\PrikazPomocnika;
@@ -41,10 +40,7 @@ class PomocnikSablonController extends Controller
             return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'pitanjeRoda' => true]);
         }
 
-        // Primer oblika je prvi primer prvog objavljenog vodiča sa ovim šablonom koji ga ima; model ga koristi kao uzor, ne kao izvor podataka.
-        $primer = Vodic::javni()->where('sablon_id', $sablon->getKey())->orderBy('id')->get()->map(fn (Vodic $vodic) => $vodic->prviPrimer())->first(fn (?string $primer) => $primer !== null);
-
-        return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'napisan' => $pisanje->napisi($sablon, $unosi, $primer, $rod), 'rod' => $rod, 'izabranRod' => $izabran ?? $ranije]);
+        return view(self::pogled($zahtev), ['sablon' => $sablon, 'unosi' => $unosi, 'napisan' => $pisanje->napisi($sablon, $unosi, $rod), 'rod' => $rod, 'izabranRod' => $izabran ?? $ranije]);
     }
 
     // Preko granice posetilac dobija obrazac sa onim što je upisao i porukom (429), kao i pitanje pomoćniku.

@@ -142,15 +142,6 @@ class VodicPrimerTest extends BazaTestCase
         $this->get(route('vodici.show', $vodic->slug))->assertNotFound()->assertDontSee('Tajni primer.')->assertDontSee('Tajni naslov');
     }
 
-    // Prvi primer je uzor oblika za pomoćnika, a prazni i nepotpuni se preskaču.
-    #[Test]
-    public function prvi_primer_je_prvi_koji_ima_tekst(): void
-    {
-        $this->assertNull(Vodic::factory()->make(['primeri' => null])->prviPrimer());
-        $this->assertNull(Vodic::factory()->make(['primeri' => [['naslov' => 'A', 'tekst' => ' ']]])->prviPrimer());
-        $this->assertSame('Drugi.', Vodic::factory()->make(['primeri' => [['naslov' => 'A', 'tekst' => ''], ['naslov' => 'B', 'tekst' => 'Drugi.'], ['naslov' => 'C', 'tekst' => 'Treći.']]])->prviPrimer());
-    }
-
     // Skript kopira tekst iz elementa na koji pokazuje dugme; bez međuspremnika tekst se označi; dugme se prikazuje tek kad skript radi.
     #[Test]
     public function skript_kopira_primer_i_otkriva_dugme_tek_kad_radi(): void
