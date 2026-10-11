@@ -194,8 +194,11 @@ h3 {
   font-weight: 800;
 }
 
+/* Nijedan link na javnom sajtu nije podvučen, ni stalno ni na prelaz mišem (Ivan, 11.10.2026., paket 66): link se razlikuje bojom i debljinom slova, a na prelaz
+   mišem menja boju. Crta se skida ovde, na jednom mestu; pravila za prelaz mišem dole je ne vraćaju. */
 a {
   color: inherit;
+  text-decoration: none;
 }
 
 /* Lepljivo zaglavlje ne sme da zakloni fokusiranu vezu: 57 px sa skriptom i na laptopu, 146 px bez skripta na telefonu (pet veza u dva reda), uz 16 px. */
@@ -559,7 +562,7 @@ html {
 }
 
 .mrvice a:hover {
-  text-decoration: underline;
+  color: var(--zlato-meko);
 }
 
 .hero {
@@ -649,8 +652,7 @@ html {
 }
 
 .vrsta-veza:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  color: var(--noc-duboka);
 }
 
 .vrsta-veza:focus-visible {
@@ -1161,7 +1163,7 @@ h1.prazno {
 
 .kartica h2 a:hover,
 .kartica h3 a:hover {
-  text-decoration: underline;
+  color: var(--akcent);
 }
 
 .kartica .kratko {
@@ -1257,7 +1259,10 @@ h1.prazno {
   font-weight: 600;
 }
 
-.izvor a {
+/* Veza u kartici izvora i u redu „Zvanični izvor" nema crtu, pa je od teksta razlikuje boja i debljina slova (paket 66). */
+.izvor a,
+.red a,
+.izvor-podatak a {
   color: var(--akcent);
   font-weight: 700;
 }
@@ -2052,7 +2057,6 @@ section + section > .naslov-izvora {
   font: inherit;
   font-size: 15px;
   font-weight: 600;
-  text-decoration: underline;
   cursor: pointer;
 }
 
@@ -2163,7 +2167,9 @@ section + section > .naslov-izvora {
   }
 
   a,
-  .izvor a {
+  .izvor a,
+  .red a,
+  .izvor-podatak a {
     color: #000;
   }
 

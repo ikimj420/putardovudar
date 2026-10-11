@@ -161,7 +161,7 @@ class PristupacnostJavnihStranaTest extends TestCase
         $bojaTeksta = '/(?<![\w-])color:\s*var\(--(?:narandzasta|narandzasta-meka|zlato|lila|bobica-svetla)\)/';
 
         $this->assertDoesNotMatchRegularExpression($bojaTeksta, $stil);
-        $this->assertMatchesRegularExpression('/\n\.izvor a \{[^}]*(?<![\w-])color: var\(--akcent\);/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.izvor a,\n\.red a,\n\.izvor-podatak a \{[^}]*(?<![\w-])color: var\(--akcent\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.meni-sredina a:hover \{\s*color: var\(--akcent\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.koraci li::before \{[^}]*background: var\(--akcent\);/', $stil);
 

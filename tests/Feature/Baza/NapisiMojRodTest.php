@@ -301,15 +301,19 @@ class NapisiMojRodTest extends BazaTestCase
         $this->assertSame('Oglas sam videla. Radim.', $this->napisan($this->napisi($sablon, ['iskustvo' => 'Radim.'], ['rod' => 'zenski'])->getContent()));
     }
 
-    // Dugmad su dovoljno velika za prst (najmanje 44 piksela), a link ima podvlaku, da se vidi da se pritiska.
+    // Dugmad su dovoljno velika za prst (najmanje 44 piksela); link se od teksta razlikuje bojom i debljinom slova, bez crte (paket 66), a na prelaz mišem menja boju.
     #[Test]
-    public function dugmad_roda_imaju_stil_za_prst_a_link_je_podvucen(): void
+    public function dugmad_roda_imaju_stil_za_prst_a_link_se_vidi_bojom_i_debljinom_bez_crte(): void
     {
         $stil = $this->stilBezKomentara();
 
         $this->assertMatchesRegularExpression('/\n\.rod-forma \{\s*display: flex;\s*flex-wrap: wrap;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-rod \{[^}]*min-height: 44px;[^}]*background: var\(--button-dark-bg\);[^}]*color: var\(--button-dark-text\);/', $stil);
-        $this->assertMatchesRegularExpression('/\n\.veza-dugme \{[^}]*min-height: 44px;[^}]*background: none;[^}]*color: var\(--akcent\);[^}]*text-decoration: underline;/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.veza-dugme \{[^}]*min-height: 44px;[^}]*background: none;[^}]*color: var\(--akcent\);[^}]*font-weight: 600;/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.veza-dugme:hover \{\s*color: var\(--noc\);/', $stil);
+        preg_match('/\n\.veza-dugme \{([^}]*)\}/', $stil, $veza);
+        $this->assertNotEmpty($veza);
+        $this->assertStringNotContainsString('underline', $veza[1]);
     }
 
     // Model prvo dobija šablon u izabranom rodu, pa ni on ne vidi zagrade sa dva oblika.

@@ -106,7 +106,7 @@ class OznakeUVratimaTest extends BazaTestCase
         $this->assertStringContainsString('<svg class="vrata"', $prazno);
     }
 
-    // Stil: samo tekst — bez pozadine, okvira, senke i strelice; tamna slova (noć) 18 px debela, bar 44 px visoka, podvučeno na prelaz mišem, tamni okvir fokusa.
+    // Stil: samo tekst — bez pozadine, okvira, senke i strelice; tamna slova (noć) 18 px debela, bar 44 px visoka, tamnija boja na prelaz mišem (bez crte), tamni okvir fokusa.
     #[Test]
     public function stil_oznaka_je_samo_tekst_sa_tackom_u_boji_vrste_i_vidljivim_fokusom(): void
     {
@@ -123,7 +123,9 @@ class OznakeUVratimaTest extends BazaTestCase
         // Bez strelice: nijedno pravilo oznake ne piše sadržaj iza ili ispred.
         $this->assertDoesNotMatchRegularExpression('/\.vrsta-veza[^{]*::(?:after|before)/', $stil);
         $this->assertDoesNotMatchRegularExpression('/\.u-svetlu[^{]*::(?:after|before)/', $stil);
-        $this->assertMatchesRegularExpression('/\n\.vrsta-veza:hover \{\s*text-decoration: underline;/', $stil);
+        // Na prelaz mišem menja boju (tamnija „noć"), bez crte (paket 66).
+        $this->assertMatchesRegularExpression('/\n\.vrsta-veza:hover \{\s*color: var\(--noc-duboka\);\s*\}/', $stil);
+        $this->assertStringNotContainsString('underline', $stil);
         $this->assertMatchesRegularExpression('/\n\.vrsta-veza:focus-visible \{[^}]*outline: 3px solid var\(--noc\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.vrsta-tacka \{[^}]*width: 12px;[^}]*height: 12px;[^}]*box-shadow: 0 0 0 2px rgba\(255, 255, 255, 0\.7\);/', $stil);
         foreach (['posao' => 'narandzasta', 'stipendija' => 'bobica', 'konkurs' => 'ljubicasta', 'obuka' => 'zlato'] as $vrsta => $boja) {
@@ -131,47 +133,6 @@ class OznakeUVratimaTest extends BazaTestCase
         }
         // Mesto u svetlu: unutar vrata, od 30% visine i 26,5% širine.
         $this->assertMatchesRegularExpression('/\n\.u-svetlu \{[^}]*position: absolute;[^}]*top: 30%;[^}]*left: 26\.5%;/', $stil);
-    }
-
-    /** @return array{0: float, 1: float, 2: float} */
-    private function rgb(string $hex): array
-    {
-        return [hexdec(substr($hex, 1, 2)) / 255, hexdec(substr($hex, 3, 2)) / 255, hexdec(substr($hex, 5, 2)) / 255];
-    }
-
-    private function osvetljenost(string $hex): float
-    {
-        [$r, $g, $b] = array_map(fn (float $v) => $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4, $this->rgb($hex));
-
-        return 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
-    }
-
-    private function mesavina(string $a, string $b, float $t): string
-    {
-        return '#'.implode('', array_map(fn (float $x, float $y) => str_pad(dechex((int) round(($x + ($y - $x) * $t) * 255)), 2, '0', STR_PAD_LEFT), $this->rgb($a), $this->rgb($b)));
-    }
-
-    /**
-     * Kontrast tamnog teksta oznake sa dna njenog teksta (najtamnije mesto pod slovima): svetlo ide odozgo (60) nadole (242) kroz tri boje.
-     * Model je proveren u pregledaču: razlika od izmerenog položaja je ispod 0,6 jedinice slike (1 px).
-     *
-     * @return list<float> kontrast svake od šest oznaka, redom
-     */
-    private function kontrasti(?string $strana, int $sirinaVrata): array
-    {
-        $boje = $this->bojeVrata($strana);
-        $jedinica = $sirinaVrata / 220;
-        $noc = $this->osvetljenost('#270f43');
-        $kontrasti = [];
-
-        foreach (range(1, 6) as $broj) {
-            $dno = 0.30 * 270 + $broj * 44 / $jedinica - 12 / $jedinica;
-            $t = min(1, max(0, ($dno - 60) / (242 - 60)));
-            $boja = $t <= 0.55 ? $this->mesavina($boje['svetlo-1'], $boje['svetlo-2'], $t / 0.55) : $this->mesavina($boje['svetlo-2'], $boje['svetlo-3'], ($t - 0.55) / 0.45);
-            $kontrasti[] = ($this->osvetljenost($boja) + 0.05) / ($noc + 0.05);
-        }
-
-        return $kontrasti;
     }
 
     // Kontrast tamnih slova na svetlu: izmereno u pregledaču (375 i 1280 px, svih šest oznaka) i ovde računom sa istim modelom. Prolazi na početnoj, prilikama i kalendaru;
