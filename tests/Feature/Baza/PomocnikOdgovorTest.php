@@ -163,10 +163,23 @@ class PomocnikOdgovorTest extends BazaTestCase
     #[Test]
     public function predugacak_odgovor_menja_sablon(): void
     {
-        $this->model(str_repeat('Radnik u skladištu. ', 50));
+        // Jedna beskrajna rečenica: kod ne može da je skrati na dve rečenice, pa je duga i ostaje (paket 65 odseca samo ono preko dve rečenice).
+        $this->model(str_repeat('radnik u skladištu ', 50));
 
         $this->assertSame('predug odgovor', $this->pitaj()->razlogSablona);
-        $this->assertGreaterThan(ProveraOdgovora::NAJVISE_ZNAKOVA, 1000);
+        $this->assertGreaterThan(ProveraOdgovora::NAJVISE_ZNAKOVA, 950);
+    }
+
+    // Isto što je ranije bilo „predug": pedeset kratkih rečenica sad stiže skraćeno na dve i prolazi proveru (paket 65/T2).
+    #[Test]
+    public function mnogo_kratkih_recenica_stize_skraceno_na_dve(): void
+    {
+        $this->model(str_repeat('Radnik u skladištu. ', 50));
+
+        $odgovor = $this->pitaj();
+
+        $this->assertSame('Radnik u skladištu. Radnik u skladištu.', $odgovor->tekst);
+        $this->assertFalse($odgovor->jeIzSablona());
     }
 
     /** @return array<string, array{0: string, 1: string}> */

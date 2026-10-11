@@ -17,7 +17,9 @@ use Illuminate\Support\Collection;
 final class PisanjeOdgovora
 {
     private const UPUTSTVO = <<<'TEXT'
-Odgovori na pitanje u najviše tri rečenice, na srpskom jeziku latinicom, samo iz priloženih prilika, vodiča i organizacija.
+Odgovori na pitanje u jednoj ili dve kratke rečenice, na srpskom jeziku latinicom, samo iz priloženih prilika, vodiča i organizacija.
+Reci šta si našao i za koga je. Ne prepričavaj rok, mesto ni uslove: oni su u karticama ispod odgovora.
+Piši toplo i jednostavno, na ti, kao drug koji pomaže, kratkim rečenicama.
 Ne navodi linkove i ne dodaj ništa iz sopstvenog znanja. Datum piši samo ako piše u prilikama, vodičima ili organizacijama.
 Ako prilike, vodiči i organizacije ne odgovaraju pitanju, reci samo da nemaš podatak.
 TEXT;
@@ -72,8 +74,8 @@ TEXT;
             ])))->implode("\n");
         }
 
-        // Model ume da pređe na ćirilicu ili da je pomeša sa latinicom; sajt piše samo latinicom.
-        return Latinica::izCirilice($this->ollama->odgovoriTekstom($kalendar->isNotEmpty() ? self::UPUTSTVO."\n".self::UPUTSTVO_KALENDAR : self::UPUTSTVO, $tekst, $vremeCekanja));
+        // Model ume da pređe na ćirilicu ili da je pomeša sa latinicom; sajt piše samo latinicom. Dužinu odgovora kod ograničava, jer model uputstvo ne drži.
+        return KratakOdgovor::skrati(Latinica::izCirilice($this->ollama->odgovoriTekstom($kalendar->isNotEmpty() ? self::UPUTSTVO."\n".self::UPUTSTVO_KALENDAR : self::UPUTSTVO, $tekst, $vremeCekanja)));
     }
 
     /** @param  Collection<int, Prilika>  $zapisi */
