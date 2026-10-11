@@ -33,7 +33,7 @@
                         <p class="red">{{ $izvor->rok }}</p>
                     @endif
                     @if ($izvor->zvanicniNaziv)
-                        <p class="red">
+                        <p class="red red-izvora">
                             {{ $izvor->jeOrganizacija ? \App\Support\PrikazOrganizacija::SAJT.': ' : \App\Support\PrikazPrilike::ZVANICNI_IZVOR }}
                             @if ($izvor->zvanicniLink)
                                 <a href="{{ $izvor->zvanicniLink }}" rel="noopener noreferrer nofollow" target="_blank">{{ $izvor->zvanicniNaziv }}</a>

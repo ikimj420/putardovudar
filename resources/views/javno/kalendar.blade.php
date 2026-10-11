@@ -24,7 +24,7 @@
                         <p class="kratko">{{ $stavka->napomena }}</p>
                     @endif
                     @if (\App\Support\LinkSajta::jeIspravan($stavka->link_izvora))
-                        <p class="red">
+                        <p class="red red-izvora">
                             {{ \App\Support\PrikazPrilike::ZVANICNI_IZVOR }}
                             <a href="{{ trim($stavka->link_izvora) }}" rel="noopener noreferrer nofollow" target="_blank">{{ \App\Support\PrikazOrganizacija::nazivSajta(trim($stavka->link_izvora)) }}</a>
                         </p>

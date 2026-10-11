@@ -64,7 +64,7 @@ class NijedanLinkNijePodvucenTest extends TestCase
         $this->assertSame(1, preg_match_all('/\na \{/', $stil), 'pravilo za „a" stoji na jednom mestu');
     }
 
-    // Bez crte veza usred teksta mora da se razlikuje bojom i debljinom: u kartici izvora, u redu „Zvanični izvor" (kalendar, odgovor pomoćnika) i u njegovom prozoru.
+    // Bez crte veza usred teksta mora da se razlikuje bojom i debljinom (veza 700, tekst 400): u kartici izvora, u redu „Zvanični izvor" (kalendar, odgovor pomoćnika) i u njegovom prozoru.
     // Izmereno u pregledaču: ove veze su nasleđivale boju i debljinu reda, pa im je crta bila jedini znak.
     #[Test]
     public function veza_u_redu_sa_izvorom_se_razlikuje_od_teksta_bojom_i_debljinom_i_na_stampi_je_crna(): void
@@ -73,9 +73,12 @@ class NijedanLinkNijePodvucenTest extends TestCase
 
         $this->assertMatchesRegularExpression('/\n\.izvor a,\n\.red a,\n\.izvor-podatak a \{\s*color: var\(--akcent\);\s*font-weight: 700;\s*\}/', $stil);
         $this->assertMatchesRegularExpression('/\n  a,\n  \.izvor a,\n  \.red a,\n  \.izvor-podatak a \{\s*color: #000;/', $stil);
-        // Ogledalo: red je muklom bojom i debljinom 600, a prozor 400, pa bi veza bez ovog pravila bila nevidljiva u tekstu.
-        $this->assertMatchesRegularExpression('/\n\.red \{\s*color: var\(--muted\);\s*font-weight: 600;/', $stil);
+        // Paket 67/T18: tekst oko veze je običan (400), pa je razlika prema vezi (700) najveća: red „Zvanični izvor" (klasa posle opšteg reda, da je pretekne),
+        // kartica izvora i prozor pomoćnika (koji težinu ne postavlja, pa je 400). Red sa rokom ostaje 600.
+        $this->assertMatchesRegularExpression('/\n\.red \{\s*color: var\(--muted\);\s*font-weight: 600;\s*\}\n\n\.red-izvora \{\s*font-weight: 400;\s*\}/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.izvor \{[^}]*font-weight: 400;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.izvor-podatak \{[^}]*color: var\(--muted\);/', $stil);
+        $this->assertDoesNotMatchRegularExpression('/\n\.izvor-podatak \{[^}]*font-weight/', $stil);
     }
 
     /** @return array<string, array{0: string}> */

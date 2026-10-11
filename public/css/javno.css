@@ -1207,6 +1207,10 @@ h1.prazno {
   font-weight: 600;
 }
 
+.red-izvora {
+  font-weight: 400;
+}
+
 /* Strana jedne prilike, vodiča ili organizacije: glavni sadržaj i bočna kartica */
 .detalj {
   display: grid;
@@ -1256,10 +1260,10 @@ h1.prazno {
   border: 1px solid rgba(26, 26, 28, 0.06);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  font-weight: 600;
+  font-weight: 400;
 }
 
-/* Veza u kartici izvora i u redu „Zvanični izvor" nema crtu, pa je od teksta razlikuje boja i debljina slova (paket 66). */
+/* Veza u kartici izvora i u redu „Zvanični izvor" nema crtu, pa je od teksta razlikuje boja i debljina slova: veza je 700, a tekst oko nje običan, 400 (paketi 66 i 67). */
 .izvor a,
 .red a,
 .izvor-podatak a {
