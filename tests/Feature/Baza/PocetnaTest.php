@@ -6,7 +6,6 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Support\PrikazPocetne;
-use App\Support\PrikazPomocnika;
 use App\Support\PrikazPrilike;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -49,8 +48,9 @@ class PocetnaTest extends BazaTestCase
         return $nalazi[1];
     }
 
+    // Paket 62/T1: naslov „Vrata su otvorena. Izaberi priliku.", tekst ispod njega, vrata, pa „Pitaj Vudar pomoćnika" na dnu; bez natpisa sa vrstama i bez dugmeta „Pogledaj prilike".
     #[Test]
-    public function pocetna_ima_naslovni_deo_sa_naslovom_opisom_i_dugmadima(): void
+    public function pocetna_ima_naslovni_deo_sa_naslovom_tekstom_vratima_i_dugmetom_za_pomocnika(): void
     {
         $this->prilika(VrstaPrilike::Posao);
 
@@ -59,20 +59,30 @@ class PocetnaTest extends BazaTestCase
         $tekst = $this->vidljivTekst($hero);
 
         $this->assertNotSame('', $hero);
-        $this->assertStringContainsString('<h1>'.PrikazPocetne::NASLOV.'<em>'.PrikazPocetne::NASLOV_ISTAKNUTO.'</em></h1>', $hero);
-        $this->assertStringContainsString(PrikazPocetne::OPIS, $tekst);
-        $this->assertStringContainsString('<a class="dugme dugme-glavno" href="'.route('prilike.index').'">'.PrikazPocetne::PRILIKE_DUGME.'</a>', $hero);
-        // Stakleno dugme otvara prozor pomoćnika (bez skripta je veza ka strani pomoćnika).
-        $this->assertStringContainsString('<a class="dugme dugme-staklo" href="'.route('pomocnik.index').'" data-pomocnik-otvori aria-controls="pomocnik-prozor">'.PrikazPomocnika::PITAJ_VUDAR.'</a>', $hero);
-        $this->assertStringContainsString('<svg class="vrata" viewBox="0 0 220 270" aria-hidden="true" focusable="false">', $hero);
+        $this->assertStringContainsString('<h1>Vrata su otvorena. <em>Izaberi priliku.</em></h1>', $hero);
+        $this->assertStringContainsString('<p>Izaberi u vratima šta tražiš. Uz svaku priliku stoji zvanični izvor.</p>', $hero);
+        // Stakleno dugme otvara prozor pomoćnika (bez skripta je veza ka strani pomoćnika) i stoji na dnu naslovnog dela, posle vrata.
+        $pitaj = '<a class="dugme dugme-staklo hero-pitaj" href="'.route('pomocnik.index').'" data-pomocnik-otvori aria-controls="pomocnik-prozor">Pitaj Vudar pomoćnika</a>';
+        $this->assertStringContainsString($pitaj, $hero);
+        $naslov = strpos($hero, '<h1>');
+        $vrata = strpos($hero, '<svg class="vrata"');
+        $this->assertNotFalse($vrata);
+        $this->assertLessThan($vrata, $naslov);
+        $this->assertLessThan(strpos($hero, $pitaj), $vrata);
+        // Nema natpisa sa vrstama iznad naslova ni dugmeta „Pogledaj prilike", ni glavne veze-dugmeta u naslovnom delu.
+        $this->assertStringNotContainsString('hero-natpis', $hero);
+        $this->assertStringNotContainsString('Pogledaj prilike', $html);
+        $this->assertStringNotContainsString('<a class="dugme dugme-glavno"', $hero);
+        $this->assertStringNotContainsString('Poslovi · ', $tekst);
         // Jedan h1 na strani, i nema naslovne trake ostalih strana.
         $this->assertSame(1, substr_count($html, '<h1'));
         $this->assertStringNotContainsString('class="naslovna-traka"', $html);
-        // Ogledalo: prozor pomoćnika postoji na početnoj, pa dugme ima šta da otvori.
+        // Ogledalo: prozor pomoćnika postoji na početnoj, pa dugme ima šta da otvori; a ispod naslovnog dela dugme „Sve prilike" i dalje stoji.
         $this->assertStringContainsString('id="pomocnik-prozor"', $html);
+        $this->assertStringContainsString('<a class="dugme dugme-glavno" href="'.route('prilike.index').'">'.PrikazPocetne::SVE_PRILIKE_DUGME.'</a>', $html);
     }
 
-    // Oznake na vratima i natpis iznad naslova postoje samo za vrste koje imaju javnu priliku, redom kojim su nabrojane; nacrt i prošao rok ne računaju.
+    // Oznake na vratima postoje samo za vrste koje imaju javnu priliku, redom kojim su nabrojane; nacrt i prošao rok ne računaju.
     #[Test]
     public function oznake_vrsta_na_vratima_su_samo_za_vrste_sa_javnom_prilikom(): void
     {
@@ -88,17 +98,17 @@ class PocetnaTest extends BazaTestCase
         $this->assertStringContainsString('>Stipendija</text>', $hero);
         $this->assertStringNotContainsString('>Konkurs</text>', $hero);
         $this->assertStringNotContainsString('>Obuka</text>', $hero);
-        $this->assertStringContainsString('<div class="hero-natpis">Poslovi · Stipendije</div>', $hero);
-        $this->assertStringNotContainsString('Konkursi', $hero);
+        // Natpis sa nazivima vrsta iznad naslova više ne postoji (paket 62).
+        $this->assertStringNotContainsString('Poslovi · Stipendije', $hero);
+        $this->assertStringNotContainsString('hero-natpis', $hero);
     }
 
-    // Ogledalo: sa svim vrstama su sve oznake; „Drugo" je na vratima, a u natpisu nema množinu; bez prilika nema ni oznaka ni natpisa, a vrata stoje.
+    // Ogledalo: sa svim vrstama su sve oznake, pa i „Drugo"; bez prilika nema oznaka, a vrata stoje.
     #[Test]
     public function sve_vrste_daju_sve_oznake_a_bez_prilika_nema_oznaka(): void
     {
         $prazno = $this->hero($this->get(route('pocetna'))->assertOk()->getContent());
         $this->assertSame([], $this->oznakeNaVratima($prazno));
-        $this->assertStringNotContainsString('hero-natpis', $prazno);
         $this->assertStringContainsString('<path d="M52 242V118a58 58 0 0 1 116 0v124z" fill="url(#vrata-unutra)"/>', $prazno);
 
         foreach (VrstaPrilike::cases() as $vrsta) {
@@ -107,7 +117,7 @@ class PocetnaTest extends BazaTestCase
         $hero = $this->hero($this->get(route('pocetna'))->assertOk()->getContent());
 
         $this->assertSame(['posao', 'praksa', 'stipendija', 'konkurs', 'obuka', 'drugo'], $this->oznakeNaVratima($hero));
-        $this->assertStringContainsString('<div class="hero-natpis">Poslovi · Prakse · Stipendije · Konkursi · Obuke</div>', $hero);
+        $this->assertStringNotContainsString('hero-natpis', $hero);
     }
 
     // Najbliže prilike su ispod naslovnog dela: najviše šest, najbliži rok prvo, bez roka i stalno otvorene na kraju; prošao rok i nacrt se ne vide.
@@ -152,7 +162,7 @@ class PocetnaTest extends BazaTestCase
         $this->assertStringNotContainsString('class="dugme dugme-glavno" href="'.route('prilike.index').'">'.PrikazPocetne::SVE_PRILIKE_DUGME, $prazna);
     }
 
-    // Stil: noć sa sjajevima i zrnom, veliki naslov sa prelivom u drugom redu, dugmad; na telefonu ilustracija manja i iza teksta.
+    // Stil: noć sa sjajevima i zrnom, naslov sa prelivom u drugom redu, dugme; na telefonu vrata na sredini ispod naslova i bez teksta ispod njega, na laptopu tekst levo i vrata desno.
     #[Test]
     public function stil_nosi_noc_sa_sjajevima_zrno_naslov_sa_prelivom_i_ilustraciju(): void
     {
@@ -162,8 +172,12 @@ class PocetnaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\n\.zrno::before \{[^}]*background-image: url\("\.\.\/img\/zrno\.svg"\);[^}]*mix-blend-mode: overlay;[^}]*opacity: 0\.1;[^}]*pointer-events: none;/', $stil);
         $this->assertFileExists(public_path('img/zrno.svg'));
         $this->assertMatchesRegularExpression('/\n\.hero h1 em \{[^}]*linear-gradient\(100deg, var\(--lila\), var\(--narandzasta-meka\) 70%, var\(--zlato\)\);[^}]*background-clip: text;[^}]*color: transparent;/', $stil);
-        $this->assertMatchesRegularExpression('/\n\.hero \.vrata \{[^}]*position: absolute;[^}]*width: 190px;[^}]*opacity: 0\.55;[^}]*pointer-events: none;/', $stil);
-        $this->assertMatchesRegularExpression('/@media \(min-width: 900px\) \{\s*\.plocice \{[^}]*\}\s*\.vodici-traka \{[^}]*\}\s*\.hero \{[^}]*padding: 170px 0 100px;\s*\}\s*\.hero h1 \{\s*font-size: 80px;\s*\}\s*\.hero \.vrata \{[^}]*width: 380px;[^}]*opacity: 1;/', $stil);
+        // Telefon: jedna kolona, vrata na sredini široka koliko i sadržaj (najviše 380 px), tekst ispod naslova ne postoji.
+        $this->assertMatchesRegularExpression('/\n\.hero-red \{[^}]*display: grid;/', $this->stilBezUpita());
+        $this->assertMatchesRegularExpression('/\n\.hero \.vrata \{[^}]*justify-self: center;[^}]*width: min\(100%, 380px\);/', $this->stilBezUpita());
+        $this->assertMatchesRegularExpression('/\n\.hero p \{\s*display: none;/', $this->stilBezUpita());
+        // Laptop: tekst levo, vrata desno (380 px), dugme ispod oba, tekst ispod naslova se vidi.
+        $this->assertMatchesRegularExpression('/@media \(min-width: 900px\) \{\s*\.plocice \{[^}]*\}\s*\.vodici-traka \{[^}]*\}\s*\.hero \{[^}]*padding: 170px 0 100px;\s*\}\s*\.hero-red \{[^}]*grid-template-columns: minmax\(0, 1fr\) 380px;[^}]*"pitaj pitaj"[^}]*\}\s*\.hero-tekst \{[^}]*\}\s*\.hero h1 \{\s*font-size: clamp\(48px, 5\.4vw, 62px\);\s*\}\s*\.hero p \{\s*display: block;[^}]*\}\s*\.hero \.vrata \{[^}]*width: 380px;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-glavno \{[^}]*linear-gradient\(135deg, var\(--narandzasta\)[^}]*color: var\(--noc\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-staklo \{[^}]*backdrop-filter: blur\(12px\);[^}]*color: #fff;/', $stil);
         // Boje oznaka na vratima su iste kao boje vrsta na karticama.

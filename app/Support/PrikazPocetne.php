@@ -7,13 +7,12 @@ final class PrikazPocetne
 {
     public const NASLOV_STRANE = 'Početna';
 
-    public const NASLOV = 'Otvorena vrata za ';
+    public const NASLOV = 'Vrata su otvorena. ';
 
-    public const NASLOV_ISTAKNUTO = 'tvoju priliku.';
+    public const NASLOV_ISTAKNUTO = 'Izaberi priliku.';
 
-    public const OPIS = 'Sve prilike na jednom mestu, sa zvaničnim izvorom. Za učenike, studente, roditelje i sve koji traže posao.';
-
-    public const PRILIKE_DUGME = 'Pogledaj prilike';
+    // Samo na laptopu; na telefonu ga nema (paket 62).
+    public const OPIS = 'Izaberi u vratima šta tražiš. Uz svaku priliku stoji zvanični izvor.';
 
     public const SVE_PRILIKE_DUGME = 'Sve prilike';
 

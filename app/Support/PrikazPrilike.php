@@ -25,11 +25,6 @@ final class PrikazPrilike
 
     public const NEMA_USKORO = 'Nema prilika koje se zatvaraju uskoro.';
 
-    // Nazivi vrsta u množini, za natpis iznad naslova na početnoj (paket 57); „Drugo" nema množinu, pa se tamo ne piše.
-    public const VRSTE_U_MNOZINI = [
-        'posao' => 'Poslovi', 'praksa' => 'Prakse', 'stipendija' => 'Stipendije', 'konkurs' => 'Konkursi', 'obuka' => 'Obuke',
-    ];
-
     public const SVE_PRILIKE = 'Sve prilike';
 
     // Naziv grupe dugmadi za filter, čita ga čitač ekrana; predlog je u PITANJA-26-38.md.

@@ -522,13 +522,22 @@ html {
   padding: 112px 0 56px;
 }
 
+/* Naslovni deo početne (paket 62): naslov, ispod njega vrata na sredini, pa dugme; na laptopu tekst levo i vrata desno, a dugme ispod. */
+.hero-red {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 20px;
+}
+
+.hero-tekst {
+  min-width: 0;
+}
+
 .hero .vrata {
-  position: absolute;
-  right: -20px;
-  bottom: 10px;
-  width: 190px;
-  opacity: 0.55;
-  pointer-events: none;
+  justify-self: center;
+  width: min(100%, 380px);
+  height: auto;
 }
 
 .tacka {
@@ -559,36 +568,11 @@ html {
   fill: var(--noc);
 }
 
-.hero-sadrzaj {
-  position: relative;
-  z-index: 2;
-}
-
-.hero-natpis {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #f6c8a0;
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.hero-natpis::before {
-  content: "";
-  width: 28px;
-  height: 1px;
-  background: currentColor;
-  opacity: 0.7;
-}
-
 .hero h1 {
-  max-width: 13ch;
-  margin: 16px 0;
-  font-size: 44px;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
   font-weight: 800;
 }
 
@@ -600,16 +584,14 @@ html {
   color: transparent;
 }
 
+/* Tekst ispod naslova postoji samo na laptopu. */
 .hero p {
-  max-width: 38ch;
-  margin: 0 0 26px;
-  color: #dcd2ea;
+  display: none;
 }
 
-.hero-dugmad {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+.hero-pitaj {
+  width: 100%;
+  min-height: 52px;
 }
 
 .plocice {
@@ -1329,15 +1311,46 @@ section + section > .naslov-izvora {
     padding: 170px 0 100px;
   }
 
+  .hero-red {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-areas:
+      "tekst vrata"
+      "pitaj pitaj"
+      "pretraga pretraga";
+    column-gap: 48px;
+    align-items: center;
+  }
+
+  .hero-tekst {
+    grid-area: tekst;
+    max-width: 560px;
+  }
+
   .hero h1 {
-    font-size: 80px;
+    font-size: clamp(48px, 5.4vw, 62px);
+  }
+
+  .hero p {
+    display: block;
+    max-width: 420px;
+    margin: 16px 0 0;
+    color: #e3d9ef;
+    font-size: 19px;
   }
 
   .hero .vrata {
-    right: 120px;
-    bottom: 30px;
+    grid-area: vrata;
+    justify-self: end;
     width: 380px;
-    opacity: 1;
+  }
+
+  .hero-pitaj {
+    grid-area: pitaj;
+    max-width: 360px;
+  }
+
+  .hero .pretraga {
+    grid-area: pretraga;
   }
 }
 
