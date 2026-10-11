@@ -23,7 +23,7 @@ class UvozObradi extends Command
             ->where('status', StatusPrilike::Nacrt)
             ->where('vrsta', VrstaPrilike::Drugo)
             ->whereNull('rok')
-            ->whereIn('naziv_izvora', [...array_column(config('uvoz.izvori'), 'ime'), config('jooble.ime')])
+            ->whereIn('naziv_izvora', [...array_column(config('uvoz.izvori'), 'ime'), ...array_column(config('uvoz.spiskovi'), 'ime'), config('jooble.ime')])
             ->orderBy('id');
 
         // Običan prolaz uzima neobrađene; --ponovo uzima obrađene po starom pravilu (u predlogu nema verzije pravila ili je manja od tekuće), ali samo

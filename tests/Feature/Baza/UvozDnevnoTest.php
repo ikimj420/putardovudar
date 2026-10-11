@@ -28,6 +28,8 @@ class UvozDnevnoTest extends BazaTestCase
         Http::preventStrayRequests();
         $this->travelTo(Carbon::create(2026, 10, 5, 12, 0, 0, 'Europe/Belgrade'));
         config()->set('uvoz.izvori', [['ime' => 'Izvor A', 'adresa' => self::FEED]]);
+        // Spiskovi bez RSS-a (paket 68/T4) imaju svoje probe; ovde su isključeni da ovi testovi mere samo RSS, Jooble i obradu.
+        config()->set('uvoz.spiskovi', []);
     }
 
     private function internet(int $statusFeeda = 200): void
@@ -105,6 +107,57 @@ class UvozDnevnoTest extends BazaTestCase
         $this->assertLessThan((int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true), (int) array_search(self::FEED, $adrese, true));
         $this->assertLessThan((int) array_search(self::OLLAMA, $adrese, true), (int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true));
         $this->assertSame(4, Prilika::query()->count());
+        $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
+    }
+
+    // Paket 68/T4: spisak poziva bez RSS-a ide posle RSS-a, a pre Jooble-a i obrade; obrada uzima i njegove nacrte.
+    #[Test]
+    public function spiskovi_idu_posle_rss_a_a_pre_obrade_koja_uzima_i_njihove_nacrte(): void
+    {
+        $spisak = 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10';
+        config()->set('uvoz.spiskovi', [['ime' => 'Spisak NSZ', 'adresa' => $spisak]]);
+        Http::fake(function (Request $zahtev) use ($spisak) {
+            return match (true) {
+                $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml'))),
+                $zahtev->url() === $spisak => Http::response((string) file_get_contents(base_path('tests/Fixtures/spiskovi/nsz-konkursi.html'))),
+                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'grupe' => []])]]),
+                default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
+            };
+        });
+
+        $this->artisan('uvoz:dnevno')
+            ->expectsOutputToContain('→ uvoz:spiskovi')
+            ->expectsOutput('Spisak NSZ: novih 6, preskočeno 3, greška: nema')
+            ->assertExitCode(0);
+
+        $adrese = Http::recorded()->map(fn (array $par) => $par[0]->url())->values()->all();
+
+        $this->assertLessThan((int) array_search($spisak, $adrese, true), (int) array_search(self::FEED, $adrese, true));
+        $this->assertLessThan((int) array_search(self::OLLAMA, $adrese, true), (int) array_search($spisak, $adrese, true));
+        $this->assertSame(9, Prilika::query()->count());
+        $this->assertSame(6, Prilika::query()->where('naziv_izvora', 'Spisak NSZ')->whereNotNull('obradeno_at')->count());
+        $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
+    }
+
+    // Ogledalo: spisak koji ne radi ne zaustavlja ni RSS ni obradu, a posao to prijavljuje izlazom 1.
+    #[Test]
+    public function spisak_koji_ne_radi_ne_zaustavlja_obradu_ali_se_vidi_u_izlazu(): void
+    {
+        config()->set('uvoz.spiskovi', [['ime' => 'Spisak NSZ', 'adresa' => 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10']]);
+        Http::fake(function (Request $zahtev) {
+            return match (true) {
+                $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml'))),
+                $zahtev->url() === 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10' => Http::response('<html><body>Nov izgled</body></html>'),
+                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'grupe' => []])]]),
+                default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
+            };
+        });
+
+        $this->artisan('uvoz:dnevno')
+            ->expectsOutput('Spisak NSZ: novih 0, preskočeno 0, greška: spisak nije pročitan, izgled strane se verovatno promenio')
+            ->assertExitCode(1);
+
+        $this->assertSame(3, Prilika::query()->count());
         $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
     }
 
