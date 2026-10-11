@@ -202,7 +202,10 @@ class FilterPrilikaPoVrstiTest extends BazaTestCase
         $this->assertCount(count(VrstaPrilike::cases()), $this->naslovi($bez));
         $this->assertSame($this->naslovi($bez), $this->naslovi($sa));
         $this->assertStringNotContainsString('class="filteri"', $bez);
-        $this->assertStringNotContainsString('href="'.route('prilike.index', ['vrsta' => 'posao']).'"', $bez);
+        // Veze ka vrstama na početnoj postoje samo kao oznake u vratima (paket 62), nigde drugde.
+        $bezVrata = (string) preg_replace('#<nav class="u-svetlu".*?</nav>#s', '', $bez);
+        $this->assertStringNotContainsString('href="'.route('prilike.index', ['vrsta' => 'posao']).'"', $bezVrata);
+        $this->assertStringContainsString('<a class="vrsta-veza" href="'.route('prilike.index', ['vrsta' => 'posao']).'">', $bez);
         // Ogledalo: filter na /prilike postoji i radi.
         $spisak = $this->get(route('prilike.index', ['vrsta' => 'obuka']))->assertOk()->getContent();
         $this->assertSame(['Prilika obuka'], $this->naslovi($spisak));

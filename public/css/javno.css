@@ -620,32 +620,68 @@ html {
   stop-color: var(--vrata-pod);
 }
 
-.tacka {
-  stroke: none;
+/* Oznake u svetlu vrata (paket 62): pravi linkovi ka vrstama, samo tekst (bez pozadine i strelice), tamna slova, tačka u boji vrste sa belim obodom;
+   bar 44 px visine, podvučeno na prelaz mišem, vidljiv fokus. */
+.u-svetlu {
+  position: absolute;
+  top: 30%;
+  left: 26.5%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.tacka[data-vrsta="posao"] {
-  fill: var(--narandzasta);
+.vrsta-veza {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--noc);
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.tacka[data-vrsta="stipendija"] {
-  fill: var(--bobica);
+.vrsta-veza:nth-child(even) {
+  margin-left: 10px;
 }
 
-.tacka[data-vrsta="konkurs"] {
-  fill: var(--ljubicasta);
+.vrsta-veza:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.tacka[data-vrsta="obuka"] {
-  fill: var(--zlato);
+.vrsta-veza:focus-visible {
+  border-radius: 8px;
+  outline: 3px solid var(--noc);
+  outline-offset: 1px;
 }
 
-.tacka[data-vrsta="praksa"] {
-  fill: var(--noc);
+.vrsta-tacka {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--noc);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
 }
 
-.tacka[data-vrsta="drugo"] {
-  fill: var(--noc);
+.vrsta-tacka[data-vrsta="posao"] {
+  background: var(--narandzasta);
+}
+
+.vrsta-tacka[data-vrsta="stipendija"] {
+  background: var(--bobica);
+}
+
+.vrsta-tacka[data-vrsta="konkurs"] {
+  background: var(--ljubicasta);
+}
+
+.vrsta-tacka[data-vrsta="obuka"] {
+  background: var(--zlato);
 }
 
 .hero h1 {

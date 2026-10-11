@@ -116,7 +116,7 @@ class VrataNaSvakojStraniTest extends BazaTestCase
         Prilika::factory()->objavljena()->create(['vrsta' => VrstaPrilike::Obuka, 'rok' => '2026-10-01']);
 
         foreach ($adrese as $strana => $adresa) {
-            preg_match_all('#<circle class="tacka" data-vrsta="([a-z]+)"#', $this->get($adresa)->assertOk()->getContent(), $oznake);
+            preg_match_all('#<span class="vrsta-tacka" data-vrsta="([a-z]+)"#', $this->get($adresa)->assertOk()->getContent(), $oznake);
 
             $this->assertSame(['posao', 'stipendija'], $oznake[1], $strana);
         }

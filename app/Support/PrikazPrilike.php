@@ -27,6 +27,9 @@ final class PrikazPrilike
 
     public const SVE_PRILIKE = 'Sve prilike';
 
+    // Naziv grupe oznaka u svetlu vrata (paket 62); čitač ekrana ih čita kao veze ka vrstama.
+    public const VRSTE_PRILIKA = 'Vrste prilika';
+
     // Naziv grupe dugmadi za filter, čita ga čitač ekrana; predlog je u PITANJA-26-38.md.
     public const FILTERI = 'Brzi filteri';
 

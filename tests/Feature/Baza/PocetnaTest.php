@@ -43,7 +43,7 @@ class PocetnaTest extends BazaTestCase
     /** @return list<string> nazivi oznaka vrsta na ilustraciji vrata, redom */
     private function oznakeNaVratima(string $hero): array
     {
-        preg_match_all('#<circle class="tacka" data-vrsta="([a-z]+)"#', $hero, $nalazi);
+        preg_match_all('#<span class="vrsta-tacka" data-vrsta="([a-z]+)"#', $hero, $nalazi);
 
         return $nalazi[1];
     }
@@ -94,10 +94,10 @@ class PocetnaTest extends BazaTestCase
         $hero = $this->hero($this->get(route('pocetna'))->assertOk()->getContent());
 
         $this->assertSame(['posao', 'stipendija'], $this->oznakeNaVratima($hero));
-        $this->assertStringContainsString('>Posao</text>', $hero);
-        $this->assertStringContainsString('>Stipendija</text>', $hero);
-        $this->assertStringNotContainsString('>Konkurs</text>', $hero);
-        $this->assertStringNotContainsString('>Obuka</text>', $hero);
+        $this->assertStringContainsString('</span>Posao</a>', $hero);
+        $this->assertStringContainsString('</span>Stipendija</a>', $hero);
+        $this->assertStringNotContainsString('</span>Konkurs</a>', $hero);
+        $this->assertStringNotContainsString('</span>Obuka</a>', $hero);
         // Natpis sa nazivima vrsta iznad naslova više ne postoji (paket 62).
         $this->assertStringNotContainsString('Poslovi · Stipendije', $hero);
         $this->assertStringNotContainsString('hero-natpis', $hero);
@@ -182,7 +182,7 @@ class PocetnaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\n\.dugme-staklo \{[^}]*backdrop-filter: blur\(12px\);[^}]*color: #fff;/', $stil);
         // Boje oznaka na vratima su iste kao boje vrsta na karticama.
         foreach (['posao' => 'narandzasta', 'stipendija' => 'bobica', 'konkurs' => 'ljubicasta', 'obuka' => 'zlato'] as $vrsta => $boja) {
-            $this->assertMatchesRegularExpression('/\n\.tacka\[data-vrsta="'.$vrsta.'"\] \{\s*fill: var\(--'.$boja.'\);/', $stil, $vrsta);
+            $this->assertMatchesRegularExpression('/\n\.vrsta-tacka\[data-vrsta="'.$vrsta.'"\] \{\s*background: var\(--'.$boja.'\);/', $stil, $vrsta);
         }
     }
 

@@ -13,13 +13,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Concerns\BojeVrata;
 use Tests\Concerns\StilJavnihStrana;
 
 // Paket 62/T3: svetlo, krilo, oreol i svetlo na podu vrata su u boji strane (vrednosti iz uzora vrata-boje-predlog.html); slika ih čita iz promenljivih strane.
 #[Group('baza')]
 class BojaVrataPoStraniTest extends BazaTestCase
 {
-    use RefreshDatabase, StilJavnihStrana;
+    use BojeVrata, RefreshDatabase, StilJavnihStrana;
 
     private const ZLATNA = ['svetlo-1' => '#ffe7b0', 'svetlo-2' => '#f7b866', 'svetlo-3' => '#f0994c', 'krilo-1' => '#e7b53c', 'krilo-2' => '#c85a14', 'oreol' => '#f0994c', 'pod' => '#ffd9a0'];
 
@@ -35,34 +36,6 @@ class BojaVrataPoStraniTest extends BazaTestCase
         ];
     }
 
-    /** @return array<string, string> promenljive vrata koje važe na strani (osnovne, pa one koje strana menja) */
-    private function boja(?string $strana): array
-    {
-        $stil = $this->stilBezKomentara();
-        $telo = [];
-
-        preg_match('/\n:root \{([^}]*)\}/', $stil, $osnovno);
-        $this->assertNotEmpty($osnovno, 'u javno.css nema :root');
-        $telo[] = $osnovno[1];
-
-        if ($strana !== null) {
-            preg_match('/\nbody\[data-strana="'.$strana.'"\] \{([^}]*)\}/', $stil, $strane);
-            $this->assertNotEmpty($strane, $strana);
-            $telo[] = $strane[1];
-        }
-
-        $boje = [];
-        foreach ($telo as $deo) {
-            preg_match_all('/--vrata-([a-z0-9-]+): (#[0-9a-f]{6});/', $deo, $nalazi, PREG_SET_ORDER);
-            foreach ($nalazi as [, $ime, $vrednost]) {
-                $boje[$ime] = $vrednost;
-            }
-        }
-        ksort($boje);
-
-        return $boje;
-    }
-
     /** @param  array<string, string>  $ocekivano */
     #[Test]
     #[DataProvider('boje')]
@@ -70,7 +43,7 @@ class BojaVrataPoStraniTest extends BazaTestCase
     {
         ksort($ocekivano);
 
-        $this->assertSame($ocekivano, $this->boja($strana));
+        $this->assertSame($ocekivano, $this->bojeVrata($strana));
     }
 
     // Strane i boje: prilike (i strana prilike) narandžasta, vodiči (i vodič) ljubičasta, organizacije bobica, kalendar zlato; početna, pomoćnik i šablon zlatno-narandžasta.
