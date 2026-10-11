@@ -13,7 +13,7 @@ class NoviIzgledStilTest extends TestCase
 
     private const FONTOVI = '/public/fonts/javno';
 
-    // T1: Inter dolazi iz public/fonts/javno uz licencu, nijedna spoljna adresa; naslovi traže Plus Jakarta Sans i, dok njegov fajl ne stigne, padaju na Inter.
+    // T1: Inter dolazi iz public/fonts/javno uz licencu, nijedna spoljna adresa; naslovi su Inter (paket 67/T17: bez imena slova čiji fajl nikad nije stigao).
     #[Test]
     public function slova_su_lokalni_fajlovi_sa_licencom_i_bez_spoljnih_adresa(): void
     {
@@ -35,13 +35,42 @@ class NoviIzgledStilTest extends TestCase
         $this->assertStringContainsString('The Inter Project Authors', $licenca);
 
         $this->assertMatchesRegularExpression('/--font-tekst: Inter,/', $stil);
-        $this->assertMatchesRegularExpression('/--font-naslov: "Plus Jakarta Sans", Inter,/', $stil);
+        $this->assertMatchesRegularExpression('/--font-naslov: Inter, "Inter Variable", system-ui,/', $stil);
         $this->assertMatchesRegularExpression('/\nbody \{[^}]*font-family: var\(--font-tekst\);/', $stil);
         $this->assertMatchesRegularExpression('/\nh1,\nh2,\nh3 \{\s*font-family: var\(--font-naslov\);\s*font-weight: 800;/', $stil);
 
         // Ogledalo: nijedan fajl slova ni spoljna adresa slova ne stoje u stilu.
         $this->assertDoesNotMatchRegularExpression('#fonts\.(?:googleapis|gstatic)|https?://#', $stil);
         $this->assertSame([], array_values(array_diff(array_map('basename', glob($koren.self::FONTOVI.'/*.woff2') ?: []), array_column($slova, 2))), 'fajl slova koji stil ne koristi');
+    }
+
+    // Paket 67/T17: nijedno pominjanje slova čiji fajl ne postoji; merilo prvo dokazuje da je obišlo fajlove, i to stil.
+    #[Test]
+    public function nijedno_pominjanje_plus_jakarta_sans_u_public_i_resources(): void
+    {
+        $koren = dirname(__DIR__, 2);
+        $obidjeno = 0;
+        $stil = false;
+        $nadjeno = [];
+
+        foreach (['public', 'resources'] as $folder) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($koren.'/'.$folder, \FilesystemIterator::SKIP_DOTS)) as $fajl) {
+                if (! $fajl->isFile() || ! in_array($fajl->getExtension(), ['css', 'js', 'php', 'html', 'svg', 'txt', 'md', 'json', 'xml', 'webmanifest'], true)) {
+                    continue;
+                }
+
+                $obidjeno++;
+                $stil = $stil || $fajl->getFilename() === 'javno.css';
+
+                if (stripos((string) file_get_contents($fajl->getPathname()), 'Jakarta') !== false) {
+                    $nadjeno[] = substr($fajl->getPathname(), strlen($koren) + 1);
+                }
+            }
+        }
+
+        $this->assertGreaterThan(20, $obidjeno);
+        $this->assertTrue($stil);
+        $this->assertSame([], $nadjeno);
     }
 
     // T-merilo: prefers-reduced-motion gasi prelaze, animacije i glatko skrolovanje; merilo prvo dokazuje da prelaza ima.

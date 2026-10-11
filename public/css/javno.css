@@ -84,7 +84,7 @@
   --vrata-pod: #ffd9a0;
 
   --font-tekst: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-naslov: "Plus Jakarta Sans", Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-naslov: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* Svaka strana ima svoju boju. Slova na obojenoj podlozi su tamna (noć) na narandžastoj i zlatnoj, a bela na ljubičastoj i bobici; svaki par je izmeren. */
