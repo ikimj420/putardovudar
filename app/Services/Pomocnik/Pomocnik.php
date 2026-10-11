@@ -2,6 +2,7 @@
 
 namespace App\Services\Pomocnik;
 
+use App\Enums\VrstaPrilike;
 use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
@@ -37,6 +38,14 @@ final class Pomocnik
     public const PONUDA_SABLONA = 'Za to imam šablon. Odgovori na nekoliko pitanja, a ja pišem tekst.';
 
     public const NEMA_SABLONA = 'Za to još nema šablona.';
+
+    // Pitanje samo sa vrstom („stipendije"), a otvorenih prilika te vrste nema (paket 65/T3). Tekst za stipendije je Coworkov; ostale vrste idu istim obrascem,
+    // sa množinom u genitivu (PITANJA-65.md).
+    public const NEMA_OTVORENIH = 'Trenutno nema otvorenih %s.';
+
+    public const DOK_CEKAS = 'Dok čekaš, ovo ti može pomoći da budeš spreman:';
+
+    public const VRSTE_U_GENITIVU = ['posao' => 'poslova', 'praksa' => 'praksi', 'stipendija' => 'stipendija', 'konkurs' => 'konkursa', 'obuka' => 'obuka'];
 
     public const NAJVISE_ZNAKOVA_PITANJA = 300;
 
@@ -96,6 +105,11 @@ final class Pomocnik
         $pocetak = now();
         $rezultat = $this->pretrazi($pitanje, intdiv($ukupno, 2));
 
+        // Samo vrsta i nijedna otvorena prilika te vrste: model se ne zove drugi put, a uz rečenicu idu vodiči i kalendar koji tu vrstu pominju.
+        if (! $pisanje && $rezultat->zapisi->isEmpty() && $this->jeSamoVrsta($rezultat->formular)) {
+            return $this->bezOtvorenih($rezultat->formular->vrsta);
+        }
+
         if ($rezultat->nemaPodatak()) {
             // Traženo je da se nešto napiše, a šablona nema: to kaže, uz objavljene vodiče.
             return $pisanje
@@ -132,6 +146,26 @@ final class Pomocnik
         return $razlog === null
             ? new OdgovorPomocnika($tekst, $izvori, false)
             : new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, $razlog);
+    }
+
+    // Pitanje je samo vrsta (posao, stipendija...) izrečena u pitanju: bez grada, „kome", reči i grupe. „Drugo" nema reč, pa ga nema ni ovde.
+    private function jeSamoVrsta(Formular $formular): bool
+    {
+        return $formular->vrsta !== null && $formular->vrsta !== VrstaPrilike::Drugo && $formular->vrstaJePomenuta
+            && $formular->grad === null && $formular->kome === null && $formular->kljucneReci === [] && $formular->grupe === [];
+    }
+
+    // Vodiči i stavke kalendara su oni čiji tekst pominje tu vrstu (ista reč kojom se vrsta dokazuje na strani); samo ono što piše u bazi.
+    private function bezOtvorenih(VrstaPrilike $vrsta): OdgovorPomocnika
+    {
+        $nema = sprintf(self::NEMA_OTVORENIH, self::VRSTE_U_GENITIVU[$vrsta->value]);
+        $vodici = Vodic::javni()->orderBy('naslov')->get()->filter(fn (Vodic $vodic) => $vrsta->potkrepljenaTekstom($vodic->naslov))->take(PretragaVodica::NAJVISE_U_SPISKU);
+        $kalendar = KalendarStavka::javne()->orderBy('otvoreno_do', 'desc')->orderBy('id')->get()
+            ->filter(fn (KalendarStavka $stavka) => $vrsta->potkrepljenaTekstom($stavka->naziv.' '.$stavka->ko_daje.' '.$stavka->napomena))->take(PretragaKalendara::NAJVISE_ZAPISA);
+        $izvori = [...$vodici->map(fn (Vodic $vodic) => $this->izvorVodica($vodic))->all(), ...$kalendar->map(fn (KalendarStavka $stavka) => $this->izvorKalendara($stavka))->all()];
+
+        // Bez ičega što bi pomoglo, rečenica o pripremi bi obećala karticu kojih nema.
+        return $izvori === [] ? new OdgovorPomocnika($nema, [], true) : new OdgovorPomocnika($nema.' '.self::DOK_CEKAS, $izvori, false, 'nema otvorenih prilika te vrste');
     }
 
     // Isto što ide modelu: latinica, bez razmaka na krajevima, najviše 300 znakova.

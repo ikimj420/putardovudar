@@ -27,6 +27,12 @@ class PomocnikGotoviTekstoviTest extends TestCase
             'kad nema ništa' => [Pomocnik::NEMAM_PODATAK, 'Za ovo trenutno nemam ništa na sajtu. Probaj da pitaš drugim rečima ili pogledaj Vodiče.'],
             'kad ne sme' => [Pomocnik::NE_MOGU_DA_POMOGNEM, 'U tome ti ne mogu pomoći. Ako ti treba pomoć uživo, pogledaj Organizacije.'],
             'kad ne radi' => [PrikazPomocnika::NE_RADI, 'Izvini, trenutno ne radim. Probaj malo kasnije.'],
+            // Paket 65/T3: pitanje samo sa vrstom, bez otvorenih prilika.
+            'nema otvorenih stipendija, uz pripremu' => [sprintf(Pomocnik::NEMA_OTVORENIH, 'stipendija').' '.Pomocnik::DOK_CEKAS, 'Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da budeš spreman:'],
+            'nema otvorenih poslova' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['posao']), 'Trenutno nema otvorenih poslova.'],
+            'nema otvorenih praksi' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['praksa']), 'Trenutno nema otvorenih praksi.'],
+            'nema otvorenih konkursa' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['konkurs']), 'Trenutno nema otvorenih konkursa.'],
+            'nema otvorenih obuka' => [sprintf(Pomocnik::NEMA_OTVORENIH, Pomocnik::VRSTE_U_GENITIVU['obuka']), 'Trenutno nema otvorenih obuka.'],
         ];
     }
 
