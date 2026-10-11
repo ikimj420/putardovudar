@@ -27,6 +27,21 @@ final class DatumUTekstu
         return null;
     }
 
+    // Gde u tekstu (bajt) prvi put piše dan i mesec, brojem („20.10.") ili imenom meseca („20. oktobra"), sa godinom ili bez nje; null kad ne piše.
+    public static function prviPolozaj(string $tekst, int $dan, int $mesec): ?int
+    {
+        $uzorci = [sprintf('(?<!\d)0?%d\s*[./-]\s*0?%d(?!\d)', $dan, $mesec), sprintf('(?<!\d)0?%d\s*\.?\s*(?:%s)(?!\p{L})', $dan, self::MESECI[$mesec])];
+        $polozaji = [];
+
+        foreach ($uzorci as $uzorak) {
+            if (preg_match('~'.$uzorak.'~iu', $tekst, $nalaz, PREG_OFFSET_CAPTURE) === 1) {
+                $polozaji[] = $nalaz[0][1];
+            }
+        }
+
+        return $polozaji === [] ? null : min($polozaji);
+    }
+
     // $datum je oblika 2026-10-20; tekst treba da je već latinicom (Latinica::izCirilice).
     public static function postoji(string $tekst, string $datum): bool
     {

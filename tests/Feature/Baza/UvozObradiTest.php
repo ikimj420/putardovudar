@@ -111,7 +111,7 @@ class UvozObradiTest extends BazaTestCase
         return [
             'pravilo ne važi' => [['vazi_pravilo' => false, 'razlog' => 'Lista dobitnika, nije prilika.'], 'pravilo za objavu ne važi', 'pravilo'],
             'rok koga nema u tekstu' => [['rok' => '2026-10-21'], 'rok ne piše u tekstu strane', 'rok'],
-            'citat koga nema u tekstu' => [['citat' => 'Prijave traju do 20. oktobra 2026.'], 'rok ne piše u tekstu strane', 'rok'],
+            'citat i datum kojih nema u tekstu' => [['rok' => '2026-10-21', 'citat' => 'Prijave traju do 21. oktobra 2026.'], 'rok ne piše u tekstu strane', 'rok'],
             'rok bez citata' => [['citat' => ''], 'rok ne piše u tekstu strane', 'rok'],
             'prošao rok' => [['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'], 'rok je prošao', 'rok'],
             'vrsta van spiska' => [['vrsta' => 'posao-na-crno'], 'vrsta nije sa spiska', 'vrsta'],

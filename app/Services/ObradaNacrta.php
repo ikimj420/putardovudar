@@ -11,6 +11,7 @@ use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\DatumiUTekstu;
 use App\Support\DatumUTekstu;
+use App\Support\PoredjenjeTeksta;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Validation\ValidationException;
@@ -40,6 +41,9 @@ TEXT;
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
     // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
+    // Najduža rečenica koju kod uzima kao citat roka celu; duža se seče oko datuma.
+    private const NAJVISE_ZNAKOVA_CITATA_ROKA = 300;
+
     private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', 'rok ne piše u tekstu strane'];
 
     public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
@@ -71,6 +75,7 @@ TEXT;
 
         $vrstaModela = $forma['vrsta'];
         [$forma, $vrstaIzvor] = $this->vrstaSaStrane($forma, $tekst);
+        [$forma, $izvorCitata] = $this->citatRokaSaStrane($forma, $tekst);
 
         [$prihvacene, $grupe] = $this->prihvaceneGrupe($this->grupeModela($forma), $tekst);
         [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
@@ -85,6 +90,7 @@ TEXT;
             if ($infostud !== null) {
                 $forma['rok'] = $infostud['rok'];
                 $forma['citat'] = $infostud['citat'];
+                $izvorCitata = 'kod';
                 [$odbijeno, $rok] = $this->zasto($forma, $tekst, $prihvacene, $prilika->izvor_objavljen, (string) $prilika->naslov);
             }
         }
@@ -99,6 +105,7 @@ TEXT;
             'rok_sa_infostuda' => $infostud !== null,
             'razlog' => $forma['razlog'],
             'citat' => $forma['citat'],
+            'izvor_citata' => $izvorCitata,
             'grupe' => $grupe,
             'prihvacene_grupe' => array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene),
             'odbijeno' => $odbijeno,
@@ -219,6 +226,88 @@ TEXT;
         }
 
         return [[...$forma, 'vrsta' => $dokazane[0]->value], 'kod'];
+    }
+
+    // Citat roka koji je model vratio mora da stoji na strani. Kad ne stoji (model pogreši slovo), kod sam traži rečenicu sa istim datumom i rečju roka i nju uzima
+    // kao citat; datum samo uz događaj ne prolazi. Bez takve rečenice sve ostaje kako je bilo (paket 68).
+    /**
+     * @param  array<string, mixed>  $forma
+     * @return array{0: array<string, mixed>, 1: string} oblik sa citatom i ko je citat odredio („model" ili „kod")
+     */
+    private function citatRokaSaStrane(array $forma, string $tekst): array
+    {
+        if (! is_string($forma['rok']) || preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $forma['rok'], $deo) !== 1 || ! checkdate((int) $deo[2], (int) $deo[3], (int) $deo[1])) {
+            return [$forma, 'model'];
+        }
+
+        $citat = TekstStrane::normalizuj((string) $forma['citat']);
+
+        // Bez citata objave nema (paket 59): kod ne traži rečenicu umesto citata koga model nije ni naveo.
+        if ($citat === '' || $this->pisePoRecima(TekstStrane::normalizuj($tekst), $citat)) {
+            return [$forma, 'model'];
+        }
+
+        $nadjena = $this->recenicaSaRokom(CarbonImmutable::create((int) $deo[1], (int) $deo[2], (int) $deo[3]), $tekst);
+
+        return $nadjena === null ? [$forma, 'model'] : [[...$forma, 'citat' => $nadjena], 'kod'];
+    }
+
+    // Prva rečenica sa „rok…" ima prednost; inače prva sa „prijav…", ili sa „do" uz „otvoren…", „konkurs…" ili „poziv…". Delovi se dele samo pre velikog slova,
+    // da „28. septembra" i „12. 10. 2026." ostanu u jednoj rečenici.
+    private function recenicaSaRokom(CarbonImmutable $rok, string $tekst): ?string
+    {
+        $prva = null;
+
+        foreach (preg_split('/(?<=[.!?])\s+(?=\p{Lu})/u', $tekst) ?: [] as $deo) {
+            $deo = trim($deo);
+
+            if (! $this->imaDatumRoka($deo, $rok)) {
+                continue;
+            }
+
+            $reci = PoredjenjeTeksta::normalizuj($deo);
+
+            if (preg_match('/\brok\w*/', $reci) === 1) {
+                return $this->okoDatuma($deo, $rok);
+            }
+
+            if ($prva === null && (preg_match('/\bprijav\w*/', $reci) === 1 || (preg_match('/\bdo\b/', $reci) === 1 && preg_match('/\b(?:otvoren|konkurs|poziv)\w*/', $reci) === 1))) {
+                $prva = $deo;
+            }
+        }
+
+        return $prva === null ? null : $this->okoDatuma($prva, $rok);
+    }
+
+    // Isti datum: pun (sa godinom koja se poklapa) ili dan i mesec bez godine, kao i za rok bez godine.
+    private function imaDatumRoka(string $recenica, CarbonImmutable $rok): bool
+    {
+        if (DatumUTekstu::postoji($recenica, $rok->toDateString())) {
+            return true;
+        }
+
+        foreach (DatumiUTekstu::izvuci($recenica) as $datum) {
+            if ($datum['godina'] === null && $datum['dan'] === $rok->day && $datum['mesec'] === $rok->month) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Duga rečenica se seče oko datuma na cele reči (najviše 12 pre i 14 posle), da citat ostane kratak i doslovan.
+    private function okoDatuma(string $recenica, CarbonImmutable $rok): string
+    {
+        $polozaj = mb_strlen($recenica) > self::NAJVISE_ZNAKOVA_CITATA_ROKA ? DatumUTekstu::prviPolozaj($recenica, $rok->day, $rok->month) : null;
+
+        if ($polozaj === null) {
+            return $recenica;
+        }
+
+        $pre = preg_split('/\s+/u', trim(substr($recenica, 0, $polozaj))) ?: [];
+        $posle = preg_split('/\s+/u', trim(substr($recenica, $polozaj))) ?: [];
+
+        return implode(' ', [...array_slice($pre, -12), ...array_slice($posle, 0, 14)]);
     }
 
     // Citat piše na strani samo kao cele reči: „roma" nije na strani na kojoj piše samo „Romania".

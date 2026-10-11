@@ -95,4 +95,30 @@ class DatumUTekstuTest extends TestCase
 
         $this->assertSame($ocekivano, $datum?->toDateString());
     }
+
+    /** @return array<string, array{0: string, 1: int, 2: int, 3: int|null}> tekst, dan, mesec, bajt gde piše (ili null) */
+    public static function polozajDatuma(): array
+    {
+        return [
+            'ime meseca' => ['Rok je 20. oktobra 2026.', 20, 10, 7],
+            'ime meseca bez godine' => ['Do 12. oktobra', 12, 10, 3],
+            'brojevi' => ['Rok: 20.10.2026.', 20, 10, 5],
+            'brojevi sa razmakom' => ['Rok: 20. 10. 2026.', 20, 10, 5],
+            'nula ispred' => ['Rok: 05.10.2026.', 5, 10, 5],
+            'brojevi pre imena meseca' => ['Rok je 20.10.2026. a nekad i 20. oktobra', 20, 10, 7],
+            'ime meseca pre brojeva' => ['Do 20. oktobra, a kasnije 20.10.2026.', 20, 10, 3],
+            'drugi datum u tekstu' => ['Od 15. oktobra do 20. oktobra', 20, 10, 18],
+            'drugi mesec' => ['Rok je 20. novembra', 20, 10, null],
+            'dan koji je deo većeg broja' => ['Rok je 120. oktobra', 20, 10, null],
+            'ćirilica se ne pretvara ovde' => ['Рок је 20. октобра', 20, 10, null],
+            'ima i veliko slovo' => ['Rok je 20. Oktobra', 20, 10, 7],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('polozajDatuma')]
+    public function prvi_polozaj_dana_i_meseca_u_tekstu(string $tekst, int $dan, int $mesec, ?int $polozaj): void
+    {
+        $this->assertSame($polozaj, DatumUTekstu::prviPolozaj($tekst, $dan, $mesec));
+    }
 }
