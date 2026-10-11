@@ -2,6 +2,7 @@
 
 namespace App\Enums;
 
+use App\Support\Latinica;
 use App\Support\PoredjenjeTeksta;
 use Filament\Support\Contracts\HasLabel;
 
@@ -13,6 +14,7 @@ enum Grupa: string implements HasLabel
     case Studenti = 'studenti';
     case MasterDoktorski = 'master-doktorski';
     case NezaposleniMladi = 'nezaposleni-mladi';
+    case Mladi = 'mladi';
     case Povratnici = 'povratnici';
     case Organizacije = 'organizacije';
     case Romi = 'romi';
@@ -26,6 +28,7 @@ enum Grupa: string implements HasLabel
             self::Studenti => 'Studenti',
             self::MasterDoktorski => 'Master i doktorski studenti',
             self::NezaposleniMladi => 'Nezaposleni mladi',
+            self::Mladi => 'Mladi',
             self::Povratnici => 'Povratnici iz inostranstva',
             self::Organizacije => 'Organizacije',
             self::Romi => 'Romi i Romkinje',
@@ -37,7 +40,7 @@ enum Grupa: string implements HasLabel
     // Rečnik je namerno uzak: „organizacije" su udruženja i organizacije civilnog društva, nikad firme; „roman" i „promocija" nisu Romi.
     public function potkrepljuje(string $citat): bool
     {
-        return preg_match($this->uzorak(), PoredjenjeTeksta::normalizuj($citat)) === 1;
+        return preg_match($this->uzorak(), self::normalizuj($citat)) === 1;
     }
 
     // Grupe čije reči stoje u tekstu, u redosledu enuma; šta nije u rečniku, nije grupa.
@@ -55,7 +58,7 @@ enum Grupa: string implements HasLabel
         $reci = [];
 
         foreach (self::cases() as $grupa) {
-            preg_match_all($grupa->uzorak(), PoredjenjeTeksta::normalizuj($tekst), $nalazi);
+            preg_match_all($grupa->uzorak(), self::normalizuj($tekst), $nalazi);
 
             foreach ($nalazi[0] as $nalaz) {
                 array_push($reci, ...explode(' ', $nalaz));
@@ -72,9 +75,10 @@ enum Grupa: string implements HasLabel
     /** @return list<string> */
     public static function bezReciGrupe(string $tekst): array
     {
-        $ostatak = PoredjenjeTeksta::normalizuj($tekst);
+        $ostatak = self::normalizuj($tekst);
 
-        foreach (self::cases() as $grupa) {
+        // „Mladi" je najkraća reč pa se skida poslednja, da ne pojede deo duže fraze („organizacije mladih").
+        foreach ([...array_filter(self::cases(), fn (self $grupa) => $grupa !== self::Mladi), self::Mladi] as $grupa) {
             $ostatak = preg_replace($grupa->uzorak(), ' | ', $ostatak) ?? $ostatak;
         }
 
@@ -96,6 +100,12 @@ enum Grupa: string implements HasLabel
         return implode(' ', $reci);
     }
 
+    // „Mlađi" nije grupa „Mladi", a ascii pretvara „đ" u „d": zato se „mlađ" menja pre normalizacije, i u ćirilici.
+    private static function normalizuj(string $tekst): string
+    {
+        return PoredjenjeTeksta::normalizuj(preg_replace('/mlađ/iu', 'mlj', Latinica::izCirilice($tekst)) ?? $tekst);
+    }
+
     // Uzorci rade nad normalizovanim tekstom (mala slova bez dijakritika, razmak umesto znakova), pa je granica reči \b.
     private function uzorak(): string
     {
@@ -104,6 +114,7 @@ enum Grupa: string implements HasLabel
             self::Srednjoskolci => '/\b(?:srednjoskol[a-z]*|gimnazijal(?:c|ac)[a-z]*|maturan(?:t|at)[a-z]*|(?:ucenik|ucenic|dj?ak(?:a|u|om|e)?\b|dj?ac)[a-z]* (?:[a-z]+ ){0,3}srednj[a-z]*)\b/',
             self::Studenti => '/\bstuden(?:t|at)[a-z]*\b/',
             self::MasterDoktorski => '/\b(?:master(?:a|u|om|i|e|ima|ant[a-z]*)?|magistar[a-z]*|magistr[a-z]*|doktorsk[a-z]*|doktoran(?:d|t|ad)[a-z]*|doktorat[a-z]*|postdiplomsk[a-z]*|postdiplomc[a-z]*|phd|msc)\b/',
+            self::Mladi => '/\b(?:mladi|mladih|mladima|mlade)\b/',
             self::NezaposleniMladi => '/\b(?:nezaposlen[a-z]*|bez zaposlenja|bez posla|trazioc[a-z]* (?:posla|zaposlenja))\b/',
             self::Povratnici => '/\b(?:povratni[ck][a-z]*|repatrijac[a-z]*|readmisij[a-z]*|(?:vracen[a-z]*|povrata?k[a-z]*) (?:iz|u) (?:inostranstv[a-z]*|zemlj[a-z]*|srbij[a-z]*))\b/',
             self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|gradj?ansk[a-z]* drustv[a-z]*|omladinsk[a-z]* organizacij[a-z]*|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje|mladih|za mlade|zena|roma|osoba|gradj?ana|ljudskih))\b/',

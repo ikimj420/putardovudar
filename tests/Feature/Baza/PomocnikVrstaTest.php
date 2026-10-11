@@ -70,7 +70,8 @@ class PomocnikVrstaTest extends BazaTestCase
     #[DataProvider('pogresnaVrsta')]
     public function vrsta_koju_pitanje_ne_pominje_ne_krije_priliku(string $pitanje, array $forma, string $naslov): void
     {
-        $this->prilika(['naslov' => 'Radionica za mlade: digitalne veštine', 'vrsta' => VrstaPrilike::Drugo, 'kratak_opis' => 'Radionica za mlade o digitalnim veštinama.', 'opis' => '']);
+        // Paket 68/T1: „mlade" u pitanju je grupa Mladi, pa prilika za mlade nosi tu grupu (prilika bez grupa ne ulazi kad pitanje kaže grupu).
+        $this->prilika(['naslov' => 'Radionica za mlade: digitalne veštine', 'vrsta' => VrstaPrilike::Drugo, 'kratak_opis' => 'Radionica za mlade o digitalnim veštinama.', 'opis' => '', 'grupe' => ['mladi']]);
         $this->prilika(['naslov' => 'Volontiranje u omladinskom centru', 'vrsta' => VrstaPrilike::Drugo, 'kratak_opis' => 'Rad sa mladima.', 'opis' => '']);
         // Druga ciljna grupa: rezervna pretraga ne sme da izgubi „kome".
         $this->prilika(['naslov' => 'Radionica za penzionere', 'vrsta' => VrstaPrilike::Drugo, 'kratak_opis' => 'Radionica za penzionere.', 'opis' => '']);

@@ -20,6 +20,7 @@ class GrupaTest extends TestCase
             'studenti' => ['Studenti prve godine', 'za studentkinje', 'Otvoreno studentima', 'Stipendije za studente iz Srbije', 'Stipendije za 100 studenata'],
             'master-doktorski' => ['Master studije u inostranstvu', 'za doktorske studije', 'doktoranti i doktorandi', 'Poziv doktorandima', 'Za 20 doktoranada', 'postdiplomske studije', 'magistarske studije', 'PhD kandidati', 'studenti mastera'],
             'nezaposleni-mladi' => ['Nezaposleni mladi do 30 godina', 'za nezaposlena lica', 'mladi bez posla', 'osobe bez zaposlenja', 'Tražioci posla'],
+            'mladi' => ['Mladi iz Srbije koji imaju 18 godina mogu da se prijave', 'Konkurs je za: mlade diplomce', 'Poziv mladima', 'za mlade i odrasle', 'Podrška mladih', 'MLADI IZ SRBIJE', 'Млади из Србије', 'mlade žene'],
             'povratnici' => ['Povratnici iz inostranstva', 'Povratnici po osnovu sporazuma o readmisiji', 'povratnik u Srbiju', 'Povratak u Srbiju', 'vraćeni iz inostranstva', 'Osobe po sporazumu o readmisiji', 'repatrijaci'],
             'organizacije' => ['Konkurs za organizacije civilnog društva', 'Udruženja građana', 'nevladine organizacije', 'NVO sektor', 'OCD iz cele Srbije', 'neprofitne organizacije', 'Podrška organizacijama koje rade sa mladima', 'organizacije mladih', 'civilni sektor', 'organizacije građanskog društva', 'Građansko društvo u Srbiji', 'omladinske organizacije', 'Omladinskim organizacijama', 'organizacije koje rade sa mladima', 'Podrška organizacijama građana', 'organizacije gradjana', 'gradjansko drustvo'],
             'odrasli-bez-skole' => ['Obrazovanje za odrasle', 'Poziv za odrasle osobe', 'Odraslima je otvoreno', 'Osobe bez kvalifikacija', 'nekvalifikovani radnici', 'niskokvalifikovana lica', 'nepismene osobe', 'ljudi bez škole', 'Za one bez završene osnovne škole', 'bez završene škole', 'Poziv za one koji nisu završili osnovnu školu', 'Ko nema završenu srednju školu', 'OBRAZOVANJE ODRASLIH', 'odrasli bez škole'],
@@ -52,6 +53,7 @@ class GrupaTest extends TestCase
             'studenti' => ['Studio za dizajn', 'studije u inostranstvu', 'Stud. servis', 'istraživači'],
             'master-doktorski' => ['Mastercard popust', 'Masterplan grada', 'doktor opšte prakse', 'majstor za vodovod', 'Mastering Excel'],
             'nezaposleni-mladi' => ['Zaposleni u firmi', 'zaposlenje u Nišu', 'Posao za mlade', 'mladi u zajednici'],
+            'mladi' => ['omladinske organizacije', 'Omladinski centar', 'Omladina Srbije', 'mlađi od 30 godina', 'Млађи од 30 година', 'Mlađih kandidata nema', 'mladić iz Niša', 'mladost', 'Mladenovac', 'Mladen traži posao'],
             'povratnici' => ['Povratna informacija', 'povrat sredstava', 'povratni let', 'iz inostranstva stiže pomoć'],
             'organizacije' => ['Firme i preduzeća', 'privredna društva', 'organizacija događaja', 'međunarodne organizacije', 'Za organizacije', 'društvo sa ograničenom odgovornošću', 'kompanije iz Srbije', 'omladinski hotel', 'omladinske sportske igre', 'građansko pravo', 'građanski rat', 'organizacije događaja'],
             'odrasli-bez-skole' => ['Odrastanje u gradu', 'Odraslo drvo', 'Kvalifikacije za rad', 'Škola stranih jezika', 'bez ograničenja', 'Praksa bez iskustva', 'Osnovna škola traži nastavnika', 'Završena škola je uslov', 'Dečija škola crtanja'],
@@ -110,7 +112,9 @@ class GrupaTest extends TestCase
     #[Test]
     public function iz_teksta_vraca_grupe_u_redosledu_enuma(): void
     {
-        $this->assertSame([Grupa::Studenti, Grupa::NezaposleniMladi, Grupa::Romi], Grupa::izTeksta('Romi i nezaposleni mladi, kao i studenti'));
+        // „Nezaposleni mladi" sadrži i reč „mladi", pa su to dve grupe, redom iz enuma.
+        $this->assertSame([Grupa::Studenti, Grupa::NezaposleniMladi, Grupa::Mladi, Grupa::Romi], Grupa::izTeksta('Romi i nezaposleni mladi, kao i studenti'));
+        $this->assertSame([Grupa::Mladi], Grupa::izTeksta('Konkurs za mlade'));
         $this->assertSame([Grupa::Studenti, Grupa::MasterDoktorski], Grupa::izTeksta('studenti master studija'));
         $this->assertSame([], Grupa::izTeksta('Konkurs za firme'));
     }
@@ -123,7 +127,8 @@ class GrupaTest extends TestCase
             'predlog na početku ispada' => ['za studente u tehnici', ['tehnici']],
             'predlog na kraju ispada' => ['tehnici za studente', ['tehnici']],
             'samo grupa' => ['studente', []],
-            'dve reči grupe' => ['mladi Romi', ['mladi']],
+            'dve reči grupe' => ['mladi Romi', []],
+            'reč grupe pored ostatka' => ['mladi u tehnici', ['tehnici']],
             'bez reči grupe' => ['skladištu', ['skladistu']],
             'fraza grupe od više reči' => ['organizacije mladih', []],
             'reč grupe u sredini deli frazu' => ['Opre Roma u zajednici', ['opre', 'zajednici']],

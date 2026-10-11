@@ -321,6 +321,7 @@ class UvozObradiTest extends BazaTestCase
             'studenti' => ['studenti', 'Konkurs je otvoren za sve studente'],
             'master-doktorski' => ['master-doktorski', 'Konkurs je za doktorske studije u inostranstvu'],
             'nezaposleni-mladi' => ['nezaposleni-mladi', 'Poziv za nezaposlene mlade do 30 godina'],
+            'mladi' => ['mladi', 'Konkurs je za: mlade diplomce'],
             'povratnici' => ['povratnici', 'Program za povratnike iz inostranstva'],
             'organizacije' => ['organizacije', 'Konkurs je za organizacije civilnog društva'],
             'romi' => ['romi', 'Konkurs je namenjen Romkinjama i Romima'],
@@ -341,6 +342,45 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
         $this->assertSame([$grupa], $nacrt->fresh()->grupe);
         $this->assertStringNotContainsStringIgnoringCase('srbij', (string) $nacrt->fresh()->predlog['grupe'][0]['citat']);
+    }
+
+    // Paket 68/T1: „Mladi" je grupa kad na strani piše „mladi" ili „mlade"; „omladinske organizacije" i „mlađi" nisu mladi.
+    #[Test]
+    public function recenica_o_mladima_iz_srbije_dokazuje_grupu_mladi(): void
+    {
+        $nacrt = $this->nacrt();
+        $citat = 'Mladi iz Srbije koji imaju 18 godina mogu da se prijave za besplatnu kartu';
+        Http::fake([self::STRANA => $this->strana('<p>Poziv. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'mladi', 'citat' => $citat]]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
+        $this->assertSame(['mladi'], $nacrt->fresh()->grupe);
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function recenicaKojaNijeMladi(): array
+    {
+        return [
+            'omladinske organizacije' => ['Prijave podnose omladinske i studentske ustanove'],
+            'omladinski centar' => ['Omladinski centar organizuje radionice'],
+            'mlađi od 30' => ['Mogu da se prijave osobe mlađe od 30 godina'],
+            'ćirilično mlađi' => ['Могу да се пријаве особе млађе од 30 година'],
+        ];
+    }
+
+    // Ogledalo: reč koja samo liči na „mladi" ne dokazuje grupu, pa model koji je predloži ostaje bez grupe (nacrt).
+    #[Test]
+    #[DataProvider('recenicaKojaNijeMladi')]
+    public function recenica_koja_samo_lici_na_mlade_ne_dokazuje_grupu_mladi(string $citat): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana('<p>Poziv. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'mladi', 'citat' => $citat]]])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertNotContains('mladi', (array) $nacrt->fresh()->grupe);
     }
 
     // Paket 59/T3: citat modela koji doslovno piše na strani, ali nema reč grupe, ne odbija grupu: kod traži na strani rečenicu sa rečju grupe (kao kad
@@ -1175,9 +1215,10 @@ class UvozObradiTest extends BazaTestCase
 
             $poruke = $zahtev->data()['messages'];
 
-            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni mladi, povratnici iz inostranstva, organizacije — ili ono što je namenjeno Romima.')
+            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni mladi, mladi, povratnici iz inostranstva, organizacije — ili ono što je namenjeno Romima.')
                 && str_contains($poruke[0]['content'], 'Organizacije su udruženja i organizacije civilnog društva, ne firme')
                 && str_contains($poruke[0]['content'], 'grupe (lista objekata')
+                && str_contains($poruke[0]['content'], 'nezaposleni-mladi, mladi (samo kad tekst kaže')
                 && str_contains($poruke[0]['content'], 'vazi_pravilo (true')
                 && strpos($poruke[0]['content'], 'grupe (lista objekata') < strpos($poruke[0]['content'], 'vazi_pravilo (true')
                 && ! str_contains($poruke[0]['content'], 'citat_pravila')

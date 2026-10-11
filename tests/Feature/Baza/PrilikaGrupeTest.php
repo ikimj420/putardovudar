@@ -37,12 +37,12 @@ class PrilikaGrupeTest extends AdminBazaTestCase
         return array_combine(array_map(fn (Grupa $grupa) => $grupa->value, Grupa::cases()), array_map(fn (Grupa $grupa) => [$grupa], Grupa::cases()));
     }
 
-    // Nazivi su iz paketa 39 (osam) i paketa 46 (poslednja), doslovno, tim redosledom.
+    // Nazivi su iz paketa 39 (osam), paketa 46 (odrasli bez škole) i paketa 68 (Mladi, posle „Nezaposleni mladi"), doslovno, tim redosledom.
     #[Test]
-    public function grupe_su_devet_i_imaju_nazive_iz_paketa(): void
+    public function grupe_su_deset_i_imaju_nazive_iz_paketa(): void
     {
         $this->assertSame(
-            ['Osnovci', 'Srednjoškolci', 'Studenti', 'Master i doktorski studenti', 'Nezaposleni mladi', 'Povratnici iz inostranstva', 'Organizacije', 'Romi i Romkinje', 'Odrasli bez završene škole'],
+            ['Osnovci', 'Srednjoškolci', 'Studenti', 'Master i doktorski studenti', 'Nezaposleni mladi', 'Mladi', 'Povratnici iz inostranstva', 'Organizacije', 'Romi i Romkinje', 'Odrasli bez završene škole'],
             array_map(fn (Grupa $grupa) => $grupa->getLabel(), Grupa::cases()),
         );
     }
