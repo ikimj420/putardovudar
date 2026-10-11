@@ -74,6 +74,15 @@
   --strana-ikona: var(--noc);
   --strana-nad: var(--ljubicasta);
 
+  /* Boje vrata (paket 62): svetlo odozgo nadole, krilo sleva nadesno, oreol i svetlo na podu. Početna, pomoćnik i ostale strane su zlatno-narandžaste; ostale strane dole menjaju ove promenljive. */
+  --vrata-svetlo-1: #ffe7b0;
+  --vrata-svetlo-2: #f7b866;
+  --vrata-svetlo-3: #f0994c;
+  --vrata-krilo-1: #e7b53c;
+  --vrata-krilo-2: #c85a14;
+  --vrata-oreol: #f0994c;
+  --vrata-pod: #ffd9a0;
+
   --font-tekst: Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-naslov: "Plus Jakarta Sans", Inter, "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -86,6 +95,13 @@ body[data-strana="prilike"] {
   --strana-krug: rgba(39, 15, 67, 0.12);
   --strana-ikona: var(--noc);
   --strana-nad: var(--noc);
+  --vrata-svetlo-1: #ffe2c6;
+  --vrata-svetlo-2: #f7a866;
+  --vrata-svetlo-3: #e07229;
+  --vrata-krilo-1: #e07229;
+  --vrata-krilo-2: #a8470f;
+  --vrata-oreol: #f0994c;
+  --vrata-pod: #ffc59a;
 }
 
 body[data-strana="vodici"] {
@@ -95,6 +111,13 @@ body[data-strana="vodici"] {
   --strana-krug: rgba(255, 255, 255, 0.22);
   --strana-ikona: #ffffff;
   --strana-nad: var(--noc);
+  --vrata-svetlo-1: #f1e6ff;
+  --vrata-svetlo-2: #c9a2fb;
+  --vrata-svetlo-3: #8d4ceb;
+  --vrata-krilo-1: #7d36e0;
+  --vrata-krilo-2: #4a1499;
+  --vrata-oreol: #a85ff2;
+  --vrata-pod: #d9c2ff;
 }
 
 body[data-strana="organizacije"] {
@@ -104,6 +127,13 @@ body[data-strana="organizacije"] {
   --strana-krug: rgba(255, 255, 255, 0.22);
   --strana-ikona: #ffffff;
   --strana-nad: var(--noc);
+  --vrata-svetlo-1: #ffe0ef;
+  --vrata-svetlo-2: #e58ab9;
+  --vrata-svetlo-3: #b83c7e;
+  --vrata-krilo-1: #a82d6e;
+  --vrata-krilo-2: #6a1546;
+  --vrata-oreol: #b83c7e;
+  --vrata-pod: #f5b6d5;
 }
 
 body[data-strana="kalendar"] {
@@ -113,6 +143,13 @@ body[data-strana="kalendar"] {
   --strana-krug: rgba(39, 15, 67, 0.12);
   --strana-ikona: var(--noc);
   --strana-nad: var(--noc);
+  --vrata-svetlo-1: #fff6d6;
+  --vrata-svetlo-2: #f5d98a;
+  --vrata-svetlo-3: #e7b53c;
+  --vrata-krilo-1: #e7b53c;
+  --vrata-krilo-2: #b07f14;
+  --vrata-oreol: #e7b53c;
+  --vrata-pod: #fbe3a0;
 }
 
 /* Inter je lokalni fajl (public/fonts/javno, licenca uz njega); nijedna spoljna adresa. */
@@ -552,6 +589,35 @@ html {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* Boje svetla, krila, oreola i poda dolaze iz promenljivih strane (vidi „Boje vrata"), pa slika ne zna na kojoj je strani. */
+.vrata-svetlo-1 {
+  stop-color: var(--vrata-svetlo-1);
+}
+
+.vrata-svetlo-2 {
+  stop-color: var(--vrata-svetlo-2);
+}
+
+.vrata-svetlo-3 {
+  stop-color: var(--vrata-svetlo-3);
+}
+
+.vrata-krilo-1 {
+  stop-color: var(--vrata-krilo-1);
+}
+
+.vrata-krilo-2 {
+  stop-color: var(--vrata-krilo-2);
+}
+
+.vrata-oreol {
+  stop-color: var(--vrata-oreol);
+}
+
+.vrata-pod {
+  stop-color: var(--vrata-pod);
 }
 
 .tacka {

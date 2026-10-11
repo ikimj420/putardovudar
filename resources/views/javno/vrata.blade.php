@@ -2,10 +2,10 @@
 <div class="vrata-okvir">
     <svg class="vrata" viewBox="0 0 220 270" aria-hidden="true" focusable="false">
         <defs>
-            <radialGradient id="vrata-oreol" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f0994c" stop-opacity=".45"/><stop offset=".55" stop-color="#a85ff2" stop-opacity=".18"/><stop offset="1" stop-color="#a85ff2" stop-opacity="0"/></radialGradient>
-            <linearGradient id="vrata-unutra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe7b0"/><stop offset=".55" stop-color="#f7b866"/><stop offset="1" stop-color="#f0994c"/></linearGradient>
-            <linearGradient id="vrata-krilo" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e7b53c"/><stop offset="1" stop-color="#c85a14"/></linearGradient>
-            <radialGradient id="vrata-pod" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".75"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+            <radialGradient id="vrata-oreol" cx=".5" cy=".5" r=".5"><stop class="vrata-oreol" offset="0" stop-opacity=".5"/><stop class="vrata-oreol" offset=".6" stop-opacity=".14"/><stop class="vrata-oreol" offset="1" stop-opacity="0"/></radialGradient>
+            <linearGradient id="vrata-unutra" x1="0" y1="0" x2="0" y2="1"><stop class="vrata-svetlo-1" offset="0"/><stop class="vrata-svetlo-2" offset=".55"/><stop class="vrata-svetlo-3" offset="1"/></linearGradient>
+            <linearGradient id="vrata-krilo" x1="0" y1="0" x2="1" y2="0"><stop class="vrata-krilo-1" offset="0"/><stop class="vrata-krilo-2" offset="1"/></linearGradient>
+            <radialGradient id="vrata-pod" cx=".5" cy=".5" r=".5"><stop class="vrata-pod" offset="0" stop-opacity=".8"/><stop class="vrata-pod" offset="1" stop-opacity="0"/></radialGradient>
             <filter id="vrata-senka" x="-20%" y="-40%" width="140%" height="190%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#270f43" flood-opacity=".25"/></filter>
         </defs>
         <circle cx="110" cy="140" r="110" fill="url(#vrata-oreol)"/>
