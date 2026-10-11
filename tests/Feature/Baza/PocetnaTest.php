@@ -174,10 +174,10 @@ class PocetnaTest extends BazaTestCase
         $this->assertMatchesRegularExpression('/\n\.hero h1 em \{[^}]*linear-gradient\(100deg, var\(--lila\), var\(--narandzasta-meka\) 70%, var\(--zlato\)\);[^}]*background-clip: text;[^}]*color: transparent;/', $stil);
         // Telefon: jedna kolona, vrata na sredini široka koliko i sadržaj (najviše 380 px), tekst ispod naslova ne postoji.
         $this->assertMatchesRegularExpression('/\n\.hero-red \{[^}]*display: grid;/', $this->stilBezUpita());
-        $this->assertMatchesRegularExpression('/\n\.hero \.vrata \{[^}]*justify-self: center;[^}]*width: min\(100%, 380px\);/', $this->stilBezUpita());
+        $this->assertMatchesRegularExpression('/\n\.vrata-okvir \{[^}]*justify-self: center;[^}]*width: min\(100%, 380px\);/', $this->stilBezUpita());
         $this->assertMatchesRegularExpression('/\n\.hero p \{\s*display: none;/', $this->stilBezUpita());
         // Laptop: tekst levo, vrata desno (380 px), dugme ispod oba, tekst ispod naslova se vidi.
-        $this->assertMatchesRegularExpression('/@media \(min-width: 900px\) \{\s*\.plocice \{[^}]*\}\s*\.vodici-traka \{[^}]*\}\s*\.hero \{[^}]*padding: 170px 0 100px;\s*\}\s*\.hero-red \{[^}]*grid-template-columns: minmax\(0, 1fr\) 380px;[^}]*"pitaj pitaj"[^}]*\}\s*\.hero-tekst \{[^}]*\}\s*\.hero h1 \{\s*font-size: clamp\(48px, 5\.4vw, 62px\);\s*\}\s*\.hero p \{\s*display: block;[^}]*\}\s*\.hero \.vrata \{[^}]*width: 380px;/', $stil);
+        $this->assertMatchesRegularExpression('/@media \(min-width: 900px\) \{\s*\.plocice \{[^}]*\}\s*\.vodici-traka \{[^}]*\}\s*\.hero \{[^}]*padding: 170px 0 100px;\s*\}\s*\.hero-red \{[^}]*grid-template-columns: minmax\(0, 1fr\) 380px;[^}]*"pitaj pitaj"[^}]*\}\s*\.hero-tekst \{[^}]*\}\s*\.hero h1 \{\s*font-size: clamp\(48px, 5\.4vw, 62px\);\s*\}\s*\.hero p \{\s*display: block;[^}]*\}\s*\.traka-red \{[^}]*grid-template-columns: minmax\(0, 1fr\) 380px;[^}]*\}\s*\.vrata-okvir \{[^}]*justify-self: end;[^}]*width: 380px;[^}]*\}\s*\.hero \.vrata-okvir \{\s*grid-area: vrata;/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-glavno \{[^}]*linear-gradient\(135deg, var\(--narandzasta\)[^}]*color: var\(--noc\);/', $stil);
         $this->assertMatchesRegularExpression('/\n\.dugme-staklo \{[^}]*backdrop-filter: blur\(12px\);[^}]*color: #fff;/', $stil);
         // Boje oznaka na vratima su iste kao boje vrsta na karticama.

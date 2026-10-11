@@ -44,7 +44,7 @@
         </nav>
     </header>
     <main>
-        {{-- Početna ima svoj naslovni deo (hero), ostale strane naslovnu traku. --}}
+        {{-- Početna ima svoj naslovni deo (hero) sa vratima u svom rasporedu, ostale strane naslovnu traku; vrata su ista komponenta (paket 62). --}}
         @hasSection('hero')
             <section class="hero zrno">
                 @yield('hero')
@@ -52,8 +52,11 @@
         @endif
         @hasSection('traka')
             <section class="naslovna-traka">
-                <div class="sirina">
-                    @yield('traka')
+                <div class="sirina traka-red">
+                    <div class="traka-tekst">
+                        @yield('traka')
+                    </div>
+                    <x-vrata />
                 </div>
             </section>
         @endif

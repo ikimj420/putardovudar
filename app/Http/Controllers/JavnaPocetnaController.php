@@ -19,7 +19,6 @@ class JavnaPocetnaController extends Controller
     public function index(): View
     {
         return view('javno.pocetna', [
-            'vrste' => Prilika::vrsteSaJavnimPrilikama(),
             // Deo „Zatvara se uskoro" (paket 61): isti opseg kao izbor na /prilike; bez ijedne prilike dela nema. Ne zove se „uskoro": to ime nosi izbor na spisku,
             // a forma pretrage nasleđuje promenljive pogleda.
             'prilikeUskoro' => Prilika::javne()->rokUskoro()->poRoku()->limit(self::NAJVISE_USKORO)->get(),

@@ -76,14 +76,14 @@ class StampaStranaTest extends BazaTestCase
         return $nadjeno;
     }
 
-    // Meni, putanja i dugmad se ne štampaju; svaki od tih selektora pogađa element koji na ove strane stvarno postoji (inače je pravilo mrtvo).
+    // Meni, putanja, vrata (paket 62) i dugmad se ne štampaju; svaki od tih selektora pogađa element koji na ove strane stvarno postoji (inače je pravilo mrtvo).
     #[Test]
     public function meni_putanja_i_dugmad_se_ne_stampaju_a_pravila_pogadjaju_postojece_elemente(): void
     {
         $sakriveno = $this->selektoriSa($this->stampa(), 'display: none');
         $stranice = $this->strane();
 
-        $this->assertSame(['.zaglavlje', '.linija', '.mrvice', '.deljenje', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
+        $this->assertSame(['.zaglavlje', '.linija', '.mrvice', '.deljenje', '.vrata-okvir', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
 
         foreach ($sakriveno as $selektor) {
             $klasa = ltrim($selektor, '.');

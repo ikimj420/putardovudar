@@ -438,9 +438,16 @@ html {
 }
 
 /* Naslovna traka kao u prototipu: preliv po uglovima, putanja, veliki naslov sa tesnim razmakom slova */
-.naslovna-traka .sirina {
+/* Naslovna traka (paket 62): tekst i vrata. Na telefonu vrata dolaze posle teksta, na sredini; na laptopu su desno od naslova. */
+.traka-red {
+  display: grid;
+  gap: 20px;
+}
+
+.traka-tekst {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 /* Redosled u kodu strane je isti kao ranije (naslov, vrsta, rok, mesto, opis); ovde se samo slaže kao u prototipu. */
@@ -534,9 +541,16 @@ html {
   min-width: 0;
 }
 
-.hero .vrata {
+/* Vrata su ista na svakoj strani: široka koliko sadržaj (najviše 380 px), puna vidljivost. */
+.vrata-okvir {
+  position: relative;
   justify-self: center;
   width: min(100%, 380px);
+}
+
+.vrata {
+  display: block;
+  width: 100%;
   height: auto;
 }
 
@@ -1338,10 +1352,19 @@ section + section > .naslov-izvora {
     font-size: 19px;
   }
 
-  .hero .vrata {
-    grid-area: vrata;
+  .traka-red {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    column-gap: 48px;
+    align-items: center;
+  }
+
+  .vrata-okvir {
     justify-self: end;
     width: 380px;
+  }
+
+  .hero .vrata-okvir {
+    grid-area: vrata;
   }
 
   .hero-pitaj {
@@ -1875,6 +1898,7 @@ section + section > .naslov-izvora {
   .linija,
   .mrvice,
   .deljenje,
+  .vrata-okvir,
   .dugme-red,
   .dugme-veza,
   .obrazac,
