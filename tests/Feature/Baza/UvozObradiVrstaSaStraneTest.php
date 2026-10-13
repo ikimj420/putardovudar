@@ -123,15 +123,66 @@ class UvozObradiVrstaSaStraneTest extends BazaTestCase
         $this->assertSame('model', $prilika->predlog['vrsta_izvor']);
     }
 
-    // Posao: i dalje ne treba grupa.
+    // Paket 72/T2 (prepisuje tvrdnju iz paketa 68/T5, koja je kodu davala da od „praksa" napravi „posao"): kod ne dodeljuje „posao" umesto modela, jer posao
+    // važi i bez grupe. Model kaže „praksa", na strani je dokazan samo posao: vrsta ostaje modelova i nije potkrepljena.
     #[Test]
-    public function posao_dokazan_na_strani_zamenjuje_pogresnu_vrstu_i_ne_traži_grupu(): void
+    public function kod_ne_pravi_posao_od_druge_vrste(): void
     {
         $prilika = $this->obradi('<p>Oglas za posao radnika u skladištu. Rok za prijavu je 20. oktobra 2026. godine.</p>', ['vrsta' => 'praksa', 'grupe' => []]);
 
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertSame('vrsta nije potkrepljena', $prilika->predlog['odbijeno']);
+        $this->assertSame('praksa', $prilika->predlog['vrsta']);
+        $this->assertSame('model', $prilika->predlog['vrsta_izvor']);
+    }
+
+    // Ogledalo: kad model sam kaže „posao" i to piše na strani, oglas se objavljuje bez grupe, kao i pre.
+    #[Test]
+    public function posao_koji_je_rekao_model_ne_traži_grupu(): void
+    {
+        $prilika = $this->obradi('<p>Oglas za posao radnika u skladištu. Rok za prijavu je 20. oktobra 2026. godine.</p>', ['vrsta' => 'posao', 'grupe' => []]);
+
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
         $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
+        $this->assertSame('model', $prilika->predlog['vrsta_izvor']);
+    }
+
+    // Primer #13 iz probe 71: vebinar „namenjen zaposlenima u ustanovama"; model kaže „obuka", a jedina reč vrste na strani je „zaposlenima".
+    #[Test]
+    public function vebinar_za_zaposlene_nije_posao(): void
+    {
+        $prilika = $this->obradi(
+            '<p>Vebinar je namenjen zaposlenima u ustanovama koje sprovode mobilnosti učenika. Rok za prijavu je 20. oktobra 2026. godine.</p>',
+            ['vrsta' => 'obuka', 'grupe' => [], 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine'],
+        );
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertSame('vrsta nije potkrepljena', $prilika->predlog['odbijeno']);
+        $this->assertSame('obuka', $prilika->predlog['vrsta']);
+        $this->assertSame('model', $prilika->predlog['vrsta_izvor']);
+    }
+
+    /** @return array<string, array{0: string, 1: string, 2: string}> vrsta koju kaže model, telo strane, vrsta posle obrade (ostale zamene iz 68/T5 rade kao do sada) */
+    public static function zameneKojeSeDozvoljavaju(): array
+    {
+        return [
+            'obuka postaje konkurs (mentorski program)' => ['obuka', '<p>Poziv za mentorski program podrške organizacijama. Rok za prijavu je 20. oktobra 2026. godine.</p>', 'konkurs'],
+            'praksa postaje konkurs (mentorski program)' => ['praksa', '<p>Poziv za mentorski program podrške organizacijama. Rok za prijavu je 20. oktobra 2026. godine.</p>', 'konkurs'],
+            'posao postaje konkurs' => ['posao', '<p>Poziv za podršku organizacijama. Rok za prijavu je 20. oktobra 2026. godine.</p>', 'konkurs'],
+            'obuka postaje stipendija' => ['obuka', '<p>Stipendija za studente. Rok za prijavu je 20. oktobra 2026. godine.</p>', 'stipendija'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('zameneKojeSeDozvoljavaju')]
+    public function ostale_zamene_vrste_rade_kao_do_sada(string $vrstaModela, string $telo, string $ocekivana): void
+    {
+        $prilika = $this->obradi($telo, ['vrsta' => $vrstaModela]);
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame($ocekivana, $prilika->vrsta->value);
         $this->assertSame('kod', $prilika->predlog['vrsta_izvor']);
+        $this->assertSame($vrstaModela, $prilika->predlog['vrsta_modela']);
     }
 
     // Paket 70/T6: „mera pripravništva za mlade sa srednjim obrazovanjem" je praksa (model kaže „praksa", a reč „praksa" ne piše na strani).

@@ -218,6 +218,7 @@ TEXT;
 
     // Model ponekad pogreši vrstu (izmereno: „praksa" za poziv programu, a reč „praksa" ne piše na strani). Kad on kaže da je prilika, a njegova vrsta nije
     // dokazana rečju sa strane, uzima se jedina vrsta koja jeste dokazana; kad ih je više ili nijedna, ostaje njegova, pa nacrt kao do sada (paket 68).
+    // „Posao" kod ne dodeljuje: važi i bez grupe, pa bi „zaposlenima" u vebinaru napravilo oglas (paket 72).
     /**
      * @param  array<string, mixed>  $forma
      * @return array{0: array<string, mixed>, 1: string} oblik sa vrstom i ko je vrstu odredio („model" ili „kod")
@@ -228,7 +229,7 @@ TEXT;
 
         $dokazane = array_values(array_filter(VrstaPrilike::cases(), fn (VrstaPrilike $druga) => $druga->potkrepljenaTekstom($tekst)));
 
-        if ($vrsta === null || $forma['vazi_pravilo'] !== true || count($dokazane) !== 1 || $dokazane[0] === $vrsta) {
+        if ($vrsta === null || $forma['vazi_pravilo'] !== true || count($dokazane) !== 1 || $dokazane[0] === $vrsta || $dokazane[0] === VrstaPrilike::Posao) {
             return [$forma, 'model'];
         }
 
