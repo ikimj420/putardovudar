@@ -3,12 +3,12 @@
 return [
 
     // Novi izvor se dodaje ovde (ime i adresa); komanda uvoz:rss ga uvozi bez izmene koda.
+    // europa.rs nije ovde: nema kategoriju konkursa, adresa /category/konkursi/feed/ daje ispravan RSS bez ijedne stavke (izmereno 13.10.2026., PITANJA-74).
     'izvori' => [
         ['ime' => 'Fond za mlade talente', 'adresa' => 'https://fondzamladetalente.gov.rs/feed/'],
         ['ime' => 'Erasmus+ Srbija', 'adresa' => 'https://erasmusplus.rs/feed/'],
         ['ime' => 'EU mogućnosti - konkursi', 'adresa' => 'https://eumogucnosti.rs/category/konkursi/feed/'],
         ['ime' => 'Youth.rs', 'adresa' => 'https://youth.rs/feed/'],
-        ['ime' => 'EU u Srbiji - konkursi', 'adresa' => 'https://europa.rs/category/konkursi/feed/'],
         ['ime' => 'KOMS - konkursi', 'adresa' => 'https://koms.rs/category/konkursi/feed/'],
         ['ime' => 'Ministarstvo prosvete', 'adresa' => 'https://prosveta.gov.rs/kategorija/vazna-obavestenja/feed/'],
         // Godina je u adresi: u januaru 2027. adresa se menja (konkursi-i-javni-pozivi-2027).

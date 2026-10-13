@@ -8,20 +8,21 @@ use Tests\TestCase;
 class UvozIzvoriUPodesavanjimaTest extends TestCase
 {
     #[Test]
-    public function podesavanja_nabrajaju_tacno_devet_provernih_izvora(): void
+    public function podesavanja_nabrajaju_tacno_osam_provernih_izvora(): void
     {
         $this->assertSame([
             ['ime' => 'Fond za mlade talente', 'adresa' => 'https://fondzamladetalente.gov.rs/feed/'],
             ['ime' => 'Erasmus+ Srbija', 'adresa' => 'https://erasmusplus.rs/feed/'],
             ['ime' => 'EU mogućnosti - konkursi', 'adresa' => 'https://eumogucnosti.rs/category/konkursi/feed/'],
             ['ime' => 'Youth.rs', 'adresa' => 'https://youth.rs/feed/'],
-            ['ime' => 'EU u Srbiji - konkursi', 'adresa' => 'https://europa.rs/category/konkursi/feed/'],
             ['ime' => 'KOMS - konkursi', 'adresa' => 'https://koms.rs/category/konkursi/feed/'],
             ['ime' => 'Ministarstvo prosvete', 'adresa' => 'https://prosveta.gov.rs/kategorija/vazna-obavestenja/feed/'],
             ['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/'],
             ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php', 'najvise_strana' => 1],
         ], config('uvoz.izvori'));
-        $this->assertCount(9, config('uvoz.izvori'));
+        $this->assertCount(8, config('uvoz.izvori'));
+        // Paket 74/T2: europa.rs nema feed konkursa (adresa daje RSS bez stavki), pa nije među izvorima.
+        $this->assertNotContains('EU u Srbiji - konkursi', array_column(config('uvoz.izvori'), 'ime'));
     }
 
     // Ogledalo: svaki izvor ima ime i veb adresu, a imena i adrese se ne ponavljaju.
