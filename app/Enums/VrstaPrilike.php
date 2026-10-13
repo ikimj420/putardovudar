@@ -31,7 +31,7 @@ enum VrstaPrilike: string implements HasLabel
     {
         $uzorak = match ($this) {
             self::Posao => '/\b(?:posao|posla|poslu|poslom|poslovi|poslova|poslovima|poslove|zaposl[a-z]*|radn[a-z]* mest[a-z]*)\b/',
-            self::Praksa => '/\b(?:praks(?:a|e|i|u|om)|pripravnic[a-z]*)\b/',
+            self::Praksa => '/\b(?:praks(?:a|e|i|u|om)|pripravnic[a-z]*|pripravnist[a-z]*)\b/',
             self::Stipendija => '/\bstipend[a-z]*\b/',
             self::Konkurs => '/\b(?:konkurs[a-z]*|poziv(?:a|u|om|i|e|ima)?)\b/',
             self::Obuka => '/\b(?:obuk[a-z]*|obuci|kurs(?:a|u|om|evi|eve|evima|eva)?|radionic[a-z]*|trening[a-z]*)\b/',

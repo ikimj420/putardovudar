@@ -29,7 +29,7 @@ class VrstaPrilikeDokazTest extends TestCase
     {
         return self::skup([
             'posao' => ['Oglas za posao u Nišu', 'ima posla za vozače', 'Radi se o poslovima u ugostiteljstvu', 'Zapošljavanje mladih', 'otvoreno radno mesto', 'ZAPOSLENJE', 'zaposleni radnici', 'ПОСАО У БЕОГРАДУ'],
-            'praksa' => ['Plaćena stručna praksa', 'za praksu u opštini', 'prakse za mlade', 'Pripravnički staž', 'pripravnici'],
+            'praksa' => ['Plaćena stručna praksa', 'za praksu u opštini', 'prakse za mlade', 'Pripravnički staž', 'pripravnici', 'Pripravništvo', 'mera pripravništva za mlade sa srednjim obrazovanjem', 'u pripravništvu', 'PRIPRAVNIŠTVO'],
             'stipendija' => ['Stipendija za studente', 'Konkurs za stipendije', 'stipendista fonda', 'stipendiju dobija'],
             'konkurs' => ['Konkurs za prijavu', 'Javni poziv za podnošenje projekata', 'poziv za prijavu', 'Rezultati konkursa', 'pozivi organizacijama'],
             'obuka' => ['Besplatna obuka', 'kurs engleskog jezika', 'Kursevi za mlade', 'radionica o pisanju CV-a', 'trening veština', 'na obuci'],
@@ -48,7 +48,7 @@ class VrstaPrilikeDokazTest extends TestCase
     {
         return self::skup([
             'posao' => ['Poslovanje preduzeća', 'poslovni prostor', 'Rezultati odabira', 'poslovica'],
-            'praksa' => ['Praktične veštine', 'praktikum', 'Rezultati'],
+            'praksa' => ['Praktične veštine', 'praktikum', 'Rezultati', 'Pripravnost službe'],
             'stipendija' => ['Nagrada za najbolje', 'EU grantovi do 20.000 evra za pravnu pomoć', 'dotacije'],
             'konkurs' => ['Pozivamo vas na vebinar', 'pozivnica za događaj', 'EU grantovi do 20.000 evra'],
             'obuka' => ['Kursna lista banke', 'kursor miša', 'Predavanje o pravima'],

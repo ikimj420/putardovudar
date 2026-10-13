@@ -133,4 +133,15 @@ class UvozObradiVrstaSaStraneTest extends BazaTestCase
         $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
         $this->assertSame('kod', $prilika->predlog['vrsta_izvor']);
     }
+
+    // Paket 70/T6: „mera pripravništva za mlade sa srednjim obrazovanjem" je praksa (model kaže „praksa", a reč „praksa" ne piše na strani).
+    #[Test]
+    public function mera_pripravnistva_je_praksa(): void
+    {
+        $prilika = $this->obradi('<p>Javni poziv za realizaciju mere pripravništva za mlade sa srednjim obrazovanjem. Rok za prijavu je 20. oktobra 2026. godine.</p>', ['vrsta' => 'praksa']);
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame(VrstaPrilike::Praksa, $prilika->vrsta);
+        $this->assertSame('model', $prilika->predlog['vrsta_izvor']);
+    }
 }
