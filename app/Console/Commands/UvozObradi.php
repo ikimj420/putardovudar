@@ -11,6 +11,7 @@ use App\Services\ObradaNacrta;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Prikaz;
 use Illuminate\Console\Command;
+use Throwable;
 
 class UvozObradi extends Command
 {
@@ -54,6 +55,10 @@ class UvozObradi extends Command
                 $this->potrosnja($model);
 
                 return self::FAILURE;
+            } catch (Throwable $izuzetak) {
+                // Jedna loša stavka ne sme da zaustavi ostale (paket 74): ostaje neobrađena, razlog se vidi u ispisu, a izuzetak ide u dnevnik.
+                report($izuzetak);
+                $ishod = new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'greška pri obradi: '.mb_strimwidth((string) preg_replace('/\s+/u', ' ', $izuzetak->getMessage()), 0, 150, '…'));
             }
 
             match ($ishod->ishod) {

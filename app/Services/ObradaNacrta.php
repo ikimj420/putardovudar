@@ -68,6 +68,11 @@ TEXT;
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor modela nije ispravan JSON');
         }
 
+        // Odgovor sa nevažećim UTF-8 (bajtovi odsečeni usred znaka) ruši proveru citata (preg_match) i upis predloga: stavka ostaje neobrađena, a obrada ide dalje (paket 74).
+        if (! $this->jeUtf8($forma)) {
+            return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor modela nije ispravan');
+        }
+
         // Model ume da pomeša ćirilična slova u latinične reči (vrsta „drugo" sa ćiriličnim „o") ili da citira ćirilicom; strana je već latinica, pa se odgovor pretvara pre svake provere (paket 70).
         $forma = $this->latinicom($forma);
 
@@ -234,6 +239,22 @@ TEXT;
         }
 
         return [[...$forma, 'vrsta' => $dokazane[0]->value], 'kod'];
+    }
+
+    // Svaki tekst u odgovoru (i ključevi), ma koliko duboko stajao, mora da je važeći UTF-8.
+    private function jeUtf8(mixed $vrednost): bool
+    {
+        if (is_string($vrednost)) {
+            return mb_check_encoding($vrednost, 'UTF-8');
+        }
+
+        foreach (is_array($vrednost) ? $vrednost : [] as $kljuc => $deo) {
+            if (! $this->jeUtf8((string) $kljuc) || ! $this->jeUtf8($deo)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     // Svaki tekst u odgovoru modela, ma koliko duboko stajao (vrsta, rok, razlog, citati, grupe), kroz Latinica::izCirilice.

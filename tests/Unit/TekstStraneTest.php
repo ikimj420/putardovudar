@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\TekstStrane;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -55,6 +56,33 @@ class TekstStraneTest extends TestCase
     {
         $this->assertSame('rok je 20. oktobra', TekstStrane::normalizuj("  „Rok   je\n20. OKTOBRA\" "));
         $this->assertNotSame(TekstStrane::normalizuj('rok je 20. oktobra'), TekstStrane::normalizuj('rok je 21. oktobra'));
+    }
+
+    /** @return array<string, array{0: string, 1: string}> */
+    public static function znakoviKojiPocinjuBajtomZaNavodnike(): array
+    {
+        return [
+            'sat na početku' => ['⏰ Prijave do 30. jula.', '⏰ prijave do 30. jula.'],
+            'kvačica na početku' => ['✅ Rok: 30. jul', '✅ rok: 30. jul'],
+            'strelica na početku' => ['➡ Prijava', '➡ prijava'],
+            'sat na kraju' => ['Prijave ⏰', 'prijave ⏰'],
+            'kvačica na kraju' => ['Rok ✅', 'rok ✅'],
+            'navodnici oko znaka na početku' => ['„⏰ Rok“', '⏰ rok'],
+            'navodnici oko znaka na kraju' => ['"Rok ✅"', 'rok ✅'],
+            'samo znak' => ['⏰', '⏰'],
+        ];
+    }
+
+    // Paket 74 (dopuna): skidanje navodnika po bajtovima je sekao prvi bajt znaka koji počinje isto kao „ “ ” (bajt E2: ⏰ ✅ ➡), pa je citat modela postajao nevažeći UTF-8
+    // i preg_match je rušio celu obradu. Izmereno na pravom odgovoru Claude-a (citat „⏰ …" sa stranice Youth.rs).
+    #[Test]
+    #[DataProvider('znakoviKojiPocinjuBajtomZaNavodnike')]
+    public function normalizacija_ne_sece_znak_koji_pocinje_bajtom_navodnika(string $ulaz, string $izlaz): void
+    {
+        $normalizovano = TekstStrane::normalizuj($ulaz);
+
+        $this->assertTrue(mb_check_encoding($normalizovano, 'UTF-8'), $ulaz);
+        $this->assertSame($izlaz, $normalizovano);
     }
 
     // Paket 59/T4: razmak ispred . , ; : ! ? ) i iza ( se skida (strana ga ima iz izvlačenja teksta, citat modela ne); razmak između reči ostaje.

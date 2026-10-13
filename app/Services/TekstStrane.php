@@ -26,6 +26,11 @@ final class TekstStrane
             throw new StranaNedostupna('strana je veća od dozvoljene veličine');
         }
 
+        // Strana u drugoj kodnoj strani bi se pretvorila u prazan tekst („strana nema teksta"); bolje je da razlog piše. Izvori iz podešavanja su svi u UTF-8 (izmereno 13.10.2026.).
+        if (! mb_check_encoding($odgovor->body(), 'UTF-8')) {
+            throw new StranaNedostupna('strana nije u UTF-8');
+        }
+
         $tekst = self::izHtmla($odgovor->body());
 
         if ($tekst === '') {
@@ -56,6 +61,7 @@ final class TekstStrane
         $tekst = preg_replace('/ ([.,;:!?)])/u', '$1', $tekst) ?? '';
         $tekst = preg_replace('/\( /u', '(', $tekst) ?? '';
 
-        return trim(mb_strtolower($tekst), " \t\n\r\"'„“”‘’");
+        // Po znakovima, ne po bajtovima: trim() sa maskom seče prvi bajt znaka koji počinje isto kao „ “ ” (E2: ⏰ ✅ ➡) i ostavlja nevažeći UTF-8 (paket 74).
+        return preg_replace('/^[ \t\n\r"\'„“”‘’]+|[ \t\n\r"\'„“”‘’]+$/u', '', mb_strtolower($tekst)) ?? '';
     }
 }
