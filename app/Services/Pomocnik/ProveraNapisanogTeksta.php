@@ -17,9 +17,10 @@ final class ProveraNapisanogTeksta
 
     /**
      * Vraća razlog odbijanja, ili null kad je tekst proveren. $dozvoljeno je sve što model sme da ponovi. $ime je ime i prezime koje je čovek upisao (kad šablon ima polje „ime"
-     * i ono nije prazno): mora bar jednom da stoji u tekstu isto kako je upisano, bez obzira na velika slova i višak razmaka (paket 67).
+     * i ono nije prazno): mora bar jednom da stoji u tekstu isto kako je upisano, bez obzira na velika slova i višak razmaka (paket 67). $bezPozdravaImenom je isto ime kad šablon
+     * ima polje „kome", a ono je prazno: tekst tada ne sme da počne imenom autora („Ana Marković,"), jer to nije pozdrav (paket 70).
      */
-    public function razlogOdbijanja(string $tekst, string $dozvoljeno, ?string $ime = null): ?string
+    public function razlogOdbijanja(string $tekst, string $dozvoljeno, ?string $ime = null, ?string $bezPozdravaImenom = null): ?string
     {
         if (trim($tekst) === '') {
             return 'prazan tekst';
@@ -35,6 +36,10 @@ final class ProveraNapisanogTeksta
 
         if ($ime !== null && ! $this->imeJeKaoUpisano($tekst, $ime)) {
             return 'ime nije kako je upisano';
+        }
+
+        if ($bezPozdravaImenom !== null && $this->pocinjeImenom($tekst, $bezPozdravaImenom)) {
+            return 'pozdrav imenom autora';
         }
 
         // Neprazna mesta za polja bi ostala čoveku u pismu.
@@ -106,6 +111,15 @@ final class ProveraNapisanogTeksta
     private function normalizuj(string $tekst): string
     {
         return rtrim(mb_strtolower((string) preg_replace('~^(?:https?://)?(?:www\.)?~i', '', trim($tekst))), '/.,;:!?');
+    }
+
+    // Prva reč teksta je ime autora (cela reč ili niz reči), pa iza njega slovo ili broj ne stoji: „Ana Marković," počinje imenom, „Ana Markovićeva" ne.
+    private function pocinjeImenom(string $tekst, string $ime): bool
+    {
+        $uporedi = fn (string $v) => trim((string) preg_replace('/[\s\x{00A0}]+/u', ' ', mb_strtolower(Latinica::izCirilice($v))));
+        $ime = $uporedi($ime);
+
+        return $ime !== '' && preg_match('/^'.preg_quote($ime, '/').'(?![\p{L}\d])/u', $uporedi($tekst)) === 1;
     }
 
     // Model ume da „popravi" ime (upisano „Marko Marković", napisano „Marka Marković"). Ćirilica upisanog imena se poredi kao latinica, jer je i tekst modela već latinica.

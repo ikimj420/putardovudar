@@ -41,7 +41,8 @@ TEXT;
 
         try {
             $tekst = Latinica::izCirilice($this->ollama->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $rod), (int) config('pomocnik.ukupno_za_pitanje')));
-            $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), in_array(RodIzImena::POLJE, $sablon->kljucevi(), true) ? ($unosi[RodIzImena::POLJE] ?? '') : null);
+            $ime = in_array(RodIzImena::POLJE, $sablon->kljucevi(), true) ? ($unosi[RodIzImena::POLJE] ?? '') : null;
+            $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), $ime, $this->komePrazno($sablon, $unosi) ? $ime : null);
         } catch (OllamaNedostupna) {
             return new NapisanTekst($slozen, false, 'model ne odgovara');
         } catch (Throwable $izuzetak) {
@@ -52,6 +53,13 @@ TEXT;
         }
 
         return $razlog === null ? new NapisanTekst($tekst, true) : new NapisanTekst($slozen, false, $razlog);
+    }
+
+    // Šablon ima polje „kome", a čovek ga je ostavio prazno: pozdrav ne sme da bude ime autora (paket 70).
+    /** @param  array<string, string>  $unosi */
+    private function komePrazno(Sablon $sablon, array $unosi): bool
+    {
+        return in_array('kome', $sablon->kljucevi(), true) && trim($unosi['kome'] ?? '') === '';
     }
 
     /** @param  array<string, string>  $unosi */
