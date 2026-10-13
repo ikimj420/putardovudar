@@ -11,6 +11,7 @@ use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\DatumiUTekstu;
 use App\Support\DatumUTekstu;
+use App\Support\Latinica;
 use App\Support\PoredjenjeTeksta;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -63,6 +64,9 @@ TEXT;
         } catch (OdgovorNijeJson) {
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nije ispravan JSON');
         }
+
+        // Model ume da pomeša ćirilična slova u latinične reči (vrsta „drugo" sa ćiriličnim „o") ili da citira ćirilicom; strana je već latinica, pa se odgovor pretvara pre svake provere (paket 70).
+        $forma = $this->latinicom($forma);
 
         if (! $this->imaOblik($forma)) {
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nema tražena polja');
@@ -226,6 +230,16 @@ TEXT;
         }
 
         return [[...$forma, 'vrsta' => $dokazane[0]->value], 'kod'];
+    }
+
+    // Svaki tekst u odgovoru modela, ma koliko duboko stajao (vrsta, rok, razlog, citati, grupe), kroz Latinica::izCirilice.
+    private function latinicom(mixed $vrednost): mixed
+    {
+        return match (true) {
+            is_string($vrednost) => Latinica::izCirilice($vrednost),
+            is_array($vrednost) => array_map($this->latinicom(...), $vrednost),
+            default => $vrednost,
+        };
     }
 
     // Rok je datum samo ako je tačno oblika YYYY-MM-DD i dan postoji; šta god drugo model vrati („15. novembar", „sutra", broj), nije datum (paket 70).

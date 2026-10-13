@@ -380,6 +380,45 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $dobra->fresh()->status);
     }
 
+    // Paket 70/T3: mešana slova u vrsti i razlogu („kоnkurs" sa ćiriličnim „о", „subvenциje") i citati ćirilicom prolaze kao latinica.
+    #[Test]
+    public function odgovor_modela_sa_cirilicnim_slovima_se_pretvara_u_latinicu_pre_provere(): void
+    {
+        $nacrt = $this->nacrt();
+        $grupa = "\u{041A}\u{043E}\u{043D}\u{043A}\u{0443}\u{0440}\u{0441} \u{0458}\u{0435} \u{043E}\u{0442}\u{0432}\u{043E}\u{0440}\u{0435}\u{043D} \u{0437}\u{0430} \u{0441}\u{0432}\u{0435} \u{0441}\u{0442}\u{0443}\u{0434}\u{0435}\u{043D}\u{0442}\u{0435}";
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama([
+            'vrsta' => "k\u{043E}nkurs",
+            'razlog' => "Poziv za subven\u{0446}\u{0438}je studentima.",
+            'citat' => "\u{0420}\u{043E}\u{043A} \u{0437}\u{0430} \u{043F}\u{0440}\u{0438}\u{0458}\u{0430}\u{0432}\u{0443} \u{0458}\u{0435} 20. oktobra 2026. godine",
+            'grupe' => [['grupa' => "stud\u{0435}nti", 'citat' => $grupa]],
+        ])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $prilika = $nacrt->fresh();
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame(VrstaPrilike::Konkurs, $prilika->vrsta);
+        $this->assertSame('Poziv za subvencije studentima.', $prilika->razlog_objave);
+        $this->assertSame(['studenti'], $prilika->grupe);
+        $this->assertSame('Rok za prijavu je 20. oktobra 2026. godine', $prilika->predlog['citat']);
+        $this->assertSame('Konkurs je otvoren za sve studente', $prilika->predlog['grupe'][0]['citat']);
+        $this->assertSame(0, preg_match('/\p{Cyrillic}/u', json_encode($prilika->predlog, JSON_UNESCAPED_UNICODE)));
+    }
+
+    // Ogledalo: čista ćirilica koja nije srpska azbuka ostaje kakva jeste i ne prolazi kao vrsta.
+    #[Test]
+    public function slovo_koje_nije_srpsko_ostaje_i_vrsta_nije_sa_spiska(): void
+    {
+        $nacrt = $this->nacrt();
+        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vrsta' => "konkurs\u{044B}"])]);
+
+        $this->artisan('uvoz:obradi');
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        $this->assertSame('vrsta nije sa spiska', $nacrt->fresh()->predlog['odbijeno']);
+    }
+
     // Paket 68/T3: grupa „Nezaposleni" važi za sve uzraste, pa je za dokaz dovoljna reč „nezaposleni", bez „mladi".
     #[Test]
     public function javni_radovi_za_nezaposlene_bez_reci_mladi_dokazuju_grupu_nezaposleni(): void
