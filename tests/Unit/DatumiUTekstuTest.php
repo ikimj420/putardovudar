@@ -23,6 +23,7 @@ class DatumiUTekstuTest extends TestCase
             'dan i mesec brojem, završna tačka' => ['Prijave do 20.10.', [['dan' => 20, 'mesec' => 10, 'godina' => null]]],
             'dva datuma' => ['od 1. oktobra do 15. oktobra 2026.', [['dan' => 1, 'mesec' => 10, 'godina' => null], ['dan' => 15, 'mesec' => 10, 'godina' => 2026]]],
             'mesec u instrumentalu sa godinom' => ['zaključno sa 15. oktobrom 2026. godine', [['dan' => 15, 'mesec' => 10, 'godina' => 2026]]],
+            'maj u instrumentalu (majem)' => ['zaključno sa 15. majem 2027. godine', [['dan' => 15, 'mesec' => 5, 'godina' => 2027]]],
             'dva datuma, drugi u instrumentalu' => ['od 1. oktobra zaključno sa 15. oktobrom 2026.', [['dan' => 1, 'mesec' => 10, 'godina' => null], ['dan' => 15, 'mesec' => 10, 'godina' => 2026]]],
             'instrumental svih meseci sa „-brom"' => ['5. septembrom, 6. novembrom i 7. decembrom', [['dan' => 5, 'mesec' => 9, 'godina' => null], ['dan' => 6, 'mesec' => 11, 'godina' => null], ['dan' => 7, 'mesec' => 12, 'godina' => null]]],
             'maj, jun i jul se ne mešaju' => ['5. maja, 6. juna i 7. jula', [['dan' => 5, 'mesec' => 5, 'godina' => null], ['dan' => 6, 'mesec' => 6, 'godina' => null], ['dan' => 7, 'mesec' => 7, 'godina' => null]]],

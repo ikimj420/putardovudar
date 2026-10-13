@@ -76,7 +76,7 @@ class DatumUTekstuTest extends TestCase
     public static function mesecUInstrumentalu(): array
     {
         return [
-            'januar' => [1, 'januarom'], 'februar' => [2, 'februarom'], 'mart' => [3, 'martom'], 'april' => [4, 'aprilom'], 'maj' => [5, 'majom'], 'jun' => [6, 'junom'],
+            'januar' => [1, 'januarom'], 'februar' => [2, 'februarom'], 'mart' => [3, 'martom'], 'april' => [4, 'aprilom'], 'maj' => [5, 'majom'], 'maj (majem)' => [5, 'majem'], 'jun' => [6, 'junom'],
             'jul' => [7, 'julom'], 'avgust' => [8, 'avgustom'], 'septembar' => [9, 'septembrom'], 'oktobar' => [10, 'oktobrom'], 'novembar' => [11, 'novembrom'], 'decembar' => [12, 'decembrom'],
         ];
     }
@@ -95,12 +95,26 @@ class DatumUTekstuTest extends TestCase
         $this->assertFalse(DatumUTekstu::postoji($tekst, sprintf('2027-%02d-15', $mesec)));
     }
 
+    // Paket 73/T2: „zaključno sa 15. majem 2027. godine" je 15.5.2027. (pravilan oblik; „majom" ostaje).
+    #[Test]
+    public function maj_u_instrumentalu_je_majem(): void
+    {
+        $this->assertTrue(DatumUTekstu::postoji('Rok počinje da teče od 1. aprila zaključno sa 15. majem 2027. godine.', '2027-05-15'));
+        $this->assertTrue(DatumUTekstu::postoji('Zaključno sa 15. majom 2027. godine.', '2027-05-15'));
+        // Ogledalo: drugi dan, mesec i godina isto ne prolaze.
+        $this->assertFalse(DatumUTekstu::postoji('Zaključno sa 15. majem 2027. godine.', '2027-05-16'));
+        $this->assertFalse(DatumUTekstu::postoji('Zaključno sa 15. majem 2027. godine.', '2027-06-15'));
+        $this->assertFalse(DatumUTekstu::postoji('Zaključno sa 15. majem 2027. godine.', '2028-05-15'));
+        $this->assertSame(14, DatumUTekstu::prviPolozaj('Zaključno sa 15. majem 2027.', 15, 5));
+    }
+
     // Merilo iznad prolazi i kad tabela nema oblik za neki mesec; ovde se broji da ga ima svih dvanaest.
     #[Test]
     public function svih_dvanaest_meseci_ima_oblik_u_instrumentalu(): void
     {
         $this->assertCount(12, DatumUTekstu::MESECI);
-        $this->assertCount(12, self::mesecUInstrumentalu());
+        $this->assertCount(13, self::mesecUInstrumentalu());
+        $this->assertCount(12, array_unique(array_column(self::mesecUInstrumentalu(), 0)));
 
         foreach (self::mesecUInstrumentalu() as [$mesec, $oblik]) {
             $this->assertContains($oblik, explode('|', DatumUTekstu::MESECI[$mesec]), 'mesec '.$mesec);
@@ -108,7 +122,7 @@ class DatumUTekstuTest extends TestCase
 
         // Ogledalo: nijedan oblik ne pripada dvama mesecima.
         $oblici = array_merge(...array_map(fn (string $oblici) => explode('|', $oblici), DatumUTekstu::MESECI));
-        $this->assertGreaterThanOrEqual(36, count($oblici));
+        $this->assertGreaterThanOrEqual(37, count($oblici));
         $this->assertSame($oblici, array_values(array_unique($oblici)));
     }
 
