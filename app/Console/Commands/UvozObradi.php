@@ -6,17 +6,19 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Services\IshodObrade;
+use App\Services\Model\ModelObrade;
 use App\Services\ObradaNacrta;
 use App\Services\Ollama\OllamaNedostupna;
+use App\Support\Prikaz;
 use Illuminate\Console\Command;
 
 class UvozObradi extends Command
 {
     protected $signature = 'uvoz:obradi {--ponovo : ponovo obradi nacrte iz uvoza obrađene po starom pravilu}';
 
-    protected $description = 'Ollama predlaže, a kod proverava: nacrti iz uvoza koji ispune pravilo za objavu postaju objavljeni, ostali ostaju nacrti';
+    protected $description = 'Model (Ollama ili Claude, MODEL_OBRADE) predlaže, a kod proverava: nacrti iz uvoza koji ispune pravilo za objavu postaju objavljeni, ostali ostaju nacrti';
 
-    public function handle(ObradaNacrta $obrada): int
+    public function handle(ObradaNacrta $obrada, ModelObrade $model): int
     {
         // Nacrt iz uvoza je onaj koji uvoz ostavlja netaknut: vrsta „Drugo", bez roka, naziv izvora iz config/uvoz.php ili Jooble.
         $upit = Prilika::query()
@@ -49,6 +51,7 @@ class UvozObradi extends Command
                 $ishod = $obrada->obradi($nacrt);
             } catch (OllamaNedostupna $izuzetak) {
                 $this->line(sprintf('%s; ništa nije promenjeno posle ovog nacrta (obrađeno do sada: %d).', $izuzetak->getMessage(), $objavljeno + array_sum($razlozi)));
+                $this->potrosnja($model);
 
                 return self::FAILURE;
             }
@@ -68,6 +71,23 @@ class UvozObradi extends Command
             $this->line(sprintf('  nacrt zbog „%s": %d', $razlog, $broj));
         }
 
+        $this->potrosnja($model);
+
         return self::SUCCESS;
+    }
+
+    // Koji je model radio, koliko poziva, tokena i (za Claude) koliko je to otprilike koštalo; cene su u config/claude.php.
+    private function potrosnja(ModelObrade $model): void
+    {
+        $p = $model->potrosnja();
+
+        $this->line(sprintf(
+            'Model: %s. Poziva: %d. Tokeni: ulaz %d, izlaz %d. %s',
+            $p->model,
+            $p->poziva,
+            $p->ulazniTokeni,
+            $p->izlazniTokeni,
+            $p->cena === null ? 'Procena cene: nema (lokalni model ili nepoznata cena).' : 'Procena cene: $'.Prikaz::broj($p->cena, 4).'.',
+        ));
     }
 }

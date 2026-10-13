@@ -6,8 +6,8 @@ use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Services\Model\ModelObrade;
 use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\DatumiUTekstu;
 use App\Support\DatumUTekstu;
@@ -17,7 +17,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Validation\ValidationException;
 
-// Ollama predlaže, kod odlučuje: objava samo ako je sve što model tvrdi proverljivo u tekstu strane. Model kaže samo da li je tekst prilika; grupu dokazuje
+// Model (Ollama ili Claude, MODEL_OBRADE) predlaže, kod odlučuje: objava samo ako je sve što model tvrdi proverljivo u tekstu strane. Model kaže samo da li je tekst prilika; grupu dokazuje
 // kod (citat sa rečju grupe koji piše na strani), a oglas za posao važi i bez grupe.
 final class ObradaNacrta
 {
@@ -50,20 +50,20 @@ TEXT;
     // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
     private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', 'rok ne piše u tekstu strane'];
 
-    public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
+    public function __construct(private readonly ModelObrade $model, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
 
     /** @throws OllamaNedostupna */
     public function obradi(Prilika $prilika): IshodObrade
     {
         try {
-            $preuzeta = $this->strana->preuzmi((string) $prilika->link_izvora, $this->ollama->najviseZnakova());
+            $preuzeta = $this->strana->preuzmi((string) $prilika->link_izvora, $this->model->najviseZnakova());
             $tekst = $preuzeta->tekst;
         } catch (StranaNedostupna $izuzetak) {
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, $izuzetak->getMessage());
         }
 
         try {
-            $forma = $this->ollama->odgovoriJsonom(self::UPUTSTVO, "Naslov: {$prilika->naslov}\n\nTekst strane:\n{$tekst}");
+            $forma = $this->model->odgovoriJsonom(self::UPUTSTVO, "Naslov: {$prilika->naslov}\n\nTekst strane:\n{$tekst}");
         } catch (OdgovorNijeJson) {
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nije ispravan JSON');
         }
@@ -117,7 +117,7 @@ TEXT;
             'prihvacene_grupe' => array_map(fn (Grupa $grupa) => $grupa->value, $prihvacene),
             'odbijeno' => $odbijeno,
             'nedostajala_polja' => $nedostajala,
-            'model' => $this->ollama->model(),
+            'model' => $this->model->model(),
         ];
 
         $prilika->obradeno_at = now();

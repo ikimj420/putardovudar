@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Http\Controllers\PomocnikSablonController;
+use App\Services\Claude\Claude;
+use App\Services\Model\ModelObrade;
+use App\Services\Ollama\Ollama;
 use App\Support\PrikazPomocnika;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -16,7 +19,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Model obrade prilika (MODEL_OBRADE): samo ObradaNacrta i uvoz:obradi traže ModelObrade; pomoćnik i „Napiši moj" traže Ollamu izričito, pa uvek idu lokalno (paket 71).
+        // Jedan objekat za ceo prolaz, da se potrošnja zbraja na jednom mestu.
+        $this->app->singleton(ModelObrade::class, fn () => config('claude.model_obrade') === 'claude' ? $this->app->make(Claude::class) : $this->app->make(Ollama::class));
     }
 
     /**
