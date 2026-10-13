@@ -27,6 +27,10 @@ class ClaudePozivTest extends TestCase
         Http::preventStrayRequests();
         Sleep::fake();
         config()->set('claude.kljuc', self::KLJUC);
+        // Ovaj test meri kod, ne .env ove mašine: tu može da stoji drugi model, adresa ili isključeno razmišljanje.
+        config()->set('claude.model', 'claude-haiku-5-5');
+        config()->set('claude.adresa', 'https://api.anthropic.com');
+        config()->set('claude.razmisljanje', null);
         config()->set('claude.ponavljanja_cekanje', [3, 10]);
     }
 

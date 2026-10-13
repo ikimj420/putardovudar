@@ -24,6 +24,10 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="ANTHROPIC_API_KEY" value=""/>
+        <env name="CLAUDE_ADRESA" value="https://api.anthropic.com"/>
+        <env name="CLAUDE_MODEL" value="claude-haiku-5-5"/>
+        <env name="CLAUDE_RAZMISLJANJE" value="(null)"/>
+        <env name="CLAUDE_VREME_CEKANJA" value="120"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mariadb"/>

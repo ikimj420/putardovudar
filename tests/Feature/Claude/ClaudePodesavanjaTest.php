@@ -17,7 +17,7 @@ class ClaudePodesavanjaTest extends TestCase
     public function bez_env_fajla_podrazumevana_podesavanja_su_ollama_haiku_i_izmerene_cene(): void
     {
         // phpunit.xml zadaje obradu na Ollami i prazan ključ; da bi se videlo šta stoji u podešavanju, ta tri zadavanja se skidaju.
-        foreach (['MODEL_OBRADE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL', 'CLAUDE_ADRESA', 'CLAUDE_VREME_CEKANJA'] as $naziv) {
+        foreach (['MODEL_OBRADE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL', 'CLAUDE_ADRESA', 'CLAUDE_VREME_CEKANJA', 'CLAUDE_RAZMISLJANJE'] as $naziv) {
             $this->postaviOkruzenje($naziv, null);
         }
         $this->refreshApplication();
@@ -72,6 +72,22 @@ class ClaudePodesavanjaTest extends TestCase
 
         $this->assertMatchesRegularExpression('#<env name="ANTHROPIC_API_KEY" value=""/>#', $xml);
         $this->assertMatchesRegularExpression('#<env name="MODEL_OBRADE" value="ollama"/>#', $xml);
+    }
+
+    // Svako podešavanje Claude-a iz okruženja je zadato u phpunit.xml: inače ga testovi čitaju iz .env ove mašine (tu je posle prelaska radne baze na Claude stajalo isključeno razmišljanje).
+    #[Test]
+    public function phpunit_zadaje_svako_podesavanje_claude_a_iz_okruzenja(): void
+    {
+        $xml = (string) file_get_contents(base_path('phpunit.xml'));
+        preg_match_all("/env\('([A-Z_]+)'/", (string) file_get_contents(config_path('claude.php')), $nalazi);
+        $nazivi = array_values(array_unique($nalazi[1]));
+        preg_match_all('#<env name="([A-Z_]+)"#', $xml, $zadato);
+
+        $this->assertGreaterThanOrEqual(6, count($nazivi));
+        $this->assertContains('CLAUDE_RAZMISLJANJE', $nazivi);
+        $this->assertSame([], array_values(array_diff($nazivi, $zadato[1])));
+        // Ogledalo: merilo vidi podešavanje koje phpunit.xml ne zadaje.
+        $this->assertSame(['CLAUDE_NEZADATO'], array_values(array_diff([...$nazivi, 'CLAUDE_NEZADATO'], $zadato[1])));
     }
 
     // Nijedan fajl projekta (osim .env, koji se ne čita i van gita je) nema nešto što liči na Anthropic ključ.
