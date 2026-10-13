@@ -17,6 +17,7 @@ use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
@@ -233,5 +234,34 @@ class ModelObradeTest extends BazaTestCase
             $this->assertContains(Ollama::class, $tipovi, $klasa);
             $this->assertNotContains(ModelObrade::class, $tipovi, $klasa);
         }
+    }
+
+    /** @return array<string, array{0: string, 1: string, 2: string}> MODEL_OBRADE, šta model vrati, poruka u ispisu komande */
+    public static function neispravanOdgovor(): array
+    {
+        return [
+            'Ollama nije JSON' => ['ollama', 'Evo mog mišljenja: može.', 'nije obrađen (odgovor modela nije ispravan JSON)'],
+            'Claude nije JSON' => ['claude', 'Evo mog mišljenja: može.', 'nije obrađen (odgovor modela nije ispravan JSON)'],
+            'Ollama bez polja' => ['ollama', '{"vazi_pravilo": "da"}', 'nije obrađen (odgovor modela nema tražena polja)'],
+            'Claude bez polja' => ['claude', '{"vazi_pravilo": "da"}', 'nije obrađen (odgovor modela nema tražena polja)'],
+        ];
+    }
+
+    // Paket 72/T3: poruka koju vidi Ivan ne nosi ime modela, jer odgovor može da bude i od Claude-a.
+    #[Test]
+    #[DataProvider('neispravanOdgovor')]
+    public function poruke_o_neispravnom_odgovoru_ne_pominju_ollamu_ni_za_jedan_model(string $obrada, string $sadrzaj, string $poruka): void
+    {
+        config()->set('claude.model_obrade', $obrada);
+        $nacrt = $this->nacrt();
+        Http::fake([
+            self::STRANA => $this->strana(),
+            self::OLLAMA => Http::response(['message' => ['content' => $sadrzaj]]),
+            self::ANTHROPIC => Http::response(['content' => [['type' => 'text', 'text' => $sadrzaj]], 'usage' => ['input_tokens' => 10, 'output_tokens' => 5]]),
+        ]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain($poruka);
+
+        $this->assertNull($nacrt->fresh()->obradeno_at);
     }
 }

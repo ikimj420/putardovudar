@@ -44,7 +44,7 @@ class PrilikeTable
                     self::red(PrikazPrilike::KOME, 'grupe_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::grupe($prilika)),
                     self::red('Rok', 'rok_prikaz', fn (Prilika $prilika): string => self::rok($prilika)),
                     self::red('Izvor', 'izvor_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::nazivIzvora($prilika)),
-                    self::red('Objavio', 'objavio_prikaz', fn (Prilika $prilika): ?string => $prilika->objavio?->getLabel()),
+                    self::red('Objavio', 'objavio_prikaz', fn (Prilika $prilika): ?string => PrikazPrilike::objavio($prilika)),
                 ])->space(2),
             ])
             ->filters([

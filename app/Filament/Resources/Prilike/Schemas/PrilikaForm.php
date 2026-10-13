@@ -8,6 +8,7 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Support\Prikaz;
+use App\Support\PrikazPrilike;
 use Carbon\CarbonImmutable;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -88,8 +89,8 @@ class PrilikaForm
                     ->maxLength(2048),
                 TextInput::make('objavio')
                     ->label('Objavio')
-                    ->helperText('Ollama objavljuje prilike iz uvoza, a Ivan ručno u adminu.')
-                    ->formatStateUsing(fn (mixed $state): ?string => KoJeObjavio::tryFrom((string) $state)?->getLabel())
+                    ->helperText('Model objavljuje prilike iz uvoza, a Ivan ručno u adminu.')
+                    ->formatStateUsing(fn (mixed $state, ?Prilika $record): ?string => $record === null ? null : PrikazPrilike::objavio($record))
                     ->disabled()
                     ->dehydrated(false)
                     ->visible(fn (?Prilika $record): bool => filled($record?->objavio)),

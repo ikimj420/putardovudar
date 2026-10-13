@@ -48,7 +48,7 @@ class AdminSpisakSuKarticeTest extends AdminBazaTestCase
         $prilika->objavi(KoJeObjavio::Ollama);
 
         $this->spisak()->assertSeeInOrder([
-            'Konkurs za stipendije', 'Objavljeno', 'Konkurs', 'Rok', '01.12.2026.', 'Izvor', 'Fond za mlade talente', 'Objavio', 'Ollama', 'Uredi',
+            'Konkurs za stipendije', 'Objavljeno', 'Konkurs', 'Rok', '01.12.2026.', 'Izvor', 'Fond za mlade talente', 'Objavio', 'Model', 'Uredi',
         ]);
     }
 
@@ -58,7 +58,7 @@ class AdminSpisakSuKarticeTest extends AdminBazaTestCase
     {
         $this->prilika()->objavi(KoJeObjavio::Covek);
 
-        $this->spisak()->assertSeeInOrder(['Objavio', 'Ivan'])->assertDontSee('Ollama');
+        $this->spisak()->assertSeeInOrder(['Objavio', 'Ivan'])->assertDontSee('Ollama')->assertDontSee('Model');
     }
 
     #[Test]

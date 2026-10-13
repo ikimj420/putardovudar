@@ -65,14 +65,14 @@ TEXT;
         try {
             $forma = $this->model->odgovoriJsonom(self::UPUTSTVO, "Naslov: {$prilika->naslov}\n\nTekst strane:\n{$tekst}");
         } catch (OdgovorNijeJson) {
-            return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nije ispravan JSON');
+            return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor modela nije ispravan JSON');
         }
 
         // Model ume da pomeša ćirilična slova u latinične reči (vrsta „drugo" sa ćiriličnim „o") ili da citira ćirilicom; strana je već latinica, pa se odgovor pretvara pre svake provere (paket 70).
         $forma = $this->latinicom($forma);
 
         if (! $this->imaOblik($forma)) {
-            return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor Ollame nema tražena polja');
+            return new IshodObrade(IshodObrade::NIJE_OBRADJENO, 'odgovor modela nema tražena polja');
         }
 
         // Model ponekad izostavi vrstu, rok ili citat (izmereno: stavlja ih u objekat grupe); izostavljeno je isto što i null, a bez njih objave nema.

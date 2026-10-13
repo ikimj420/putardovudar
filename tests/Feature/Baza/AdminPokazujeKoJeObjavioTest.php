@@ -18,7 +18,7 @@ use Tests\AdminBazaTestCase;
 #[Group('baza')]
 class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
 {
-    private const POMOC_OBJAVIO = 'Ollama objavljuje prilike iz uvoza, a Ivan ručno u adminu.';
+    private const POMOC_OBJAVIO = 'Model objavljuje prilike iz uvoza, a Ivan ručno u adminu.';
 
     private const POMOC_RAZLOG = 'Zašto je prilika objavljena.';
 
@@ -56,7 +56,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
 
         $this->izmena($prilika)
             ->assertFormFieldIsVisible('objavio')
-            ->assertFormSet(['objavio' => 'Ollama', 'razlog_objave' => 'Konkurs za stipendije otvoren za građane Srbije.'])
+            ->assertFormSet(['objavio' => 'Model', 'razlog_objave' => 'Konkurs za stipendije otvoren za građane Srbije.'])
             ->assertSee(self::POMOC_OBJAVIO)
             ->assertSee(self::POMOC_RAZLOG);
     }

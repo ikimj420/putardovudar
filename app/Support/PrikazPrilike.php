@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\Grupa;
+use App\Enums\KoJeObjavio;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 
@@ -60,6 +61,19 @@ final class PrikazPrilike
     public const DODAJ_ROK = 'Dodaj rok u telefon';
 
     public const ROK_U_KALENDARU = 'Rok: ';
+
+    // Ko je objavio, za admin: „Ivan", ili „Model · claude-haiku-5-5" (model koji je obradio, iz predloga); bez imena modela samo „Model". Na jednom mestu za karticu i formu.
+    public static function objavio(Prilika $prilika): ?string
+    {
+        $ko = $prilika->objavio;
+        $model = data_get($prilika->predlog, 'model');
+
+        if ($ko === KoJeObjavio::Ollama && is_string($model) && $model !== '') {
+            return $ko->getLabel().' · '.$model;
+        }
+
+        return $ko?->getLabel();
+    }
 
     // Rok se prenosi u telefon samo kad postoji i važi; za stalno otvorene prijave i prilike bez roka nema šta da se doda.
     public static function imaRokZaTelefon(Prilika $prilika): bool

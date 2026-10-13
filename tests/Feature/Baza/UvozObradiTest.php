@@ -1141,24 +1141,24 @@ class UvozObradiTest extends BazaTestCase
     }
 
     #[Test]
-    public function odgovor_ollame_koji_nije_ispravan_ne_obelezava_nacrt_kao_obradjen(): void
+    public function odgovor_modela_koji_nije_ispravan_ne_obelezava_nacrt_kao_obradjen(): void
     {
         $nacrt = $this->nacrt();
         Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => 'Evo mog mišljenja: može.']])]);
 
-        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor Ollame nije ispravan JSON)');
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor modela nije ispravan JSON)');
 
         $this->assertNull($nacrt->fresh()->obradeno_at);
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
     }
 
     #[Test]
-    public function odgovor_ollame_bez_trazenih_polja_ne_obelezava_nacrt_kao_obradjen(): void
+    public function odgovor_modela_bez_trazenih_polja_ne_obelezava_nacrt_kao_obradjen(): void
     {
         $nacrt = $this->nacrt();
         Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => '{"vazi_pravilo": "da"}']])]);
 
-        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor Ollame nema tražena polja)');
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor modela nema tražena polja)');
 
         $this->assertNull($nacrt->fresh()->obradeno_at);
     }
@@ -1286,7 +1286,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt();
         Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma)]])]);
 
-        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor Ollame nema tražena polja)');
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor modela nema tražena polja)');
 
         $this->assertNull($nacrt->fresh()->obradeno_at);
     }
