@@ -342,6 +342,44 @@ class UvozObradiTest extends BazaTestCase
         $this->assertStringNotContainsStringIgnoringCase('srbij', (string) $nacrt->fresh()->predlog['grupe'][0]['citat']);
     }
 
+    /** @return array<string, array{0: mixed}> rok koji model vrati, a nije datum oblika YYYY-MM-DD */
+    public static function rokKojiNijeDatum(): array
+    {
+        return [
+            'datum rečima' => ['15. novembar'],
+            'reč umesto datuma' => ['sutra'],
+            'datum sa vremenom' => ['2026-11-15T10:00:00'],
+            'datum sa tačkama' => ['15.11.2026.'],
+            'mesec koji ne postoji' => ['2026-13-45'],
+            'razmak ispred' => [' 2026-11-15'],
+            'prazan tekst' => [''],
+        ];
+    }
+
+    // Paket 70/T1: rok koji nije datum je „nema ispravnog roka", nacrt; obrada ne pada i ide na sledeći nacrt.
+    #[Test]
+    #[DataProvider('rokKojiNijeDatum')]
+    public function rok_koji_nije_datum_ostaje_nacrt_a_obrada_ide_dalje(mixed $rok): void
+    {
+        $losa = $this->nacrt(['naslov' => 'Loš rok', 'link_izvora' => 'https://a.test/los']);
+        $dobra = $this->nacrt(['naslov' => 'Dobar rok', 'link_izvora' => 'https://a.test/dobar']);
+        Http::fake([
+            'https://a.test/los' => $this->strana(),
+            'https://a.test/dobar' => $this->strana(),
+            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Loš rok')
+                ? $this->ollama(['rok' => $rok])
+                : $this->ollama(),
+        ]);
+
+        $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (nema ispravnog roka): Loš rok')->assertExitCode(0);
+
+        $this->assertSame(StatusPrilike::Nacrt, $losa->fresh()->status);
+        $this->assertSame('nema ispravnog roka', $losa->fresh()->predlog['odbijeno']);
+        $this->assertNotNull($losa->fresh()->obradeno_at);
+        // Ogledalo: sledeći nacrt je obrađen i objavljen.
+        $this->assertSame(StatusPrilike::Objavljeno, $dobra->fresh()->status);
+    }
+
     // Paket 68/T3: grupa „Nezaposleni" važi za sve uzraste, pa je za dokaz dovoljna reč „nezaposleni", bez „mladi".
     #[Test]
     public function javni_radovi_za_nezaposlene_bez_reci_mladi_dokazuju_grupu_nezaposleni(): void

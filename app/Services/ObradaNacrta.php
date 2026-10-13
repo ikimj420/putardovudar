@@ -40,10 +40,10 @@ TEXT;
     // Razlog objave oglasa za posao, uvek kodov (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md), a Ivan ga je prihvatio 11.10.2026.
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
-    // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
     // Najduža rečenica koju kod uzima kao citat roka celu; duža se seče oko datuma.
     private const NAJVISE_ZNAKOVA_CITATA_ROKA = 300;
 
+    // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
     private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', 'rok ne piše u tekstu strane'];
 
     public function __construct(private readonly Ollama $ollama, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
@@ -228,6 +228,16 @@ TEXT;
         return [[...$forma, 'vrsta' => $dokazane[0]->value], 'kod'];
     }
 
+    // Rok je datum samo ako je tačno oblika YYYY-MM-DD i dan postoji; šta god drugo model vrati („15. novembar", „sutra", broj), nije datum (paket 70).
+    private function datum(mixed $vrednost): ?CarbonImmutable
+    {
+        if (! is_string($vrednost) || preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $vrednost, $deo) !== 1 || ! checkdate((int) $deo[2], (int) $deo[3], (int) $deo[1])) {
+            return null;
+        }
+
+        return CarbonImmutable::create((int) $deo[1], (int) $deo[2], (int) $deo[3])->startOfDay();
+    }
+
     // Citat roka koji je model vratio mora da stoji na strani. Kad ne stoji (model pogreši slovo), kod sam traži rečenicu sa istim datumom i rečju roka i nju uzima
     // kao citat; datum samo uz događaj ne prolazi. Bez takve rečenice sve ostaje kako je bilo (paket 68).
     /**
@@ -236,7 +246,9 @@ TEXT;
      */
     private function citatRokaSaStrane(array $forma, string $tekst): array
     {
-        if (! is_string($forma['rok']) || preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $forma['rok'], $deo) !== 1 || ! checkdate((int) $deo[2], (int) $deo[3], (int) $deo[1])) {
+        $rok = $this->datum($forma['rok']);
+
+        if ($rok === null) {
             return [$forma, 'model'];
         }
 
@@ -247,7 +259,7 @@ TEXT;
             return [$forma, 'model'];
         }
 
-        $nadjena = $this->recenicaSaRokom(CarbonImmutable::create((int) $deo[1], (int) $deo[2], (int) $deo[3]), $tekst);
+        $nadjena = $this->recenicaSaRokom($rok, $tekst);
 
         return $nadjena === null ? [$forma, 'model'] : [[...$forma, 'citat' => $nadjena], 'kod'];
     }
@@ -352,9 +364,9 @@ TEXT;
             return ['pravilo nije potkrepljeno citatom', null];
         }
 
-        $rok = is_string($forma['rok']) ? CarbonImmutable::createFromFormat('!Y-m-d', $forma['rok']) : null;
+        $rok = $this->datum($forma['rok']);
 
-        if ($rok === null || $rok->format('Y-m-d') !== $forma['rok']) {
+        if ($rok === null) {
             return ['nema ispravnog roka', null];
         }
 
