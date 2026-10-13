@@ -39,13 +39,13 @@ class UvozSpiskaTest extends BazaTestCase
         return (string) file_get_contents(base_path('tests/Fixtures/spiskovi/'.$ime));
     }
 
+    // Paket 70/T7: samo „Konkursi NSZ"; regionalni i lokalni spisak (25 nacrta, nijedna objava u probi 68) nije u podešavanju.
     #[Test]
-    public function podesavanje_ima_dva_spiska_nsz_sa_imenom_i_adresom(): void
+    public function podesavanje_ima_samo_spisak_konkursa_nsz_sa_imenom_i_adresom(): void
     {
-        $this->assertSame([
-            ['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI],
-            ['ime' => 'Nacionalna služba za zapošljavanje - regionalni i lokalni konkursi', 'adresa' => self::REGIONALNI],
-        ], config('uvoz.spiskovi'));
+        $this->assertSame([['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI]], config('uvoz.spiskovi'));
+        $this->assertStringNotContainsString('lokalne-samouprave', (string) json_encode(config('uvoz.spiskovi')));
+        $this->assertStringNotContainsString('regionalni', mb_strtolower((string) json_encode(config('uvoz.spiskovi'), JSON_UNESCAPED_UNICODE)));
     }
 
     // Snimak ima devet stavki, tri sa „ZATVOREN" u naslovu; šest otvorenih ulazi kao nacrt, tačnog naslova (latinica), datuma i veze.
@@ -104,8 +104,13 @@ class UvozSpiskaTest extends BazaTestCase
     }
 
     #[Test]
-    public function komanda_uvozi_oba_spiska_i_ispisuje_brojeve(): void
+    public function komanda_uvozi_svaki_spisak_iz_podesavanja_i_ispisuje_brojeve(): void
     {
+        // Drugi spisak istog izgleda (snimak regionalnog spiska) zadat u samom testu: uvoz je opšti, a podešavanje ga nema.
+        config()->set('uvoz.spiskovi', [
+            ['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI],
+            ['ime' => 'Nacionalna služba za zapošljavanje - regionalni i lokalni konkursi', 'adresa' => self::REGIONALNI],
+        ]);
         Http::fake([self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')), self::REGIONALNI => Http::response($this->snimak('nsz-regionalni.html'))]);
 
         $this->artisan('uvoz:spiskovi')

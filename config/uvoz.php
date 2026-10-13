@@ -19,7 +19,6 @@ return [
     // Izvori bez RSS-a: strana sa spiskom poziva (HTML). Uvozi ih uvoz:spiskovi; čita se samo prva strana spiska, a naslov sa „ZATVOREN" se preskače.
     'spiskovi' => [
         ['ime' => 'Nacionalna služba za zapošljavanje - konkursi', 'adresa' => 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10'],
-        ['ime' => 'Nacionalna služba za zapošljavanje - regionalni i lokalni konkursi', 'adresa' => 'https://www.nsz.gov.rs/sadrzaji/konkurisi-lokalne-samouprave/11'],
     ],
 
     // Ograničenja da jedan izvor ne može da zaglavi uvoz ni da napuni bazu.
