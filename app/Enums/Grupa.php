@@ -117,7 +117,8 @@ enum Grupa: string implements HasLabel
             self::Mladi => '/\b(?:mladi|mladih|mladima|mlade)\b/',
             self::NezaposleniMladi => '/\b(?:nezaposlen[a-z]*|bez zaposlenja|bez posla|trazioc[a-z]* (?:posla|zaposlenja))\b/',
             self::Povratnici => '/\b(?:povratni[ck][a-z]*|repatrijac[a-z]*|readmisij[a-z]*|(?:vracen[a-z]*|povrata?k[a-z]*) (?:iz|u) (?:inostranstv[a-z]*|zemlj[a-z]*|srbij[a-z]*))\b/',
-            self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|gradj?ansk[a-z]* drustv[a-z]*|omladinsk[a-z]* organizacij[a-z]*|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje|mladih|za mlade|zena|roma|osoba|gradj?ana|ljudskih))\b/',
+            // „organizacije koje…" dokazuje grupu samo uz rad sa ljudima („koje rade sa mladima", „koje se bave zaštitom…"), ne i „organizacije koje žele da istraže…" (paket 74).
+            self::Organizacije => '/\b(?:udruzenj[a-z]*|civiln[a-z]* (?:drustv[a-z]*|sektor[a-z]*)|gradj?ansk[a-z]* drustv[a-z]*|omladinsk[a-z]* organizacij[a-z]*|nevladin[a-z]*|nvo|ocd|neprofitn[a-z]*|organizacij[a-z]* (?:koje(?= rade (?:sa|s) | se bave (?:mladim|ljudsk|zastit|socijaln|ranjiv|osetljiv|marginalizovan|zen|romim|osobam|gradjanim|pravim|zajednic))|mladih|za mlade|zena|roma|osoba|gradj?ana|ljudskih))\b/',
             self::Romi => '/\brom(?:a|i|e|u|om|ima|kinj[a-z]*|sk[a-z]*)?\b/',
             self::OdrasliBezSkole => '/\b(?:odrasl(?:i|ih|im|ima|e|a|u|om|oj)|bez kvalifikacij[a-z]*|nekvalifikovan[a-z]*|niskokvalifikovan[a-z]*|nepismen[a-z]*|bez (?:zavrsen[a-z]* )?(?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*|(?:nisu|nije) zavrsil[a-z]* (?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*|nema(?:ju)? zavrsen[a-z]* (?:(?:osnovn|srednj)[a-z]* )?skol[a-z]*)\b/',
         };
