@@ -33,6 +33,9 @@
         <env name="DB_CONNECTION" value="mariadb"/>
         <env name="DB_DATABASE" value="putardovudar_test"/>
         <env name="DB_URL" value=""/>
+        <env name="JOOBLE_KLJUC" value=""/>
+        <env name="JOOBLE_KLJUCNE_RECI" value="posao"/>
+        <env name="JOOBLE_LOKACIJA" value="Srbija"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="MODEL_OBRADE" value="ollama"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
