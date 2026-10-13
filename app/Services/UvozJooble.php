@@ -14,12 +14,21 @@ use Throwable;
 // (help.jooble.org, „REST API documentation") poziv je POST na adresu sa ključem u putanji, pa se adresa nikad ne ispisuje.
 final class UvozJooble
 {
+    // Jooble ograničava broj zahteva po ključu (500, izmereno 13.10.2026.), pa se svaki poslat zahtev broji i komanda ga ispisuje, kao tokeni kod Claude-a.
+    private int $zahteva = 0;
+
+    public function zahteva(): int
+    {
+        return $this->zahteva;
+    }
+
     public function uvezi(): RezultatUvoza
     {
         $kljuc = (string) config('jooble.kljuc');
         $najvise = (int) config('jooble.najvise_poslova');
 
         try {
+            $this->zahteva++;
             $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))
                 ->withUserAgent(config('uvoz.korisnicki_agent'))
                 ->acceptJson()

@@ -100,6 +100,46 @@ class UvozJoobleTest extends BazaTestCase
         $this->assertSame(50, Prilika::query()->count());
     }
 
+    // Paket 74/T4: svaki poslat zahtev se broji i ispisuje (ključ ima ograničenje broja zahteva), i kad je odgovor greška; bez ključa nijedan.
+    #[Test]
+    public function komanda_ispisuje_koliko_je_zahteva_poslala(): void
+    {
+        Http::fake([self::ADRESA => Http::response($this->snimak())]);
+
+        $this->artisan('uvoz:jooble')->expectsOutput('Zahteva ka Jooble-u: 1.')->assertExitCode(0);
+        Http::assertSentCount(1);
+    }
+
+    /** @return array<string, array{0: callable(): mixed}> */
+    public static function odgovoriSaGreskom(): array
+    {
+        return [
+            'ključ nije prihvaćen' => [fn () => Http::response('Access denied', 403)],
+            'greška servera' => [fn () => Http::response('x', 500)],
+            'ne odgovara' => [fn () => fn () => throw new ConnectionException('nema veze')],
+        ];
+    }
+
+    /** @param  callable(): mixed  $odgovor */
+    #[Test]
+    #[DataProvider('odgovoriSaGreskom')]
+    public function zahtev_koji_je_poslat_se_broji_i_kad_odgovor_nije_dobar(callable $odgovor): void
+    {
+        Http::fake([self::ADRESA => $odgovor()]);
+
+        $this->artisan('uvoz:jooble')->expectsOutput('Zahteva ka Jooble-u: 1.')->assertExitCode(1);
+    }
+
+    // Ogledalo: bez ključa nema zahteva, pa ni reda o njima.
+    #[Test]
+    public function bez_kljuca_nema_reda_o_zahtevima(): void
+    {
+        config()->set('jooble.kljuc', '');
+
+        $this->artisan('uvoz:jooble')->doesntExpectOutput('Zahteva ka Jooble-u: 0.')->assertExitCode(0);
+        Http::assertNothingSent();
+    }
+
     #[Test]
     public function bez_kljuca_se_preskace_bez_zahteva_i_bez_greske(): void
     {

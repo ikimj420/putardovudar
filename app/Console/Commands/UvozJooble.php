@@ -24,6 +24,7 @@ class UvozJooble extends Command
         $rezultat = $uvoz->uvezi();
 
         $this->line(sprintf('%s: novih %d, preskočeno %d, greška: %s', $ime, $rezultat->novih, $rezultat->preskoceno, $rezultat->greska ?? 'nema'));
+        $this->line('Zahteva ka Jooble-u: '.$uvoz->zahteva().'.');
 
         return $rezultat->greska === null ? self::SUCCESS : self::FAILURE;
     }
