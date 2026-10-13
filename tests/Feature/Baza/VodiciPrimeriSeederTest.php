@@ -287,9 +287,9 @@ class VodiciPrimeriSeederTest extends BazaTestCase
         $this->assertStringNotContainsString('/', SklapanjeSablona::sklopi($sablon, $unosi, Rod::Muski));
     }
 
-    // Paket 69/T1: prazno polje „skola" u „Moje predstavljanje" ne ostavlja prazan red; ostaje linija za olovku kao u svakom šablonu (PITANJA-69.md 1).
+    // Paket 69/T1 i 70/T10: prazno polje „skola" u „Moje predstavljanje" je opciono: red se ne vidi, a ne ostaje ni prazan red ni linija za olovku.
     #[Test]
-    public function moje_predstavljanje_bez_skole_nema_prazan_red(): void
+    public function moje_predstavljanje_bez_skole_nema_ni_prazan_red_ni_liniju(): void
     {
         $this->pokreni();
 
@@ -299,11 +299,65 @@ class VodiciPrimeriSeederTest extends BazaTestCase
         $bez = SklapanjeSablona::sklopi($sablon, $unosi);
         $sa = SklapanjeSablona::sklopi($sablon, [...$unosi, 'skola' => 'Srednja ugostiteljska škola u Leskovcu.']);
 
-        $this->assertSame("Zovem se Marko Jovanović.\n".SklapanjeSablona::PRAZNO."\nTri meseca sam radio u kafani na Zlatiboru.\nVolim posao sa ljudima.\nŽelim da radim kao konobar u restoranu „Lipa\".", $bez);
+        $this->assertSame("Zovem se Marko Jovanović.\nTri meseca sam radio u kafani na Zlatiboru.\nVolim posao sa ljudima.\nŽelim da radim kao konobar u restoranu „Lipa\".", $bez);
         $this->assertDoesNotMatchRegularExpression('/^$/m', $bez);
         // Ogledalo: sa upisanom školom red je njen tekst, a linije za olovku nema.
         $this->assertStringContainsString("\nSrednja ugostiteljska škola u Leskovcu.\n", $sa);
         $this->assertStringNotContainsString(SklapanjeSablona::PRAZNO, $sa);
+        // Ostala polja ostaju linija za olovku kad su prazna.
+        $this->assertStringContainsString(SklapanjeSablona::PRAZNO, SklapanjeSablona::sklopi($sablon, [...$unosi, 'umem' => '']));
+    }
+
+    // Paket 70/T10: CV iz dokumenta: prazni „kursevi" → odeljak „Kursevi" se ne vidi; prazne „preporuke" → „Preporuke dostupne na zahtev"; ostala prazna polja su linija za olovku.
+    #[Test]
+    public function cv_bez_kurseva_nema_odeljak_a_bez_preporuka_pise_dostupne_na_zahtev(): void
+    {
+        $this->pokreni();
+
+        $cv = Sablon::query()->where('slug', 'cv')->firstOrFail();
+        $unosi = ['ime' => 'Ana Marković', 'telefon' => '060 000 0000', 'eposta' => 'ana.markovic@example.com', 'mesto' => 'Niš', 'cilj' => 'Želim da radim u knjigovodstvu.', 'iskustvo' => 'Praksa u agenciji.', 'obrazovanje' => '2022–2026. Ekonomska škola, Niš', 'kursevi' => '', 'racunar' => 'Excel – srednji nivo', 'jezici' => 'srpski i romski – maternji', 'preporuke' => ''];
+
+        $tekst = SklapanjeSablona::sklopi($cv, $unosi);
+
+        $this->assertStringNotContainsString('Kursevi', $tekst);
+        $this->assertStringNotContainsString("\n\n\n", $tekst);
+        $this->assertStringContainsString("Obrazovanje\n2022–2026. Ekonomska škola, Niš\n\nRad na računaru\nExcel – srednji nivo", $tekst);
+        $this->assertStringEndsWith("Preporuke\nPreporuke dostupne na zahtev", $tekst);
+        $this->assertStringNotContainsString(SklapanjeSablona::PRAZNO, $tekst);
+
+        // Ogledalo: sa kursevima i preporukama odeljak i tekst su tu; prazno „cilj" je i dalje linija za olovku.
+        $pun = SklapanjeSablona::sklopi($cv, [...$unosi, 'kursevi' => '2025. Osnove rada u Excelu', 'preporuke' => 'Jelena Stojanović, 060 000 0001', 'cilj' => '']);
+        $this->assertStringContainsString("Kursevi\n2025. Osnove rada u Excelu\n\nRad na računaru", $pun);
+        $this->assertStringEndsWith("Preporuke\nJelena Stojanović, 060 000 0001", $pun);
+        $this->assertStringContainsString("Cilj\n".SklapanjeSablona::PRAZNO."\n", $pun);
+    }
+
+    // Paket 70/T10: motivaciono pismo iz dokumenta: prazno „kome" → „Poštovani"; upisano „kome" ostaje.
+    #[Test]
+    public function motivaciono_pismo_bez_kome_pocinje_sa_postovani(): void
+    {
+        $this->pokreni();
+
+        $pismo = Sablon::query()->where('slug', 'motivaciono-pismo')->firstOrFail();
+        $unosi = ['ime' => 'Ana Marković', 'prilika' => 'stipendija za studente', 'oglas' => 'Sajt škole', 'kome' => '', 'skola' => 'Ekonomski fakultet u Nišu', 'iskustvo' => 'Praksa u agenciji.', 'zasto' => 'Želim da završim fakultet.', 'kraj' => 'Niš, 20. oktobar'];
+
+        $this->assertStringStartsWith("Poštovani,\n\nprijavljujem se za stipendija za studente.", SklapanjeSablona::sklopi($pismo, $unosi));
+        $this->assertStringStartsWith("Poštovana profesorko Petrović,\n\nprijavljujem se", SklapanjeSablona::sklopi($pismo, [...$unosi, 'kome' => 'Poštovana profesorko Petrović']));
+    }
+
+    // Paket 70/T10: podešavanje stoji uz polje (u podacima šablona), ne u kodu po imenu šablona: ista tri polja sa istim pravilima rade na šablonu koji seeder ne poznaje.
+    #[Test]
+    public function pravilo_stoji_uz_polje_a_ne_uz_ime_sablona(): void
+    {
+        $sablon = Sablon::factory()->create(['slug' => 'neki-moj-sablon', 'naslov' => 'Moj', 'objasnjenje' => 'Moj.', 'status' => StatusObjave::Nacrt,
+            'polja' => [['kljuc' => 'a', 'oznaka' => 'A', 'dugo' => false, 'ako_prazno' => 'Zdravo'], ['kljuc' => 'b', 'oznaka' => 'B', 'dugo' => false, 'opciono' => true], ['kljuc' => 'c', 'oznaka' => 'C', 'dugo' => false]],
+            'tekst' => "{a},\n\nodeljak\n{b}\n\n{c}"]);
+
+        $this->assertSame("Zdravo,\n\n".SklapanjeSablona::PRAZNO, SklapanjeSablona::sklopi($sablon, []));
+
+        // Isto ime šablona kao u seederu, ali bez zadatih pravila: kao do sada, sve prazno je linija za olovku.
+        $sablon->update(['slug' => 'cv', 'polja' => [['kljuc' => 'kursevi', 'oznaka' => 'Kursevi', 'dugo' => false]], 'tekst' => "Kursevi\n{kursevi}"]);
+        $this->assertSame("Kursevi\n".SklapanjeSablona::PRAZNO, SklapanjeSablona::sklopi($sablon->fresh(), []));
     }
 
     // Od zaglavlja do sledećeg zaglavlja istog ili višeg nivoa („### " ili „## "); „#### " je deo odeljka.

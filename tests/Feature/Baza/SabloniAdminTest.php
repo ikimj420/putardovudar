@@ -61,6 +61,16 @@ class SabloniAdminTest extends AdminBazaTestCase
         Livewire::test(ListSabloni::class)->searchTable('Molba')->assertCanSeeTableRecords([$nacrt])->assertCanNotSeeTableRecords([$objavljen]);
     }
 
+    // Paket 70/T10: forma uz svako polje čuva i podrazumevanu reč i izostavljanje reda; bez zadatih vrednosti to je „nema reči, red se vidi".
+    /**
+     * @param  list<array<string, mixed>>  $polja
+     * @return list<array<string, mixed>>
+     */
+    private static function snimljena(array $polja): array
+    {
+        return array_map(fn (array $polje) => [...$polje, 'ako_prazno' => null, 'opciono' => false], $polja);
+    }
+
     #[Test]
     public function dodavanje_pravi_slug_iz_naslova_i_cuva_polja_kao_spisak(): void
     {
@@ -72,7 +82,7 @@ class SabloniAdminTest extends AdminBazaTestCase
         $sablon = Sablon::query()->sole();
 
         $this->assertSame('molba-za-pomoc', $sablon->slug);
-        $this->assertSame(self::polja(), $sablon->polja);
+        $this->assertSame(self::snimljena(self::polja()), $sablon->polja);
         $this->assertSame(StatusObjave::Nacrt, $sablon->status);
         $this->assertSame(0, Sablon::javni()->count());
     }
@@ -186,7 +196,7 @@ class SabloniAdminTest extends AdminBazaTestCase
         $posle = $sablon->fresh();
 
         $this->assertSame('Novi naslov', $posle->naslov);
-        $this->assertSame([self::polja()[0]], $posle->polja);
+        $this->assertSame(self::snimljena([self::polja()[0]]), $posle->polja);
         $this->assertSame(StatusObjave::Objavljeno, $posle->status);
         $this->assertSame(1, Sablon::javni()->count());
     }

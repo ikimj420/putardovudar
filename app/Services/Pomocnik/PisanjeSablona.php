@@ -66,7 +66,9 @@ TEXT;
     private function poruka(Sablon $sablon, array $unosi, ?Rod $rod): string
     {
         // Primer vodiča se modelu ne šalje (paket 67): prepisivao je rečenice koje čovek nije upisao. Model dobija samo šablon i upisano.
-        $poruka = "Šablon:\n".SklapanjeSablona::uRodu((string) $sablon->tekst, $rod);
+        // Šablon bez redova praznih opcionih polja, a podrazumevana reč uz prazno polje ide među upisano (paket 70).
+        $poruka = "Šablon:\n".SklapanjeSablona::tekstSablona($sablon, $unosi, $rod);
+        $unosi = SklapanjeSablona::unosiSaPodrazumevanim($sablon, $unosi);
 
         if ($rod !== null) {
             $poruka .= "\n\n".self::ROD[$rod->value];
@@ -90,6 +92,6 @@ TEXT;
     /** @param  array<string, string>  $unosi */
     private function dozvoljeno(Sablon $sablon, array $unosi, ?Rod $rod): string
     {
-        return implode("\n", $unosi)."\n".preg_replace('/\{[a-z][a-z0-9_]*\}/', ' ', SklapanjeSablona::uRodu((string) $sablon->tekst, $rod));
+        return implode("\n", SklapanjeSablona::unosiSaPodrazumevanim($sablon, $unosi))."\n".preg_replace('/\{[a-z][a-z0-9_]*\}/', ' ', SklapanjeSablona::uRodu((string) $sablon->tekst, $rod));
     }
 }

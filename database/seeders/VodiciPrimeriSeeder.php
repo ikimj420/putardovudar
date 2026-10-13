@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 
 // Primeri za vodiče i šabloni za „Napiši moj“ iz Dokumentacija/VODICI-PRIMERI.md, samo ono što je Ivan odobrio (paketi 64 i 69). Tekstovi su prepisani doslovno.
 // Ništa postojeće se ne menja: primeri se upisuju samo vodiču koji ih još nema, šabloni ulaze kao nacrt (slug koji postoji se ne dira), a vodič se vezuje
-// za šablon samo kad još nema nijedan. Ivan pokreće seeder sam, pročita tekstove, i sam objavljuje šablone u adminu.
+// za šablon samo kad još nema nijedan. Ivan pokreće seeder sam, pročita tekstove, i sam objavljuje šablone u adminu. Prazna polja po dokumentu (paket 70): podrazumevana reč „ako_prazno" i izostavljen red „opciono" zadaju se uz polje.
 class VodiciPrimeriSeeder extends Seeder
 {
     public function run(): void
@@ -361,7 +361,7 @@ TEKST,
                     ['kljuc' => 'ime', 'oznaka' => 'Kako se zoveš?', 'objasnjenje' => 'Ime i prezime; ide na kraj pisma.', 'dugo' => false],
                     ['kljuc' => 'prilika', 'oznaka' => 'Za šta se prijavljuješ, i gde?', 'objasnjenje' => 'Na primer „posao konobara u restoranu Lipa" ili „stipendija za studente".', 'dugo' => false],
                     ['kljuc' => 'oglas', 'oznaka' => 'Gde je objavljen oglas?', 'objasnjenje' => 'Može da ostane prazno.', 'dugo' => false],
-                    ['kljuc' => 'kome', 'oznaka' => 'Kome se obraćaš?', 'objasnjenje' => 'Ako u oglasu piše ime osobe, upiši ga. Ako ne piše, ostavi prazno, pa piše „Poštovani".', 'dugo' => false],
+                    ['kljuc' => 'kome', 'oznaka' => 'Kome se obraćaš?', 'objasnjenje' => 'Ako u oglasu piše ime osobe, upiši ga. Ako ne piše, ostavi prazno, pa piše „Poštovani".', 'dugo' => false, 'ako_prazno' => 'Poštovani'],
                     ['kljuc' => 'skola', 'oznaka' => 'Koju školu ili fakultet imaš, i koji smer?', 'objasnjenje' => '', 'dugo' => false],
                     ['kljuc' => 'iskustvo', 'oznaka' => 'Gde imaš iskustva i šta je tamo bio tvoj posao?', 'objasnjenje' => 'Posao, praksa, volontiranje ili rad u školi. Opiši jedan običan dan.', 'dugo' => true],
                     ['kljuc' => 'zasto', 'oznaka' => 'Zašto želiš baš ovo?', 'objasnjenje' => 'Šta hoćeš da naučiš ili postigneš.', 'dugo' => true],
@@ -399,10 +399,10 @@ TEKST,
                     ['kljuc' => 'cilj', 'oznaka' => 'Šta želiš da radiš?', 'objasnjenje' => 'Jedna rečenica, na primer „Želim da radim u knjigovodstvu."', 'dugo' => false],
                     ['kljuc' => 'iskustvo', 'oznaka' => 'Praksa, posao ili volontiranje', 'objasnjenje' => 'Kada, gde i šta je bio tvoj posao. Opiši jedan običan dan. Najnovije prvo.', 'dugo' => true],
                     ['kljuc' => 'obrazovanje', 'oznaka' => 'Škola i fakultet', 'objasnjenje' => 'Godine, naziv škole, mesto i smer.', 'dugo' => true],
-                    ['kljuc' => 'kursevi', 'oznaka' => 'Kursevi', 'objasnjenje' => 'Naziv, godina, ima li sertifikat. Ako ih nemaš, ostavi prazno.', 'dugo' => true],
+                    ['kljuc' => 'kursevi', 'oznaka' => 'Kursevi', 'objasnjenje' => 'Naziv, godina, ima li sertifikat. Ako ih nemaš, ostavi prazno.', 'dugo' => true, 'opciono' => true],
                     ['kljuc' => 'racunar', 'oznaka' => 'Rad na računaru', 'objasnjenje' => 'Programi i nivo: početni, srednji, napredni.', 'dugo' => false],
                     ['kljuc' => 'jezici', 'oznaka' => 'Jezici', 'objasnjenje' => 'Koji jezici i koliko dobro.', 'dugo' => false],
-                    ['kljuc' => 'preporuke', 'oznaka' => 'Ko može da potvrdi tvoje iskustvo?', 'objasnjenje' => 'Ime, gde radi i telefon, samo ako se ta osoba složila. Ako ostaviš prazno, piše „Preporuke dostupne na zahtev".', 'dugo' => false],
+                    ['kljuc' => 'preporuke', 'oznaka' => 'Ko može da potvrdi tvoje iskustvo?', 'objasnjenje' => 'Ime, gde radi i telefon, samo ako se ta osoba složila. Ako ostaviš prazno, piše „Preporuke dostupne na zahtev".', 'dugo' => false, 'ako_prazno' => 'Preporuke dostupne na zahtev'],
                 ],
                 'tekst' => <<<'TEKST'
 {ime}
@@ -500,7 +500,7 @@ TEKST,
                 'polja' => [
                     ['kljuc' => 'ime', 'oznaka' => 'Kako se zoveš?', 'objasnjenje' => 'Ime i prezime.', 'dugo' => false],
                     ['kljuc' => 'posao', 'oznaka' => 'Za koji posao ideš na razgovor?', 'objasnjenje' => 'Na primer „konobar u restoranu Lipa".', 'dugo' => false],
-                    ['kljuc' => 'skola', 'oznaka' => 'Koju školu imaš?', 'objasnjenje' => 'Može da ostane prazno.', 'dugo' => false],
+                    ['kljuc' => 'skola', 'oznaka' => 'Koju školu imaš?', 'objasnjenje' => 'Može da ostane prazno.', 'dugo' => false, 'opciono' => true],
                     ['kljuc' => 'iskustvo', 'oznaka' => 'Gde imaš iskustva i šta je tamo bio tvoj posao?', 'objasnjenje' => 'Posao, praksa, volontiranje ili rad u porodici.', 'dugo' => true],
                     ['kljuc' => 'umem', 'oznaka' => 'Šta voliš ili dobro umeš da radiš?', 'objasnjenje' => 'Na primer „posao sa ljudima", „rad u smenama".', 'dugo' => false],
                 ],

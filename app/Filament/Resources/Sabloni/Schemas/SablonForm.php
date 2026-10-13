@@ -59,6 +59,20 @@ class SablonForm
                         Toggle::make('dugo')
                             ->label('Više redova')
                             ->helperText('Uključi za duži tekst (polje raste); isključeno je polje u jednom redu.'),
+                        TextInput::make('ako_prazno')
+                            ->label('Ako ostane prazno, piše')
+                            ->helperText('Reč koja stoji umesto praznog polja, npr. „Poštovani“. Bez nje i bez izostavljanja reda, prazno polje je linija za olovku.')
+                            ->maxLength(100)
+                            ->rules([
+                                fn (Get $get): Closure => function (string $atribut, mixed $vrednost, Closure $greska) use ($get): void {
+                                    if (filled($vrednost) && $get('opciono') === true) {
+                                        $greska('Izaberi jedno: reč umesto praznog polja ili izostavljen red.');
+                                    }
+                                },
+                            ]),
+                        Toggle::make('opciono')
+                            ->label('Ako ostane prazno, red se ne vidi')
+                            ->helperText('Uključi za polje koje nije obavezno: red sa njim, a i odeljak koji bez njega ostane bez ijednog polja, ne piše u tekstu.'),
                     ])
                     ->itemLabel(fn (array $state): ?string => $state['oznaka'] ?? null)
                     ->addActionLabel('Dodaj polje')
