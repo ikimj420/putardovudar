@@ -35,6 +35,14 @@ class ObecanjeUPrvomLicuTest extends TestCase
             'pozvaću' => ['Našao sam posao. Pozvaću ih umesto tebe.'],
             'pokrenuću' => ['Našao sam posao. Pokrenuću prijavu za tebe.'],
             'u sredini rečenice' => ['Našao sam posao pa ću ti javiti.'],
+            // Paket 70/T8: i prvo lice množine.
+            'javićemo ti' => ['Našao sam posao u Nišu. Javićemo ti kad se pojavi nešto novo.'],
+            'poslaćemo' => ['Našao sam stipendiju. Poslaćemo ti link.'],
+            'obavestićemo' => ['Našao sam konkurs. Obavestićemo te čim se otvori.'],
+            'mi ćemo ti javiti' => ['Našao sam posao. Mi ćemo ti javiti sve što saznamo.'],
+            'ćemo iza glagola' => ['Našao sam posao. Javiti ćemo ti.'],
+            'velikim slovima ćemo' => ['NAŠAO SAM POSAO. JAVIĆEMO TI.'],
+            'proverićemo' => ['Našao sam posao. Proverićemo još i to.'],
         ];
     }
 
@@ -63,6 +71,10 @@ class ObecanjeUPrvomLicuTest extends TestCase
             'veću' => ['Našao sam posao. Ovde imaš veću šansu.'],
             'kuću i sreću' => ['Našao sam pomoć za kuću. Želim ti sreću.'],
             'hoću' => ['Našao sam posao. Ako hoću da se prijavim, kako?'],
+            'hoćemo' => ['Našao sam posao. Ako hoćemo da se prijavimo, kako?'],
+            'pokrećemo' => ['Našao sam konkurs. Pokrećemo prijavu zajedno sa tobom.'],
+            'krećemo' => ['Našao sam posao. Krećemo od prvog koraka.'],
+            'možemo' => ['Našao sam posao. Možemo da pogledamo uslove.'],
             'treće lice' => ['Našao sam posao. Poslodavac će te pozvati.'],
         ];
     }

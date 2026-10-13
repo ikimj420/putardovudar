@@ -49,9 +49,9 @@ final class ProveraOdgovora
     // Isto kad model piše sa „ć": svaka reč na „-će".
     private const BUDUCE_VREME = '/(?<!\p{L})\p{L}*će(?!\p{L})/u';
 
-    // Pomoćnik ništa ne šalje i ne pamti pitanje, pa „javiću ti" i „ja ću ti javiti" obećavaju ono što se ne radi: svaka reč na „-ću" i samo „ću".
-    // Izuzete su imenice, predlog i sadašnje vreme koje nisu obećanje („veću šansu", „pomoću linka", „hoću").
-    private const OBECANJE = '/(?<!\p{L})(?!(?:pomoću|noću|kuću|sreću|odeću|obuću|sveću|smeću|veću|leću|hoću|pokreću)(?!\p{L}))\p{L}*ću(?!\p{L})/u';
+    // Pomoćnik ništa ne šalje i ne pamti pitanje, pa „javiću ti", „ja ću ti javiti" i „javićemo ti" obećavaju ono što se ne radi: svaka reč na „-ću" ili „-ćemo", i samo „ću" i „ćemo".
+    // Izuzete su imenice, predlog i sadašnje vreme koje nisu obećanje („veću šansu", „pomoću linka", „hoću", „hoćemo", „pokrećemo").
+    private const OBECANJE = '/(?<!\p{L})(?!(?:pomoću|noću|kuću|sreću|odeću|obuću|sveću|smeću|veću|leću|hoću|pokreću|hoćemo|pokrećemo|krećemo)(?!\p{L}))\p{L}*ć(?:u|emo)(?!\p{L})/u';
 
     private const DOMEN = '/(?<![\p{L}\d@.-])(?:https?:\/\/)?(?:www\.)?[a-z0-9][a-z0-9-]*(?:\.[a-z0-9-]+)*\.(?:rs|com|org|net|eu|info|edu|gov|me|io|co)(?:\/[^\s)\]»"„“]*)?(?![\p{L}\d])/iu';
 

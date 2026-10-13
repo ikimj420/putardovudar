@@ -51,6 +51,19 @@ class ObecanjeUPrvomLicuUOdgovoruTest extends BazaTestCase
         $this->assertSame(['Radnik u skladištu'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
     }
 
+    // Paket 70/T8: isto i za „javićemo ti".
+    #[Test]
+    public function javicemo_ti_bez_kalendara_se_menja_karticama(): void
+    {
+        $this->odgovorModela = 'Našao sam posao u Nišu. Javićemo ti kad se pojavi nešto novo.';
+
+        $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
+
+        $this->assertTrue($odgovor->jeIzSablona());
+        $this->assertSame('obećanje u prvom licu', $odgovor->razlogSablona);
+        $this->assertStringNotContainsString('Javićemo', $odgovor->tekst);
+    }
+
     // Ogledalo: isti odgovor bez obećanja prolazi.
     #[Test]
     public function rok_u_odgovoru_prolazi(): void
