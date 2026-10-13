@@ -52,7 +52,8 @@ class ClaudePozivTest extends TestCase
                 && $zahtev->hasHeader('x-api-key', self::KLJUC)
                 && $zahtev->hasHeader('anthropic-version', '2023-06-01')
                 && $telo['model'] === 'claude-haiku-5-5'
-                && $telo['max_tokens'] === 1500
+                && $telo['max_tokens'] === 4000
+                && ! array_key_exists('thinking', $telo)
                 && $telo['system'] === 'Kratko uputstvo.'
                 && $telo['messages'] === [['role' => 'user', 'content' => 'Tekst strane.']]
                 && ! array_key_exists('temperature', $telo);
@@ -78,6 +79,22 @@ class ClaudePozivTest extends TestCase
 
         Http::assertSent(fn (Request $zahtev) => $zahtev->url() === 'https://drugi.test/v1/messages' && $zahtev['model'] === 'claude-sonnet-5-5' && $zahtev['temperature'] === 0.0);
         $this->assertSame(7, $opcije['timeout']);
+    }
+
+    // Haiku 5.5 podrazumevano razmišlja; blok „thinking" ispada iz teksta, a razmišljanje se isključuje samo kad je tako podešeno.
+    #[Test]
+    public function razmisljanje_se_iskljucuje_samo_kad_je_podeseno_a_blok_razmisljanja_nije_tekst(): void
+    {
+        Http::fake([self::ADRESA => Http::response(['content' => [['type' => 'thinking', 'thinking' => ''], ['type' => 'drugo', 'text' => '{"b": 2}'], ['type' => 'text', 'text' => '{"a": 1}']], 'usage' => ['input_tokens' => 10, 'output_tokens' => 400]])]);
+        config()->set('claude.razmisljanje', 'iskljuceno');
+
+        $this->assertSame(['a' => 1], (new Claude)->odgovoriJsonom('U.', 'T.'));
+        Http::assertSent(fn (Request $zahtev) => $zahtev['thinking'] === ['type' => 'disabled']);
+
+        // Ogledalo: bilo koja druga vrednost ne šalje ništa.
+        config()->set('claude.razmisljanje', 'ukljuceno');
+        (new Claude)->odgovoriJsonom('U.', 'T.');
+        Http::assertSent(fn (Request $zahtev) => ! array_key_exists('thinking', $zahtev->data()));
     }
 
     #[Test]

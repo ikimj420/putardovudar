@@ -95,6 +95,7 @@ final class Claude implements ModelObrade
                         'model' => $this->model(),
                         'max_tokens' => (int) config('claude.najvise_izlaznih_tokena'),
                         ...(config('claude.temperatura') !== null ? ['temperature' => (float) config('claude.temperatura')] : []),
+                        ...(config('claude.razmisljanje') === 'iskljuceno' ? ['thinking' => ['type' => 'disabled']] : []),
                         'system' => $uputstvo,
                         'messages' => [['role' => 'user', 'content' => $tekst]],
                     ]);

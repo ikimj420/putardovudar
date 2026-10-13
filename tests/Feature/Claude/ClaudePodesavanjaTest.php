@@ -29,6 +29,8 @@ class ClaudePodesavanjaTest extends TestCase
         $this->assertSame(120, config('claude.vreme_cekanja'));
         $this->assertSame(12000, config('claude.najvise_znakova'));
         $this->assertNull(config('claude.temperatura'));
+        $this->assertNull(config('claude.razmisljanje'));
+        $this->assertSame(4000, config('claude.najvise_izlaznih_tokena'));
         $this->assertSame(['claude-haiku-5-5' => ['ulaz' => 0.10, 'izlaz' => 0.50], 'claude-sonnet-5-5' => ['ulaz' => 2.00, 'izlaz' => 10.00]], config('claude.cene'));
     }
 

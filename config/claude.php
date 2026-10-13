@@ -12,8 +12,12 @@ return [
     'verzija_api' => '2023-06-01',
     'vreme_cekanja' => (int) env('CLAUDE_VREME_CEKANJA', 120),
 
-    // Odgovor obrade je mali JSON; više od ovoga je odgovor koji se ionako odbacuje.
-    'najvise_izlaznih_tokena' => 1500,
+    // Odgovor obrade je mali JSON, ali Haiku 5.5 podrazumevano „razmišlja" i ti tokeni ulaze u izlaz (izmereno 13.10.2026.: sa 1500 je 7 od 80 odgovora ostalo bez teksta),
+    // pa je granica velika; cenu određuje ono što je stvarno potrošeno, ne granica.
+    'najvise_izlaznih_tokena' => 4000,
+
+    // null: kako model podrazumeva; „iskljuceno": šalje se thinking disabled (Haiku 5.5 ga prima, jeftinije i brže; Sonnet 5.5 ne razmišlja pa mu ne treba i odbija taj oblik).
+    'razmisljanje' => env('CLAUDE_RAZMISLJANJE'),
 
     // Modeli 5.5 ne primaju „temperature" (HTTP 400: „deprecated for this model", izmereno 13.10.2026.), pa se ne šalje; za stariji model može da se zada.
     'temperatura' => null,
