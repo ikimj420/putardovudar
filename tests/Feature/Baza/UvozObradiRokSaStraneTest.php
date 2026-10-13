@@ -176,20 +176,120 @@ class UvozObradiRokSaStraneTest extends BazaTestCase
         $this->assertSame('model', $prilika->predlog['izvor_citata']);
     }
 
-    // Duga rečenica se seče oko datuma na cele reči i ostaje doslovan deo strane.
+    // Duga rečenica se seče oko datuma na cele reči i ostaje doslovan deo strane; reč roka je blizu datuma (paket 70), a ostatak rečenice je dug.
     #[Test]
     public function duga_recenica_sa_rokom_se_seče_oko_datuma(): void
     {
         $pre = implode(' ', array_map(fn (int $i) => 'pre'.$i, range(1, 40)));
         $posle = implode(' ', array_map(fn (int $i) => 'posle'.$i, range(1, 40)));
-        $prilika = $this->obradi('<p>Poziv. Rok za prijavu je '.$pre.' 20. oktobra 2026. godine '.$posle.'.</p>', ['citat' => 'Rok je 20. oktobra 2026. godine']);
+        $prilika = $this->obradi('<p>Poziv. '.$pre.' Rok je 20. oktobra 2026. godine '.$posle.'.</p>', ['citat' => 'Prijave traju do 20. oktobra 2026']);
 
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
         $citat = (string) $prilika->predlog['citat'];
         $this->assertLessThan(260, mb_strlen($citat));
         $this->assertStringContainsString('20. oktobra 2026.', $citat);
-        // Najviše 12 reči pre datuma i 14 od datuma (datum su četiri reči).
-        $this->assertStringStartsWith('pre29 ', $citat);
+        // Najviše 12 reči pre datuma (uključujući „Rok je") i 14 od datuma (datum su četiri reči).
+        $this->assertStringStartsWith('pre31 ', $citat);
         $this->assertStringEndsWith(' posle10', $citat);
+    }
+
+    /** @return array<string, array{0: string, 1: string, 2: bool}> rok koji model vrati, citat modela, da li prolazi */
+    public static function dvaDatumaURecenici(): array
+    {
+        return [
+            'datum uz koji stoji rok' => ['2026-10-11', 'Prijave traju do 11. oktobra 2026', true],
+            'datum uz događaj' => ['2026-10-17', 'Radionica se održava 17. oktobra 2026', false],
+        ];
+    }
+
+    // Paket 70/T5: „Rok za prijavu je 11. oktobra, a radionica je 17. oktobra." dokazuje samo 11. oktobar.
+    #[Test]
+    #[DataProvider('dvaDatumaURecenici')]
+    public function recenica_sa_dva_datuma_dokazuje_samo_onaj_uz_koji_stoji_rok(string $rok, string $citat, bool $prolazi): void
+    {
+        $prilika = $this->obradi('<p>Poziv organizacijama. Rok za prijavu je 11. oktobra 2026. godine, a radionica je 17. oktobra 2026. godine.</p>', ['rok' => $rok, 'citat' => $citat]);
+
+        $this->assertSame($prolazi ? StatusPrilike::Objavljeno : StatusPrilike::Nacrt, $prilika->status);
+
+        if ($prolazi) {
+            $this->assertSame($rok, $prilika->rok->toDateString());
+            $this->assertStringContainsString('Rok za prijavu je 11. oktobra 2026.', (string) $prilika->predlog['citat']);
+        } else {
+            $this->assertSame('rok ne piše u tekstu strane', $prilika->predlog['odbijeno']);
+        }
+    }
+
+    /** @return array<string, array{0: string}> strana na kojoj piše drugi datum nego što model kaže */
+    public static function drugiDatum(): array
+    {
+        return [
+            'druga godina' => ['<p>Poziv organizacijama. Rok za prijavu je 20. oktobra 2027. godine.</p>'],
+            'drugi mesec' => ['<p>Poziv organizacijama. Rok za prijavu je 20. novembra 2026. godine.</p>'],
+            'drugi dan' => ['<p>Poziv organizacijama. Rok za prijavu je 21. oktobra 2026. godine.</p>'],
+        ];
+    }
+
+    // Rečenica sa rokom mora da ima isti datum: ista godina, mesec i dan.
+    #[Test]
+    #[DataProvider('drugiDatum')]
+    public function recenica_sa_rokom_za_drugi_datum_se_ne_uzima(string $telo): void
+    {
+        $prilika = $this->obradi($telo, ['rok' => '2026-10-20', 'citat' => 'Prijave traju do 20. oktobra 2026']);
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertSame('rok ne piše u tekstu strane', $prilika->predlog['odbijeno']);
+    }
+
+    /** @return array<string, array{0: string}> prva rečenica sa „Rok" je za drugi datum, tek druga za pravi */
+    public static function prvaRecenicaJeZaDrugiDatum(): array
+    {
+        return [
+            'druga godina' => ['Rok za prijavu radionice je 20. oktobra 2027. godine. Rok za prijavu konkursa je 20. oktobra 2026. godine.'],
+            'drugi mesec' => ['Rok za prijavu radionice je 20. novembra 2026. godine. Rok za prijavu konkursa je 20. oktobra 2026. godine.'],
+            'drugi dan' => ['Rok za prijavu radionice je 21. oktobra 2026. godine. Rok za prijavu konkursa je 20. oktobra 2026. godine.'],
+        ];
+    }
+
+    // Među više rečenica sa rokom bira se ona sa pravim datumom (ne prva), pa nacrt prolazi umesto da ga kasnija provera odbije.
+    #[Test]
+    #[DataProvider('prvaRecenicaJeZaDrugiDatum')]
+    public function medju_vise_recenica_sa_rokom_bira_se_ona_sa_pravim_datumom(string $recenice): void
+    {
+        $prilika = $this->obradi('<p>Poziv organizacijama. '.$recenice.'</p>', ['rok' => '2026-10-20', 'citat' => 'Prijave traju do 20. oktobra 2026']);
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame('Rok za prijavu konkursa je 20. oktobra 2026. godine.', $prilika->predlog['citat']);
+    }
+
+    /** @return array<string, array{0: int, 1: bool}> reči između „Rok" i datuma, da li prolazi */
+    public static function razmakIzmedjuRokaIDatuma(): array
+    {
+        return [
+            'odmah' => [0, true],
+            'deset reči' => [10, true],
+            'poslednja koja staje (dvanaest ukupno)' => [11, true],
+            'prva koja ne staje (trinaest)' => [12, false],
+            'daleko' => [30, false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('razmakIzmedjuRokaIDatuma')]
+    public function reč_roka_mora_da_stoji_najviše_dvanaest_reči_ispred_datuma(int $reci, bool $prolazi): void
+    {
+        $punjenje = $reci === 0 ? '' : implode(' ', array_map(fn (int $i) => 'rec'.$i, range(1, $reci))).' ';
+        $prilika = $this->obradi('<p>Poziv organizacijama. Rok '.$punjenje.'20. oktobra 2026. godine.</p>', ['citat' => 'Prijave traju do 20. oktobra 2026']);
+
+        $this->assertSame($prolazi ? StatusPrilike::Objavljeno : StatusPrilike::Nacrt, $prilika->status);
+    }
+
+    // Opseg „od … do …": reč uz prvi datum važi i za drugi (rok je kraj opsega).
+    #[Test]
+    public function opseg_od_do_ne_prekida_prozor(): void
+    {
+        $prilika = $this->obradi('<p>Poziv studentima. Prijave su otvorene od 28. septembra 2026. do 12. oktobra 2026. godine.</p>', ['rok' => '2026-10-12', 'citat' => 'Prijave traju do 12. oktobra 2026']);
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame('2026-10-12', $prilika->rok->toDateString());
     }
 }

@@ -51,4 +51,40 @@ class DatumiUTekstuTest extends TestCase
     {
         $this->assertSame([], DatumiUTekstu::izvuci($tekst));
     }
+
+    /** @return array<string, array{0: string, 1: list<array{0: int, 1: int, 2: int, 3: int|null}>}> tekst, pojave kao [od, do, dan·mesec, godina] */
+    public static function pojaveSaMestom(): array
+    {
+        return [
+            'ime meseca sa godinom' => ['Rok je 20. oktobra 2026.', [[7, 23, 2010, 2026]]],
+            'brojevi' => ['Rok: 20.10.2026.', [[5, 15, 2010, 2026]]],
+            'iso' => ['do 2026-10-20 u podne', [[3, 13, 2010, 2026]]],
+            'dva datuma redom' => ['Od 28. septembra do 12. oktobra', [[3, 16, 2809, null], [20, 31, 1210, null]]],
+            'bez godine sa tačkama' => ['Rok je 20.10. u podne', [[7, 13, 2010, null]]],
+            'veliko slovo' => ['Rok je 20. Oktobra', [[7, 18, 2010, null]]],
+            'datum sa razmacima se ne cepa na dva' => ['Rok 5. 10. 2026. godine', [[4, 15, 510, 2026]]],
+            'nema datuma' => ['Prijave su u toku, 5 mesta.', []],
+        ];
+    }
+
+    /** @param  list<array{0: int, 1: int, 2: int, 3: int|null}>  $ocekivano */
+    #[Test]
+    #[DataProvider('pojaveSaMestom')]
+    public function pojave_imaju_mesto_u_tekstu_redom(string $tekst, array $ocekivano): void
+    {
+        $stvarno = array_map(fn (array $p) => [$p['od'], $p['do'], $p['dan'] * 100 + $p['mesec'], $p['godina']], DatumiUTekstu::pojave($tekst));
+
+        $this->assertSame($ocekivano, $stvarno, $tekst);
+    }
+
+    // Isti datumi kao izvuci, bez ponavljanja unutar jednog.
+    #[Test]
+    public function pojave_i_izvuci_nalaze_iste_datume(): void
+    {
+        foreach (['Rok je 20. oktobra 2026.', 'Od 28. septembra do 12. oktobra', 'Rok: 20.10.2026. a 5.11.', 'Do 2026-10-20', 'Cena 10.5 hiljada, 32. oktobra'] as $tekst) {
+            $izPojava = array_map(fn (array $p) => ['dan' => $p['dan'], 'mesec' => $p['mesec'], 'godina' => $p['godina']], DatumiUTekstu::pojave($tekst));
+
+            $this->assertEqualsCanonicalizing(DatumiUTekstu::izvuci($tekst), $izPojava, $tekst);
+        }
+    }
 }

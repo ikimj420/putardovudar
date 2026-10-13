@@ -41,6 +41,9 @@ TEXT;
     // Razlog objave oglasa za posao, uvek kodov (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md), a Ivan ga je prihvatio 11.10.2026.
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
+    // Koliko reči ispred datuma se gleda za reč roka (paket 70).
+    private const NAJVISE_RECI_PRE_DATUMA = 12;
+
     // Najduža rečenica koju kod uzima kao citat roka celu; duža se seče oko datuma.
     private const NAJVISE_ZNAKOVA_CITATA_ROKA = 300;
 
@@ -278,47 +281,49 @@ TEXT;
         return $nadjena === null ? [$forma, 'model'] : [[...$forma, 'citat' => $nadjena], 'kod'];
     }
 
-    // Prva rečenica sa „rok…" ima prednost; inače prva sa „prijav…", ili sa „do" uz „otvoren…", „konkurs…" ili „poziv…". Delovi se dele samo pre velikog slova,
-    // da „28. septembra" i „12. 10. 2026." ostanu u jednoj rečenici.
+    // Reč roka mora da stoji najviše 12 reči ispred datuma, i posle prethodnog datuma u rečenici (osim kad ih spaja samo „do" ili crtica, kao u „od 28. septembra do 12.
+    // oktobra"): „Rok za prijavu je 11. oktobra, a radionica je 17. oktobra." dokazuje samo 11. oktobar (paket 70). Prva rečenica sa „rok…" ima prednost; inače prva sa „prijav…",
+    // ili sa „do" uz „otvoren…", „konkurs…" ili „poziv…". Delovi se dele samo pre velikog slova, da „28. septembra" i „12. 10. 2026." ostanu u jednoj rečenici.
     private function recenicaSaRokom(CarbonImmutable $rok, string $tekst): ?string
     {
         $prva = null;
 
         foreach (preg_split('/(?<=[.!?])\s+(?=\p{Lu})/u', $tekst) ?: [] as $deo) {
             $deo = trim($deo);
+            $mala = mb_strtolower($deo);
+            $pojave = DatumiUTekstu::pojave($deo);
 
-            if (! $this->imaDatumRoka($deo, $rok)) {
-                continue;
-            }
+            foreach ($pojave as $i => $pojava) {
+                if ($pojava['dan'] !== $rok->day || $pojava['mesec'] !== $rok->month || ($pojava['godina'] !== null && $pojava['godina'] !== $rok->year)) {
+                    continue;
+                }
 
-            $reci = PoredjenjeTeksta::normalizuj($deo);
+                $pocetak = 0;
 
-            if (preg_match('/\brok\w*/', $reci) === 1) {
-                return $this->okoDatuma($deo, $rok);
-            }
+                for ($j = $i - 1; $j >= 0; $j--) {
+                    $izmedju = substr($mala, $pojave[$j]['do'], $pojave[$j + 1]['od'] - $pojave[$j]['do']);
 
-            if ($prva === null && (preg_match('/\bprijav\w*/', $reci) === 1 || (preg_match('/\bdo\b/', $reci) === 1 && preg_match('/\b(?:otvoren|konkurs|poziv)\w*/', $reci) === 1))) {
-                $prva = $deo;
+                    if (preg_match('/^[\s.,]*(?:do|-|–|—)[\s.,]*$/u', $izmedju) !== 1) {
+                        $pocetak = $pojave[$j]['do'];
+
+                        break;
+                    }
+                }
+
+                $reci = preg_split('/\s+/u', trim(substr($mala, $pocetak, $pojava['od'] - $pocetak)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                $prozor = PoredjenjeTeksta::normalizuj(implode(' ', array_slice($reci, -self::NAJVISE_RECI_PRE_DATUMA)));
+
+                if (preg_match('/\brok\w*/', $prozor) === 1) {
+                    return $this->okoDatuma($deo, $rok);
+                }
+
+                if ($prva === null && (preg_match('/\bprijav\w*/', $prozor) === 1 || (preg_match('/\bdo\b/', $prozor) === 1 && preg_match('/\b(?:otvoren|konkurs|poziv)\w*/', $prozor) === 1))) {
+                    $prva = $deo;
+                }
             }
         }
 
         return $prva === null ? null : $this->okoDatuma($prva, $rok);
-    }
-
-    // Isti datum: pun (sa godinom koja se poklapa) ili dan i mesec bez godine, kao i za rok bez godine.
-    private function imaDatumRoka(string $recenica, CarbonImmutable $rok): bool
-    {
-        if (DatumUTekstu::postoji($recenica, $rok->toDateString())) {
-            return true;
-        }
-
-        foreach (DatumiUTekstu::izvuci($recenica) as $datum) {
-            if ($datum['godina'] === null && $datum['dan'] === $rok->day && $datum['mesec'] === $rok->month) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // Duga rečenica se seče oko datuma na cele reči (najviše 12 pre i 14 posle), da citat ostane kratak i doslovan.
