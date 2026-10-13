@@ -68,6 +68,15 @@ class Prilika extends Model
         });
     }
 
+    // Posle uvoza ili obrade niko nije menjao zapis: obrada postavlja obradeno_at u istom trenutku kad i izmenu, a Ivanova izmena kasnije pomera updated_at.
+    // Zapis koji niko nije obradio poredi se sa trenutkom pravljenja. Minut tolerancije za vreme upisa.
+    public function nijeMenjanRucno(): bool
+    {
+        $polazna = $this->obradeno_at ?? $this->created_at;
+
+        return $this->updated_at !== null && $polazna !== null && $this->updated_at->lessThanOrEqualTo($polazna->copy()->addMinute());
+    }
+
     /** @return array<string, mixed> */
     protected function casts(): array
     {

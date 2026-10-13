@@ -24,7 +24,7 @@ class UvozSpiskova extends Command
             $ime = (string) ($spisak['ime'] ?? '');
             $rezultat = $uvoz->uvezi($ime, (string) ($spisak['adresa'] ?? ''));
 
-            $this->line(sprintf('%s: novih %d, preskočeno %d, greška: %s', $ime, $rezultat->novih, $rezultat->preskoceno, $rezultat->greska ?? 'nema'));
+            $this->line(sprintf('%s: novih %d, preskočeno %d, greška: %s%s', $ime, $rezultat->novih, $rezultat->preskoceno, $rezultat->greska ?? 'nema', $rezultat->dopunjeno > 0 ? ', dopunjen datum objave: '.$rezultat->dopunjeno : ''));
 
             if ($rezultat->greska !== null) {
                 $neuspelih++;

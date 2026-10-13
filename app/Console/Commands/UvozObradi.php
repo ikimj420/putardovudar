@@ -30,7 +30,7 @@ class UvozObradi extends Command
         // dok ih niko nije menjao: Ivanova izmena posle obrade pomera vreme izmene, a obrada ga postavlja u istom trenutku.
         $nacrti = $this->option('ponovo')
             ? $upit->whereNotNull('obradeno_at')->where(fn ($staro) => $staro->whereNull('predlog->pravilo')->orWhere('predlog->pravilo', '<', ObradaNacrta::PRAVILO))->get()
-                ->filter(fn (Prilika $nacrt) => $nacrt->updated_at !== null && $nacrt->obradeno_at !== null && $nacrt->updated_at->lessThanOrEqualTo($nacrt->obradeno_at->copy()->addMinute()))
+                ->filter(fn (Prilika $nacrt) => $nacrt->nijeMenjanRucno())
                 ->values()
             : $upit->whereNull('obradeno_at')->get();
 

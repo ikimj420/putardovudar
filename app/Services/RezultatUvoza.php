@@ -8,5 +8,6 @@ final readonly class RezultatUvoza
         public int $novih = 0,
         public int $preskoceno = 0,
         public ?string $greska = null,
+        public int $dopunjeno = 0,
     ) {}
 }

@@ -20,10 +20,13 @@ final class UvozSpiska
 {
     private const STAVKA = "//article[contains(concat(' ', normalize-space(@class), ' '), ' news-item ')]";
 
+    public function __construct(private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
+
     public function uvezi(string $ime, string $adresa): RezultatUvoza
     {
         $novih = 0;
         $preskoceno = 0;
+        $dopunjeno = 0;
 
         try {
             $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa);
@@ -46,7 +49,17 @@ final class UvozSpiska
             foreach (array_slice($stavke, 0, config('uvoz.najvise_stavki')) as $stavka) {
                 $podaci = $this->podaci($stavka, $ime, $adresa);
 
-                if ($podaci === null || Prilika::query()->where('link_izvora', $podaci['link_izvora'])->exists()) {
+                if ($podaci === null) {
+                    $preskoceno++;
+
+                    continue;
+                }
+
+                // Stari nacrt bez datuma objave ga dobija (paket 70).
+                $postojeca = Prilika::query()->where('link_izvora', $podaci['link_izvora'])->first();
+
+                if ($postojeca !== null) {
+                    $dopunjeno += $this->dopuna->dopuni($postojeca, $podaci['izvor_objavljen']) ? 1 : 0;
                     $preskoceno++;
 
                     continue;
@@ -56,10 +69,10 @@ final class UvozSpiska
                 $novih++;
             }
         } catch (Throwable $izuzetak) {
-            return new RezultatUvoza($novih, $preskoceno, 'neočekivana greška: '.$izuzetak->getMessage());
+            return new RezultatUvoza($novih, $preskoceno, 'neočekivana greška: '.$izuzetak->getMessage(), $dopunjeno);
         }
 
-        return new RezultatUvoza($novih, $preskoceno);
+        return new RezultatUvoza($novih, $preskoceno, dopunjeno: $dopunjeno);
     }
 
     /** @return list<DOMElement> */
