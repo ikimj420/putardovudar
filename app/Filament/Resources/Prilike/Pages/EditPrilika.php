@@ -13,7 +13,7 @@ class EditPrilika extends EditRecord
 
     protected static string $resource = PrilikaResource::class;
 
-    // Predlog Ollame je samo za čitanje, ali bi ga forma pri snimanju prepisala praznim nizom.
+    // Predlog modela je samo za čitanje, ali bi ga forma pri snimanju prepisala praznim nizom.
     protected function mutateFormDataBeforeSave(array $data): array
     {
         return Arr::except($data, ['predlog']);

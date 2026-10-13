@@ -139,4 +139,54 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     {
         $this->assertSame($ocekivano, PrikazPrilike::objavio(new Prilika(['objavio' => $ko, 'predlog' => $predlog])));
     }
+
+    // Paket 73/T1 (Ivan, PITANJA-72, 1): isto i na nacrtu; odeljak piše „Predlog modela · <model>", a nigde ne piše „Ollama".
+    #[Test]
+    #[DataProvider('modeli')]
+    public function na_nacrtu_pise_predlog_modela_a_ne_ollame(string $obrada, string $model): void
+    {
+        $nacrt = $this->obradi($obrada, saGrupom: false);
+
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->status);
+
+        Livewire::test(EditPrilika::class, ['record' => $nacrt->getKey()])
+            ->assertSee('Predlog modela · '.$model)
+            ->assertSee('Model je predložio, ali kod nije prihvatio.')
+            ->assertFormSet(['predlog.vrsta' => 'Konkurs'])
+            ->assertDontSee('Ollam');
+
+        // Spisak nacrta isto ne pominje Ollamu.
+        Livewire::test(ListPrilike::class)->assertSee($nacrt->naslov)->assertDontSee('Ollam');
+    }
+
+    // Ogledalo: objavljena prilika nema odeljak sa predlogom, pa ni njegov naslov.
+    #[Test]
+    #[DataProvider('modeli')]
+    public function na_objavljenoj_prilici_nema_predloga_modela(string $obrada, string $model): void
+    {
+        $prilika = $this->obradi($obrada);
+
+        Livewire::test(EditPrilika::class, ['record' => $prilika->getKey()])->assertDontSee('Predlog modela')->assertDontSee('Model je predložio');
+    }
+
+    /** @return array<string, array{0: mixed, 1: string|null}> predlog, ime modela koje admin piše uz predlog */
+    public static function modeliPredloga(): array
+    {
+        return [
+            'lokalni model' => [['model' => 'qwen2.5:7b'], 'qwen2.5:7b'],
+            'Claude' => [['model' => 'claude-haiku-5-5'], 'claude-haiku-5-5'],
+            'predlog bez modela (ranija obrada)' => [['vrsta' => 'konkurs'], null],
+            'bez predloga' => [null, null],
+            'prazno ime modela' => [['model' => ''], null],
+            'ime modela nije tekst' => [['model' => ['x']], null],
+        ];
+    }
+
+    /** @param  array<string, mixed>|null  $predlog */
+    #[Test]
+    #[DataProvider('modeliPredloga')]
+    public function ime_modela_uz_predlog_je_na_jednom_mestu(?array $predlog, ?string $ocekivano): void
+    {
+        $this->assertSame($ocekivano, PrikazPrilike::modelPredloga(new Prilika(['predlog' => $predlog])));
+    }
 }

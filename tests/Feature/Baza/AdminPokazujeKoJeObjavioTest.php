@@ -22,7 +22,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
 
     private const POMOC_RAZLOG = 'Zašto je prilika objavljena.';
 
-    private const POMOC_PREDLOG = 'Ollama je predložila, ali kod nije prihvatio.';
+    private const POMOC_PREDLOG = 'Model je predložio, ali kod nije prihvatio.';
 
     private const POMOC_CITAT_PRAVILA = 'Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.';
 
@@ -142,7 +142,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
             ->assertFormFieldIsHidden('razlog_objave')
             ->assertDontSee(self::POMOC_OBJAVIO)
             ->assertDontSee(self::POMOC_RAZLOG)
-            ->assertDontSee('Predlog Ollame')
+            ->assertDontSee('Predlog modela')
             ->assertDontSee(self::POMOC_PREDLOG);
 
         // Objavljena pre ovog paketa: ne zna se ko je objavio, pa se ne tvrdi ništa.
@@ -153,12 +153,12 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     }
 
     #[Test]
-    public function nacrt_sa_predlogom_ollame_pokazuje_predlog_a_prazne_vrednosti_ne_crtaju_red(): void
+    public function nacrt_sa_predlogom_modela_pokazuje_predlog_a_prazne_vrednosti_ne_crtaju_red(): void
     {
         $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog()]);
 
         $this->izmena($nacrt)
-            ->assertSee('Predlog Ollame')
+            ->assertSee('Predlog modela')
             ->assertSee(self::POMOC_PREDLOG)
             ->assertFormSet([
                 'predlog.vrsta' => 'Konkurs', 'predlog.rok' => '20.10.2026.',
@@ -169,10 +169,23 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $bezRoka = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['rok' => null, 'citat' => ''])]);
 
         $this->izmena($bezRoka)
-            ->assertSee('Predlog Ollame')
+            ->assertSee('Predlog modela')
             ->assertFormFieldIsVisible('predlog.razlog')
             ->assertFormFieldIsHidden('predlog.rok')
             ->assertFormFieldIsHidden('predlog.citat');
+    }
+
+    // Paket 73/T1: naslov odeljka nosi ime modela iz predloga; predlog iz ranije obrade, bez imena modela, piše samo „Predlog modela".
+    #[Test]
+    public function naslov_predloga_nosi_ime_modela_a_bez_njega_ne_ostavlja_kaciku(): void
+    {
+        $sModelom = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['model' => 'claude-haiku-5-5'])]);
+        $this->izmena($sModelom)->assertSee('Predlog modela · claude-haiku-5-5');
+
+        $stari = $this->predlog();
+        unset($stari['model']);
+        $bezModela = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $stari]);
+        $this->izmena($bezModela)->assertSee('Predlog modela')->assertDontSee('Predlog modela ·');
     }
 
     // Ogledalo: predlog se ne pokazuje na objavljenoj prilici ni na formi za dodavanje.
@@ -182,12 +195,12 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $objavljena = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['odbijeno' => null])]);
         $objavljena->objavi(KoJeObjavio::Ollama);
 
-        $this->izmena($objavljena)->assertDontSee('Predlog Ollame')->assertDontSee(self::POMOC_PREDLOG);
+        $this->izmena($objavljena)->assertDontSee('Predlog modela')->assertDontSee(self::POMOC_PREDLOG);
 
         Livewire::test(CreatePrilika::class)
             ->assertFormFieldIsHidden('objavio')
             ->assertFormFieldIsHidden('razlog_objave')
-            ->assertDontSee('Predlog Ollame')
+            ->assertDontSee('Predlog modela')
             ->fillForm(['naslov' => 'Nova', 'vrsta' => VrstaPrilike::Posao, 'kratak_opis' => 'Opis.'])
             ->call('create')
             ->assertHasNoFormErrors();
@@ -220,12 +233,12 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     }
 
     #[Test]
-    public function nacrt_pokazuje_osnov_i_citat_pravila_u_predlogu_ollame(): void
+    public function nacrt_pokazuje_osnov_i_citat_pravila_u_predlogu_modela(): void
     {
         $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog()]);
 
         $this->izmena($nacrt)
-            ->assertSee('Predlog Ollame')
+            ->assertSee('Predlog modela')
             ->assertSee('Citat pravila')
             ->assertFormSet(['predlog.osnov' => 'Romi', 'predlog.citat_pravila' => 'Konkurs je namenjen Romima.'])
             ->assertFormFieldIsDisabled('predlog.osnov')
@@ -245,7 +258,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $stari]);
 
         $this->izmena($nacrt)
-            ->assertSee('Predlog Ollame')
+            ->assertSee('Predlog modela')
             ->assertFormFieldIsVisible('predlog.razlog')
             ->assertFormFieldIsHidden('predlog.osnov')
             ->assertFormFieldIsHidden('predlog.citat_pravila')
@@ -254,7 +267,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
 
     // Greška iz paketa 10 T3: forma je pri snimanju nacrta upisivala prazan niz u predlog Ollame.
     #[Test]
-    public function snimanje_nacrta_ne_brise_predlog_ollame(): void
+    public function snimanje_nacrta_ne_brise_predlog_modela(): void
     {
         $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog()]);
 
@@ -332,14 +345,14 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     }
 
     #[Test]
-    public function nacrt_pokazuje_grupe_i_citate_u_predlogu_ollame_a_pokvaren_zapis_ne_obara_stranu(): void
+    public function nacrt_pokazuje_grupe_i_citate_u_predlogu_modela_a_pokvaren_zapis_ne_obara_stranu(): void
     {
         $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlogSaGrupama([
             'grupe' => [['grupa' => 'studenti', 'citat' => 'Za studente'], ['grupa' => 'nepoznata', 'citat' => 'Tuđe'], 'tekst', ['grupa' => 'organizacije', 'citat' => null]],
         ])]);
 
         $this->izmena($nacrt)
-            ->assertSee('Predlog Ollame')
+            ->assertSee('Predlog modela')
             ->assertSee('Grupe i citati')
             ->assertFormFieldIsVisible('predlog.grupe')
             ->assertFormSet(['predlog.grupe' => "Studenti: „Za studente\"\nOrganizacije: „\""])
@@ -353,7 +366,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         foreach ([$this->predlog(), $this->predlogSaGrupama(['grupe' => []])] as $predlog) {
             $nacrt = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $predlog]);
 
-            $this->izmena($nacrt)->assertSee('Predlog Ollame')->assertFormFieldIsHidden('predlog.grupe')->assertDontSee('Grupe i citati');
+            $this->izmena($nacrt)->assertSee('Predlog modela')->assertFormFieldIsHidden('predlog.grupe')->assertDontSee('Grupe i citati');
         }
     }
 }

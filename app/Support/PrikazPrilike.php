@@ -62,17 +62,21 @@ final class PrikazPrilike
 
     public const ROK_U_KALENDARU = 'Rok: ';
 
-    // Ko je objavio, za admin: „Ivan", ili „Model · claude-haiku-5-5" (model koji je obradio, iz predloga); bez imena modela samo „Model". Na jednom mestu za karticu i formu.
+    // Ime modela koji je obradio priliku, iz predloga (upisuje ga obrada); null kad ga nema (ranija obrada). Jedno mesto za „Objavio" i za odeljak sa predlogom.
+    public static function modelPredloga(Prilika $prilika): ?string
+    {
+        $model = data_get($prilika->predlog, 'model');
+
+        return is_string($model) && $model !== '' ? $model : null;
+    }
+
+    // Ko je objavio, za admin: „Ivan", ili „Model · claude-haiku-5-5"; bez imena modela samo „Model". Na jednom mestu za karticu i formu.
     public static function objavio(Prilika $prilika): ?string
     {
         $ko = $prilika->objavio;
-        $model = data_get($prilika->predlog, 'model');
+        $model = self::modelPredloga($prilika);
 
-        if ($ko === KoJeObjavio::Ollama && is_string($model) && $model !== '') {
-            return $ko->getLabel().' · '.$model;
-        }
-
-        return $ko?->getLabel();
+        return $ko === KoJeObjavio::Ollama && $model !== null ? $ko->getLabel().' · '.$model : $ko?->getLabel();
     }
 
     // Rok se prenosi u telefon samo kad postoji i važi; za stalno otvorene prijave i prilike bez roka nema šta da se doda.

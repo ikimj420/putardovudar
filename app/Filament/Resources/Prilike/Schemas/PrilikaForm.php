@@ -110,8 +110,8 @@ class PrilikaForm
                     ->helperText('Isečci iz teksta strane koji pokazuju kome je prilika namenjena.')
                     ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'grupe')))
                     ->columnSpanFull(),
-                Section::make('Predlog Ollame')
-                    ->description('Ollama je predložila, ali kod nije prihvatio.')
+                Section::make(fn (?Prilika $record): string => self::naslovPredloga($record))
+                    ->description('Model je predložio, ali kod nije prihvatio.')
                     ->schema([
                         self::predlog('vrsta', 'Vrsta', fn (mixed $state): string => VrstaPrilike::tryFrom((string) $state)?->getLabel() ?? (string) $state),
                         self::predlog('rok', 'Rok', fn (mixed $state): string => self::datumPredloga((string) $state)),
@@ -124,6 +124,14 @@ class PrilikaForm
                     ->visible(fn (?Prilika $record): bool => $record?->status === StatusPrilike::Nacrt && filled($record->predlog))
                     ->columnSpanFull(),
             ]);
+    }
+
+    // „Predlog modela · claude-haiku-5-5": koji je model predložio, kao uz „Objavio"; bez imena modela (ranija obrada) samo „Predlog modela".
+    private static function naslovPredloga(?Prilika $prilika): string
+    {
+        $model = $prilika === null ? null : PrikazPrilike::modelPredloga($prilika);
+
+        return 'Predlog modela'.($model === null ? '' : ' · '.$model);
     }
 
     // Prazna vrednost ne crta red; polje samo prikazuje predlog i ne ulazi u snimanje.
