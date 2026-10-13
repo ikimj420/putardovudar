@@ -35,10 +35,15 @@ final class TekstStrane
         return new PreuzetaStrana(mb_substr($tekst, 0, $najviseZnakova), $odgovor->body());
     }
 
+    // Oznake koje odvajaju tekst: blokovi, prelomi, tabele, liste, kontrole obrasca. Sve ostale (strong, em, span, a, b, i…) stoje usred reda i ne odvajaju ništa,
+    // jer ih strane ume da zalepe usred reči („<strong>n</strong><strong>ovembar</strong>"); razmak koji piše između reči u HTML-u ostaje.
+    private const BLOKOVI = 'p|div|br|hr|h[1-6]|ul|ol|li|dl|dt|dd|table|thead|tbody|tfoot|tr|td|th|caption|section|article|header|footer|main|aside|nav|blockquote|pre|form|fieldset|legend|figure|figcaption|address|details|summary|select|option|textarea|button|input|iframe|video|audio|canvas|object';
+
     public static function izHtmla(string $html): string
     {
         $html = preg_replace('#<(script|style|noscript|svg|head|nav|footer)\b.*?</\1>#is', ' ', $html) ?? '';
-        $tekst = html_entity_decode(strip_tags(str_replace('>', '> ', $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $html = preg_replace('#</?(?:'.self::BLOKOVI.')\b[^>]*>#i', ' ', $html) ?? '';
+        $tekst = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         return Latinica::izCirilice(trim(preg_replace('/[\s\x{00A0}]+/u', ' ', $tekst) ?? ''));
     }

@@ -17,6 +17,32 @@ class TekstStraneTest extends TestCase
         $this->assertSame('Konkurs Rok: 20. oktobra & dalje', TekstStrane::izHtmla($html));
     }
 
+    // Paket 70/T2: oznake usred reda ne lome reč, blokovi je odvajaju (primer: Erasmus+ stranica, „<strong>n</strong><strong>ovembar</strong>").
+    #[Test]
+    public function oznake_usred_reda_ne_lome_rec_a_blokovi_i_dalje_odvajaju(): void
+    {
+        $this->assertSame('Rok je 10. novembar 2026. do 23.59 časova.', TekstStrane::izHtmla('<p><strong>Rok je 10. </strong><strong>n</strong><strong>ovembar</strong><strong> 2026.</strong><strong> do 23.59 časova.</strong></p>'));
+        // Ogledalo: dve reči u dve oznake jedna do druge, sa razmakom između, ostaju odvojene.
+        $this->assertSame('Rok je 20. oktobra', TekstStrane::izHtmla('<b>Rok</b> <b>je</b> <i>20.</i> <em>oktobra</em>'));
+        $this->assertSame('na sajtu s2s.fonis.rs, gde', TekstStrane::izHtmla('na sajtu <a href="http://s2s.fonis.rs">s2s.fonis.rs</a>, gde'));
+
+        // Svaka oznaka usred reda, jedna po jedna: reč podeljena njome ostaje cela.
+        foreach (['strong', 'em', 'span', 'a', 'b', 'i', 'u', 'small', 'sup', 'mark', 'font', 'abbr', 'time', 'label'] as $oznaka) {
+            $this->assertSame('novembar', TekstStrane::izHtmla("n<$oznaka>ovembar</$oznaka>"), $oznaka);
+            $this->assertSame('novembar', TekstStrane::izHtmla("<$oznaka>n</$oznaka>ovembar"), $oznaka);
+        }
+
+        foreach (['p', 'div', 'li', 'h2', 'td', 'section', 'blockquote'] as $oznaka) {
+            $this->assertSame('prvi drugi', TekstStrane::izHtmla("<$oznaka>prvi</$oznaka><$oznaka>drugi</$oznaka>"), $oznaka);
+        }
+
+        $this->assertSame('prvi drugi', TekstStrane::izHtmla('prvi<br>drugi'));
+        $this->assertSame('prvi drugi', TekstStrane::izHtmla('prvi<br />drugi'));
+        $this->assertSame('Naslov Tekst', TekstStrane::izHtmla('<h1>Naslov</h1>Tekst'));
+        // Veličina slova u oznaci i atributi ne smetaju.
+        $this->assertSame('prvi drugi', TekstStrane::izHtmla('<DIV class="x">prvi</DIV><P id="y">drugi</P>'));
+    }
+
     // Ogledalo: obična latinica bez oznaka prolazi nepromenjena.
     #[Test]
     public function tekst_bez_oznaka_i_cirilice_ostaje_isti(): void
