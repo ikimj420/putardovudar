@@ -292,4 +292,28 @@ class UvozObradiRokSaStraneTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
         $this->assertSame('2026-10-12', $prilika->rok->toDateString());
     }
+
+    private const OGLAS_62 = 'Ministarstvo oglašava Javni konkurs za popunjavanje izvršilačih radnih mesta. Rok za ponošenje prijave je 15 (petnaest) dana i počinje da teče od 1. oktobra zaključno sa 15. oktobrom 2026. godine.';
+
+    // Paket 72/T1: oglas iz probe 71 (#62) piše rok mesecom u instrumentalu; model ga vrati ispravno, a kod ga je odbijao kao „rok ne piše u tekstu strane".
+    #[Test]
+    public function rok_sa_mesecom_u_instrumentalu_prolazi(): void
+    {
+        $prilika = $this->obradi('<p>'.self::OGLAS_62.'</p>', ['vrsta' => 'posao', 'grupe' => [], 'rok' => '2026-10-15', 'citat' => self::OGLAS_62]);
+
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
+        $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
+        $this->assertSame('2026-10-15', $prilika->rok->toDateString());
+        $this->assertSame('model', $prilika->predlog['izvor_citata']);
+    }
+
+    // Ogledalo: rok koji model vrati za dan kog nema na strani i dalje ne prolazi.
+    #[Test]
+    public function drugi_dan_od_onog_u_instrumentalu_ne_prolazi(): void
+    {
+        $prilika = $this->obradi('<p>'.self::OGLAS_62.'</p>', ['vrsta' => 'posao', 'grupe' => [], 'rok' => '2026-10-16', 'citat' => self::OGLAS_62]);
+
+        $this->assertSame(StatusPrilike::Nacrt, $prilika->status);
+        $this->assertSame('rok ne piše u tekstu strane', $prilika->predlog['odbijeno']);
+    }
 }

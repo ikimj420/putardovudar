@@ -22,6 +22,9 @@ class DatumiUTekstuTest extends TestCase
             'veliko slovo' => ['Do 3. NOVEMBRA 2026.', [['dan' => 3, 'mesec' => 11, 'godina' => 2026]]],
             'dan i mesec brojem, završna tačka' => ['Prijave do 20.10.', [['dan' => 20, 'mesec' => 10, 'godina' => null]]],
             'dva datuma' => ['od 1. oktobra do 15. oktobra 2026.', [['dan' => 1, 'mesec' => 10, 'godina' => null], ['dan' => 15, 'mesec' => 10, 'godina' => 2026]]],
+            'mesec u instrumentalu sa godinom' => ['zaključno sa 15. oktobrom 2026. godine', [['dan' => 15, 'mesec' => 10, 'godina' => 2026]]],
+            'dva datuma, drugi u instrumentalu' => ['od 1. oktobra zaključno sa 15. oktobrom 2026.', [['dan' => 1, 'mesec' => 10, 'godina' => null], ['dan' => 15, 'mesec' => 10, 'godina' => 2026]]],
+            'instrumental svih meseci sa „-brom"' => ['5. septembrom, 6. novembrom i 7. decembrom', [['dan' => 5, 'mesec' => 9, 'godina' => null], ['dan' => 6, 'mesec' => 11, 'godina' => null], ['dan' => 7, 'mesec' => 12, 'godina' => null]]],
             'maj, jun i jul se ne mešaju' => ['5. maja, 6. juna i 7. jula', [['dan' => 5, 'mesec' => 5, 'godina' => null], ['dan' => 6, 'mesec' => 6, 'godina' => null], ['dan' => 7, 'mesec' => 7, 'godina' => null]]],
         ];
     }
@@ -63,6 +66,7 @@ class DatumiUTekstuTest extends TestCase
             'bez godine sa tačkama' => ['Rok je 20.10. u podne', [[7, 13, 2010, null]]],
             'veliko slovo' => ['Rok je 20. Oktobra', [[7, 18, 2010, null]]],
             'datum sa razmacima se ne cepa na dva' => ['Rok 5. 10. 2026. godine', [[4, 15, 510, 2026]]],
+            'instrumental sa godinom' => ['Zaključno sa 15. oktobrom 2026.', [[14, 31, 1510, 2026]]],
             'nema datuma' => ['Prijave su u toku, 5 mesta.', []],
         ];
     }

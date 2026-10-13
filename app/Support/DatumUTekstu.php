@@ -8,9 +8,10 @@ use Carbon\CarbonInterface;
 // Proverava da li datum doslovno piše u tekstu, u nekom od uobičajenih oblika. Godina mora da piše.
 final class DatumUTekstu
 {
+    // Nominativ, genitiv („do 20. oktobra") i instrumental („zaključno sa 20. oktobrom"); u instrumentalu septembar, oktobar, novembar i decembar gube „a" (paket 72).
     public const MESECI = [
-        1 => 'januar|januara', 2 => 'februar|februara', 3 => 'mart|marta', 4 => 'april|aprila', 5 => 'maj|maja', 6 => 'jun|juna',
-        7 => 'jul|jula', 8 => 'avgust|avgusta', 9 => 'septembar|septembra', 10 => 'oktobar|oktobra', 11 => 'novembar|novembra', 12 => 'decembar|decembra',
+        1 => 'januar|januara|januarom', 2 => 'februar|februara|februarom', 3 => 'mart|marta|martom', 4 => 'april|aprila|aprilom', 5 => 'maj|maja|majom', 6 => 'jun|juna|junom',
+        7 => 'jul|jula|julom', 8 => 'avgust|avgusta|avgustom', 9 => 'septembar|septembra|septembrom', 10 => 'oktobar|oktobra|oktobrom', 11 => 'novembar|novembra|novembrom', 12 => 'decembar|decembra|decembrom',
     ];
 
     // Prvi dan sa datim danom i mesecom koji nije pre $posle (isti dan važi); za 29. februar to može da bude i nekoliko godina kasnije.

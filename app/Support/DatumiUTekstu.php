@@ -113,7 +113,7 @@ final class DatumiUTekstu
         return $pojave;
     }
 
-    /** @return array<string, int> mesec napisan rečima (nominativ i genitiv) → broj meseca */
+    /** @return array<string, int> mesec napisan rečima (nominativ, genitiv i instrumental) → broj meseca */
     private static function nazivi(): array
     {
         $nazivi = [];

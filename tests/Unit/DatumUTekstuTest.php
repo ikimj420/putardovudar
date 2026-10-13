@@ -49,6 +49,8 @@ class DatumUTekstuTest extends TestCase
             'dan zalepljen za veći broj' => ['Rok je 120.10.2026.'],
             'godina zalepljena za veći broj' => ['Rok je 20.10.20261.'],
             'mesec napisan drugačije' => ['Rok je 20. novembra 2026.'],
+            'instrumental drugog meseca' => ['Zaključno sa 20. novembrom 2026.'],
+            'instrumental bez godine' => ['Zaključno sa 20. oktobrom'],
             'nema datuma' => ['Rok za prijavu je uskoro.'],
             'prazno' => [''],
         ];
@@ -68,6 +70,46 @@ class DatumUTekstuTest extends TestCase
         $this->assertFalse(DatumUTekstu::postoji('Rok je 31.02.2026.', '2026-02-31'));
         $this->assertFalse(DatumUTekstu::postoji('Rok je 20.10.2026.', '20.10.2026'));
         $this->assertFalse(DatumUTekstu::postoji('Rok je 20.10.2026.', ''));
+    }
+
+    /** @return array<string, array{0: int, 1: string}> broj meseca, mesec u instrumentalu (paket 72/T1) */
+    public static function mesecUInstrumentalu(): array
+    {
+        return [
+            'januar' => [1, 'januarom'], 'februar' => [2, 'februarom'], 'mart' => [3, 'martom'], 'april' => [4, 'aprilom'], 'maj' => [5, 'majom'], 'jun' => [6, 'junom'],
+            'jul' => [7, 'julom'], 'avgust' => [8, 'avgustom'], 'septembar' => [9, 'septembrom'], 'oktobar' => [10, 'oktobrom'], 'novembar' => [11, 'novembrom'], 'decembar' => [12, 'decembrom'],
+        ];
+    }
+
+    // Paket 72/T1: strana #62 iz probe 71 piše „zaključno sa 15. oktobrom 2026. godine"; instrumental je isti datum kao genitiv.
+    #[Test]
+    #[DataProvider('mesecUInstrumentalu')]
+    public function mesec_u_instrumentalu_je_isti_datum(int $mesec, string $oblik): void
+    {
+        $tekst = 'Rok počinje da teče od 1. septembra zaključno sa 15. '.$oblik.' 2026. godine.';
+
+        $this->assertTrue(DatumUTekstu::postoji($tekst, sprintf('2026-%02d-15', $mesec)));
+        // Ogledalo: isti tekst ne dokazuje drugi mesec, drugi dan ni drugu godinu.
+        $this->assertFalse(DatumUTekstu::postoji($tekst, sprintf('2026-%02d-15', $mesec % 12 + 1)));
+        $this->assertFalse(DatumUTekstu::postoji($tekst, sprintf('2026-%02d-16', $mesec)));
+        $this->assertFalse(DatumUTekstu::postoji($tekst, sprintf('2027-%02d-15', $mesec)));
+    }
+
+    // Merilo iznad prolazi i kad tabela nema oblik za neki mesec; ovde se broji da ga ima svih dvanaest.
+    #[Test]
+    public function svih_dvanaest_meseci_ima_oblik_u_instrumentalu(): void
+    {
+        $this->assertCount(12, DatumUTekstu::MESECI);
+        $this->assertCount(12, self::mesecUInstrumentalu());
+
+        foreach (self::mesecUInstrumentalu() as [$mesec, $oblik]) {
+            $this->assertContains($oblik, explode('|', DatumUTekstu::MESECI[$mesec]), 'mesec '.$mesec);
+        }
+
+        // Ogledalo: nijedan oblik ne pripada dvama mesecima.
+        $oblici = array_merge(...array_map(fn (string $oblici) => explode('|', $oblici), DatumUTekstu::MESECI));
+        $this->assertGreaterThanOrEqual(36, count($oblici));
+        $this->assertSame($oblici, array_values(array_unique($oblici)));
     }
 
     /** @return array<string, array{0: int, 1: int, 2: string, 3: string|null}> dan, mesec, posle datuma, prvi takav dan */
@@ -112,6 +154,8 @@ class DatumUTekstuTest extends TestCase
             'dan koji je deo većeg broja' => ['Rok je 120. oktobra', 20, 10, null],
             'ćirilica se ne pretvara ovde' => ['Рок је 20. октобра', 20, 10, null],
             'ima i veliko slovo' => ['Rok je 20. Oktobra', 20, 10, 7],
+            'ime meseca u instrumentalu' => ['Zaključno sa 20. oktobrom 2026.', 20, 10, 14],
+            'instrumental drugog meseca' => ['Zaključno sa 20. novembrom 2026.', 20, 10, null],
         ];
     }
 
