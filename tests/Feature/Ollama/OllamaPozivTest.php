@@ -184,4 +184,28 @@ class OllamaPozivTest extends TestCase
 
         (new Ollama)->odgovoriTekstom('U.', 'T.');
     }
+
+    // Paket 71/T1: i Ollama pamti poziv i tokene koje sama javlja, bez cene (lokalno).
+    #[Test]
+    public function potrosnja_zbraja_pozive_i_tokene_koje_ollama_javlja_a_cene_nema(): void
+    {
+        Http::fake(['http://127.0.0.1:11434/api/chat' => Http::sequence()
+            ->push(['message' => ['role' => 'assistant', 'content' => '{"a": 1}'], 'prompt_eval_count' => 1500, 'eval_count' => 90])
+            ->push(['message' => ['role' => 'assistant', 'content' => 'Tekst.'], 'prompt_eval_count' => 700, 'eval_count' => 30])
+            ->push(['message' => ['role' => 'assistant', 'content' => 'Bez brojeva.']])
+            ->push(['error' => 'x'], 500)]);
+        $ollama = new Ollama;
+
+        $ollama->odgovoriJsonom('U.', 'T.');
+        $ollama->odgovoriTekstom('U.', 'T.');
+        $ollama->odgovoriTekstom('U.', 'T.');
+        try {
+            $ollama->odgovoriTekstom('U.', 'T.');
+        } catch (OllamaNedostupna) {
+        }
+        $potrosnja = $ollama->potrosnja();
+
+        $this->assertSame(['qwen2.5:7b', 3, 2200, 120], [$potrosnja->model, $potrosnja->poziva, $potrosnja->ulazniTokeni, $potrosnja->izlazniTokeni]);
+        $this->assertNull($potrosnja->cena);
+    }
 }

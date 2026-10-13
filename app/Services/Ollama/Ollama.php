@@ -2,12 +2,20 @@
 
 namespace App\Services\Ollama;
 
+use App\Services\Model\ModelObrade;
+use App\Services\Model\Potrosnja;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 // Jedino mesto u aplikaciji koje zove Ollamu. Adresa, model i vreme čekanja dolaze iz config/ollama.php.
-final class Ollama
+final class Ollama implements ModelObrade
 {
+    private int $poziva = 0;
+
+    private int $ulazni = 0;
+
+    private int $izlazni = 0;
+
     public function model(): string
     {
         return (string) config('ollama.model');
@@ -44,6 +52,12 @@ final class Ollama
         return is_string($sadrzaj) ? trim($sadrzaj) : '';
     }
 
+    // Lokalno, bez cene; tokeni su oni koje Ollama sama javlja (prompt_eval_count i eval_count).
+    public function potrosnja(): Potrosnja
+    {
+        return new Potrosnja($this->model(), $this->poziva, $this->ulazni, $this->izlazni);
+    }
+
     // Pozivalac sme da skrati vreme čekanja (ostatak ukupnog vremena za pitanje), nikad da ga produži.
     private function pozovi(string $uputstvo, string $tekst, bool $kaoJson, ?int $vremeCekanja): mixed
     {
@@ -69,6 +83,10 @@ final class Ollama
         if (! $odgovor->successful()) {
             throw new OllamaNedostupna('Ollama je odgovorila sa HTTP '.$odgovor->status());
         }
+
+        $this->poziva++;
+        $this->ulazni += (int) $odgovor->json('prompt_eval_count');
+        $this->izlazni += (int) $odgovor->json('eval_count');
 
         return $odgovor->json('message.content');
     }
