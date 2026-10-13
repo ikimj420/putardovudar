@@ -21,56 +21,92 @@ final class UvozRss
 
     public function __construct(private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
 
-    public function uvezi(string $ime, string $adresa): RezultatUvoza
+    // Čita strane izvora redom (?paged=2…, WordPress), najviše koliko piše u podešavanju. Prva strana je kao do sada (greška se prijavljuje); druga i dalje staju tiho na prvoj
+    // koja ne stigne, nije RSS, nema stavki ili nema nijednu novu vezu (izvor koji ne zna „paged" vraća istu stranu).
+    public function uvezi(string $ime, string $adresa, ?int $najviseStrana = null): RezultatUvoza
     {
+        $najviseStrana = max(1, $najviseStrana ?? (int) config('uvoz.najvise_strana', 1));
         $novih = 0;
         $preskoceno = 0;
         $dopunjeno = 0;
+        $videne = [];
 
         try {
-            $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa);
+            for ($strana = 1; $strana <= $najviseStrana; $strana++) {
+                $stavke = $strana === 1 ? $this->prvaStrana($adresa) : $this->sledecaStrana($adresa, $strana);
 
-            if (! $odgovor->successful()) {
-                return new RezultatUvoza(greska: 'izvor je odgovorio sa HTTP '.$odgovor->status());
-            }
-
-            if (strlen($odgovor->body()) > config('uvoz.najvise_bajtova')) {
-                return new RezultatUvoza(greska: 'odgovor je veći od dozvoljene veličine');
-            }
-
-            $stavke = $this->stavke($odgovor->body());
-
-            if ($stavke === null) {
-                return new RezultatUvoza(greska: 'odgovor nije RSS');
-            }
-
-            foreach (array_slice($stavke, 0, config('uvoz.najvise_stavki')) as $stavka) {
-                $podaci = $this->podaci($stavka, $ime);
-
-                if ($podaci === null) {
-                    $preskoceno++;
-
-                    continue;
+                if ($stavke instanceof RezultatUvoza) {
+                    return $stavke;
                 }
 
-                // Oglas uvezen ranije sa http adresom je isti oglas: ne uvozi se ponovo samo zato što se veza sad čuva kao https. Stari nacrt bez datuma objave ga dobija (paket 70).
-                $postojeca = Prilika::query()->whereIn('link_izvora', [$podaci['link_izvora'], preg_replace(self::INFOSTUD_HTTPS, 'http://$1', $podaci['link_izvora'])])->first();
+                $linkovi = array_map(fn (SimpleXMLElement $stavka) => trim((string) $stavka->link), $stavke);
 
-                if ($postojeca !== null) {
-                    $dopunjeno += $this->dopuna->dopuni($postojeca, $podaci['izvor_objavljen']) ? 1 : 0;
-                    $preskoceno++;
-
-                    continue;
+                if ($stavke === [] || ($strana > 1 && array_diff($linkovi, $videne) === [])) {
+                    break;
                 }
 
-                Prilika::query()->create($podaci);
-                $novih++;
+                $videne = [...$videne, ...$linkovi];
+
+                foreach (array_slice($stavke, 0, config('uvoz.najvise_stavki')) as $stavka) {
+                    $podaci = $this->podaci($stavka, $ime);
+
+                    if ($podaci === null) {
+                        $preskoceno++;
+
+                        continue;
+                    }
+
+                    // Oglas uvezen ranije sa http adresom je isti oglas: ne uvozi se ponovo samo zato što se veza sad čuva kao https. Stari nacrt bez datuma objave ga dobija (paket 70).
+                    $postojeca = Prilika::query()->whereIn('link_izvora', [$podaci['link_izvora'], preg_replace(self::INFOSTUD_HTTPS, 'http://$1', $podaci['link_izvora'])])->first();
+
+                    if ($postojeca !== null) {
+                        $dopunjeno += $this->dopuna->dopuni($postojeca, $podaci['izvor_objavljen']) ? 1 : 0;
+                        $preskoceno++;
+
+                        continue;
+                    }
+
+                    Prilika::query()->create($podaci);
+                    $novih++;
+                }
             }
         } catch (Throwable $izuzetak) {
             return new RezultatUvoza($novih, $preskoceno, 'neočekivana greška: '.$izuzetak->getMessage(), $dopunjeno);
         }
 
         return new RezultatUvoza($novih, $preskoceno, dopunjeno: $dopunjeno);
+    }
+
+    /** @return list<SimpleXMLElement>|RezultatUvoza stavke prve strane ili greška uvoza */
+    private function prvaStrana(string $adresa): array|RezultatUvoza
+    {
+        $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa);
+
+        if (! $odgovor->successful()) {
+            return new RezultatUvoza(greska: 'izvor je odgovorio sa HTTP '.$odgovor->status());
+        }
+
+        if (strlen($odgovor->body()) > config('uvoz.najvise_bajtova')) {
+            return new RezultatUvoza(greska: 'odgovor je veći od dozvoljene veličine');
+        }
+
+        return $this->stavke($odgovor->body()) ?? new RezultatUvoza(greska: 'odgovor nije RSS');
+    }
+
+    /** @return list<SimpleXMLElement> stavke strane, a prazno kad strane nema ili ne valja (uvoz tada staje) */
+    private function sledecaStrana(string $adresa, int $strana): array
+    {
+        try {
+            $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa.(str_contains($adresa, '?') ? '&' : '?').'paged='.$strana);
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (! $odgovor->successful() || strlen($odgovor->body()) > config('uvoz.najvise_bajtova')) {
+            return [];
+        }
+
+        return $this->stavke($odgovor->body()) ?? [];
     }
 
     /** @return list<SimpleXMLElement>|null */

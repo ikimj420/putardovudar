@@ -22,7 +22,7 @@ class UvozRss extends Command
 
         foreach ($izvori as $izvor) {
             $ime = (string) ($izvor['ime'] ?? '');
-            $rezultat = $uvoz->uvezi($ime, (string) ($izvor['adresa'] ?? ''));
+            $rezultat = $uvoz->uvezi($ime, (string) ($izvor['adresa'] ?? ''), isset($izvor['najvise_strana']) ? (int) $izvor['najvise_strana'] : null);
 
             $this->line(sprintf('%s: novih %d, preskočeno %d, greška: %s%s', $ime, $rezultat->novih, $rezultat->preskoceno, $rezultat->greska ?? 'nema', $rezultat->dopunjeno > 0 ? ', dopunjen datum objave: '.$rezultat->dopunjeno : ''));
 

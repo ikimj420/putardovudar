@@ -19,7 +19,7 @@ class UvozIzvoriUPodesavanjimaTest extends TestCase
             ['ime' => 'KOMS - konkursi', 'adresa' => 'https://koms.rs/category/konkursi/feed/'],
             ['ime' => 'Ministarstvo prosvete', 'adresa' => 'https://prosveta.gov.rs/kategorija/vazna-obavestenja/feed/'],
             ['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/'],
-            ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php'],
+            ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php', 'najvise_strana' => 1],
         ], config('uvoz.izvori'));
         $this->assertCount(9, config('uvoz.izvori'));
     }
@@ -40,6 +40,24 @@ class UvozIzvoriUPodesavanjimaTest extends TestCase
 
         $this->assertSame(count($izvori), count(array_unique(array_column($izvori, 'ime'))));
         $this->assertSame(count($izvori), count(array_unique(array_column($izvori, 'adresa'))));
+    }
+
+    // Paket 74/T1: pet strana po izvoru je opšta granica (jedno mesto), a samo Infostud, koji vraća istu stranu na svakom ?paged=, ima svoju (jednu).
+    #[Test]
+    public function strane_po_izvoru_su_u_podesavanjima_a_samo_infostud_ima_svoju_granicu(): void
+    {
+        $this->assertSame(5, config('uvoz.najvise_strana'));
+
+        $svoje = [];
+        foreach (config('uvoz.izvori') as $izvor) {
+            if (array_key_exists('najvise_strana', $izvor)) {
+                $svoje[$izvor['ime']] = $izvor['najvise_strana'];
+            }
+        }
+
+        $this->assertSame(['Infostud Poslovi' => 1], $svoje);
+        // Ogledalo: ostali izvori (neprazan skup) koriste opštu granicu.
+        $this->assertGreaterThan(1, count(config('uvoz.izvori')));
     }
 
     #[Test]

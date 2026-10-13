@@ -77,9 +77,11 @@ class UvozNovihIzvoraTest extends BazaTestCase
     #[DataProvider('izvori')]
     public function izvor_je_u_podesavanjima_a_njegov_snimak_daje_tri_nacrta(string $ime, string $adresa, string $snimak, array $naslovi, array $dani, string $pocetakVeze): void
     {
-        $this->assertContains(['ime' => $ime, 'adresa' => $adresa], config('uvoz.izvori'));
-        config()->set('uvoz.izvori', [['ime' => $ime, 'adresa' => $adresa]]);
-        Http::fake([$adresa => Http::response($this->snimak($snimak))]);
+        // Izvor iz podešavanja (sa svojom granicom strana, ako je ima): ime i adresa moraju da budu tačno ovi.
+        $izvor = collect(config('uvoz.izvori'))->firstWhere('ime', $ime);
+        $this->assertSame($adresa, $izvor['adresa'] ?? null);
+        config()->set('uvoz.izvori', [$izvor]);
+        Http::fake([$adresa => Http::response($this->snimak($snimak)), $adresa.'?paged=2' => Http::response('<?xml version="1.0"?><rss version="2.0"><channel><title>Prazno</title></channel></rss>')]);
 
         $this->artisan('uvoz:rss')->expectsOutput($ime.': novih 3, preskočeno 0, greška: nema')->assertExitCode(0);
 
@@ -102,7 +104,8 @@ class UvozNovihIzvoraTest extends BazaTestCase
 
         // Ništa se ne objavljuje: nijedna od uvezenih nije javna.
         $this->assertSame(0, Prilika::javne()->count());
-        Http::assertSentCount(1);
+        // Izvor koji ne zna „paged" (Infostud) čita samo prvu stranu, ostali još i drugu, koja je prazna (paket 74/T1).
+        Http::assertSentCount(isset($izvor['najvise_strana']) ? 1 : 2);
     }
 
     // Ogledalo: drugo pokretanje nad istim snimkom ne pravi nijedan nacrt i ne menja postojeće.
