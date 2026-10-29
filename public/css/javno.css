@@ -1611,6 +1611,63 @@ section + section > .naslov-izvora {
   padding: 12px 0;
 }
 
+/* Podnožje (paket 80): ime sajta i dve veze, na svakoj javnoj strani. Dole je mesta za plutajuće dugme pomoćnika, da ne pokrije veze; veze su visoke 44 px. */
+.podnozje {
+  padding: 24px 0 88px;
+  background: var(--noc);
+  color: #fff;
+}
+
+.podnozje-red {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.podnozje-ime {
+  font-family: var(--font-naslov);
+  font-weight: 800;
+}
+
+.podnozje-ime small {
+  display: block;
+  font-family: var(--font-tekst);
+  font-size: 14px;
+  font-weight: 600;
+  color: #dcd2ea;
+}
+
+.podnozje-meni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+}
+
+.podnozje-meni a {
+  display: inline-block;
+  padding: 12px 0;
+  font-weight: 600;
+  color: #dcd2ea;
+}
+
+.podnozje-meni a[aria-current="page"] {
+  font-weight: 800;
+  color: #fff;
+}
+
+/* Podloga je tamna, pa je obris fokusa zlatan (kao u naslovnoj traci). */
+.podnozje :focus-visible {
+  outline-color: var(--zlato);
+}
+
+@media (min-width: 720px) {
+  .podnozje-red {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 .odgovor {
   margin-bottom: 24px;
 }
@@ -2121,6 +2178,7 @@ section + section > .naslov-izvora {
   }
 
   .zaglavlje,
+  .podnozje,
   .linija,
   .mrvice,
   .deljenje,
@@ -2220,6 +2278,7 @@ section + section > .naslov-izvora {
 /* Prozor pomoćnika sa napisanim tekstom (paket 56): štampa se samo taj tekst, bez strane iza prozora i bez obrasca. */
 @media print {
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .zaglavlje,
+  html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .podnozje,
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) main,
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-glava,
   html.pomocnik-otvoren:has(.plutajuci-rezultat .sklopljen-tekst) .plutajuci-forma,

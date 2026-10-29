@@ -82,7 +82,7 @@ class PristupacnostMarkeraTest extends BazaTestCase
 
         $html = $this->get(route('prilike.index'))->getContent();
         preg_match_all('#<nav\b[^>]*aria-label="([^"]+)"#', $html, $nazivi);
-        $this->assertSame(['Glavni meni', 'Putanja', 'Vrste prilika', 'Brzi filteri'], $nazivi[1]);
+        $this->assertSame(['Glavni meni', 'Putanja', 'Vrste prilika', 'Brzi filteri', 'Podnožje'], $nazivi[1]);
     }
 
     #[Test]

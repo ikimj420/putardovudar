@@ -16,4 +16,7 @@ final class PrikazZaglavlja
 
     // Veza u meniju posle „Prilike" (paket 80, tekst iz paketa).
     public const STIPENDIJE = 'Stipendije';
+
+    // Naziv podnožja (veze „Privatnost" i „Predloži priliku"); čita ga čitač ekrana (paket 80).
+    public const PODNOZJE = 'Podnožje';
 }

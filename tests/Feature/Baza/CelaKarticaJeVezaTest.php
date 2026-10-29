@@ -139,7 +139,7 @@ class CelaKarticaJeVezaTest extends BazaTestCase
         $this->assertSame(['kartica-veza', ''], array_column($this->veze($kartice[0]), 0));
         $this->assertSame(route('prilike.show', $prilika->slug), $this->veze($kartice[0])[0][1]);
         $this->assertStringContainsString('<section class="kartica odgovor">', $html);
-        $this->assertSame([], $this->veze((string) preg_replace('#<article.*?</article>#s', '', (string) strstr($html, '<section class="kartica odgovor">'))));
+        $this->assertSame([], $this->veze((string) preg_replace('#<article.*?</article>|<footer.*?</footer>#s', '', (string) strstr($html, '<section class="kartica odgovor">'))));
     }
 
     // Stil: veza se razvlači preko kartice (kartica je njen položaj), ostale veze su iznad, a naslov ne dobija sopstveni položaj.

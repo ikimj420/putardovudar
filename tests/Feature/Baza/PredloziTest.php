@@ -209,7 +209,7 @@ class PredloziTest extends BazaTestCase
         $this->assertSame(1, Predlog::query()->count());
     }
 
-    // Veza je na strani „Prilike", i kad nema nijedne prilike, i kad ih ima; ne i na drugim stranama (podnožje je paket 80).
+    // Veza sa rečenicom je na strani „Prilike", i kad nema nijedne prilike, i kad ih ima; na drugim stranama je samo veza iz podnožja (paket 80).
     #[Test]
     public function strana_prilike_vodi_na_formu_i_prazna_i_puna(): void
     {
@@ -220,6 +220,9 @@ class PredloziTest extends BazaTestCase
         Prilika::factory()->objavljena()->create();
         $this->get(route('prilike.index'))->assertOk()->assertSee(PrikazPredloga::VEZA_SA_PRILIKA)->assertSee($veza, false);
 
-        $this->get(route('organizacije.index'))->assertOk()->assertDontSee($veza, false);
+        // Ogledalo: na drugim stranama te rečenice nema; do forme tu vodi samo veza iz podnožja (paket 80).
+        $organizacije = $this->get(route('organizacije.index'))->assertOk()->assertDontSee(PrikazPredloga::VEZA_SA_PRILIKA);
+        $this->assertSame(1, substr_count($organizacije->getContent(), $veza));
+        $this->assertStringContainsString($veza, (string) preg_replace('#^.*<footer class="podnozje">(.*?)</footer>.*$#s', '$1', $organizacije->getContent()));
     }
 }

@@ -83,7 +83,7 @@ class StampaStranaTest extends BazaTestCase
         $sakriveno = $this->selektoriSa($this->stampa(), 'display: none');
         $stranice = $this->strane();
 
-        $this->assertSame(['.zaglavlje', '.linija', '.mrvice', '.deljenje', '.vrata-okvir', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
+        $this->assertSame(['.zaglavlje', '.podnozje', '.linija', '.mrvice', '.deljenje', '.vrata-okvir', '.dugme-red', '.dugme-veza', '.obrazac', '.uputstvo', '.plutajuci', '.dugme-kopiraj'], $sakriveno);
 
         foreach ($sakriveno as $selektor) {
             $klasa = ltrim($selektor, '.');
@@ -122,7 +122,7 @@ class StampaStranaTest extends BazaTestCase
             }
         }
         // Od paketa 57 prozor je razgovor: štampa se samo poruka sa napisanim tekstom, pa se sakrivaju i sve ostale poruke.
-        $this->assertSame(['.zaglavlje', 'main', '.plutajuci-glava', '.plutajuci-forma', '.plutajuci-uvod', '.plutajuci-sablon', '.sklopljen h2', '.poruka:not(:has(.sklopljen-tekst))'], $skriveno);
+        $this->assertSame(['.zaglavlje', '.podnozje', 'main', '.plutajuci-glava', '.plutajuci-forma', '.plutajuci-uvod', '.plutajuci-sablon', '.sklopljen h2', '.poruka:not(:has(.sklopljen-tekst))'], $skriveno);
         $this->assertContains($uslov.' .plutajuci', $selektori);
         $this->assertMatchesRegularExpression('/\.plutajuci,[^{]*\.plutajuci-prozor \{[^}]*position: static;[^}]*display: block;/', $blok);
         $this->assertMatchesRegularExpression('/\.plutajuci-telo \{[^}]*overflow: visible;/', $blok);

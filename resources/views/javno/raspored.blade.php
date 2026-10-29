@@ -67,6 +67,15 @@
             @yield('sadrzaj')
         </div>
     </main>
+    <footer class="podnozje">
+        <div class="sirina podnozje-red">
+            <p class="podnozje-ime">{{ config('app.name') }} <small>{{ \App\Support\PrikazZaglavlja::SLOGAN }}</small></p>
+            <nav class="podnozje-meni" aria-label="{{ \App\Support\PrikazZaglavlja::PODNOZJE }}">
+                <a href="{{ route('privatnost') }}"@if (request()->routeIs('privatnost')) aria-current="page"@endif>{{ \App\Support\PrikazPrivatnosti::NASLOV }}</a>
+                <a href="{{ route('predlozi.forma') }}"@if (request()->routeIs('predlozi.*')) aria-current="page"@endif>{{ \App\Support\PrikazPredloga::NASLOV }}</a>
+            </nav>
+        </div>
+    </footer>
     @unless (request()->routeIs('pomocnik.*'))
         @include('javno.pomocnik-prozor')
     @endunless
