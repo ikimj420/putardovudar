@@ -8,7 +8,7 @@ use App\Models\Organizacija;
 use Illuminate\Database\Seeder;
 
 // Romske organizacije iz Dokumentacija/ORGANIZACIJE-NOVE.md, samo ono što je Ivan odobrio (✅, 13.10.2026.); tekstovi su prepisani doslovno. Za razliku od OrganizacijeSeeder,
-// ulaze kao objavljene (Ivan je odobrio svaku, i hoće da se vide). Slug koji već postoji se ne dira. Ivan pokreće seeder sam.
+// ulaze kao objavljene (Ivan je odobrio svaku, i hoće da se vide) i sa redosledom 1–6 (na vrhu strane). Slug koji već postoji se ne dira, ni polje „redosled". Ivan pokreće seeder sam.
 class RomskeOrganizacijeSeeder extends Seeder
 {
     public function run(): void
@@ -20,7 +20,7 @@ class RomskeOrganizacijeSeeder extends Seeder
         }
     }
 
-    /** @return list<array{naziv: string, slug: string, vrsta: VrstaOrganizacije, kratak_opis: string, opis: string, mesto: string, online: bool, telefon?: string, eposta: string, sajt: string, usluge: list<string>, beleska: string}> */
+    /** @return list<array{naziv: string, slug: string, vrsta: VrstaOrganizacije, kratak_opis: string, opis: string, mesto: string, online: bool, telefon?: string, eposta: string, sajt: string, usluge: list<string>, beleska: string, redosled: int}> */
     public static function organizacije(): array
     {
         return [
@@ -36,6 +36,7 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'sajt' => 'https://opreromasrbija.rs/rs',
                 'usluge' => ['Učlanjenje u pokret'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://opreromasrbija.rs/rs 13.10.2026.; adresa od Ivana.',
+                'redosled' => 1,
             ],
             [
                 'naziv' => 'ERIAC – Evropski romski institut za umetnost i kulturu',
@@ -50,6 +51,7 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'sajt' => 'https://eriac.org/eriac-serbia/',
                 'usluge' => ['Podrška romskim umetnicima', 'Pozivi i stipendije za umetnike', 'Članstvo'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://eriac.org/ 13.10.2026.',
+                'redosled' => 2,
             ],
             [
                 'naziv' => 'Roma Education Fund (REF)',
@@ -63,6 +65,7 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'sajt' => 'https://roma.education/sr/',
                 'usluge' => ['Obrazovna podrška', 'Liderstvo', 'Veštine i zapošljavanje'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://roma.education/ 13.10.2026.; adresa od Ivana.',
+                'redosled' => 3,
             ],
             [
                 'naziv' => 'REDI – Roma Entrepreneurship Development Initiative',
@@ -76,6 +79,7 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'sajt' => 'https://www.redi-ngo.eu/',
                 'usluge' => ['Povoljni krediti', 'Grantovi i mentorstvo za preduzetnike', 'Podrška za razvoj posla'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://www.redi-ngo.eu/ 13.10.2026.',
+                'redosled' => 4,
             ],
             [
                 'naziv' => 'Roma Foundation for Europe',
@@ -89,6 +93,7 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'sajt' => 'https://romaforeurope.org/',
                 'usluge' => ['Novosti na mejl', 'Uključi se (Join)'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://romaforeurope.org/ 13.10.2026.',
+                'redosled' => 5,
             ],
             [
                 'naziv' => 'Roma for Democracy',
@@ -102,6 +107,7 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'sajt' => 'https://romafordemocracy.org/',
                 'usluge' => ['Novosti na mejl', 'Uključi se (Act with us)'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://romafordemocracy.org/ 13.10.2026.',
+                'redosled' => 6,
             ],
         ];
     }

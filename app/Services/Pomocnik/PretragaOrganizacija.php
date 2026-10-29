@@ -45,7 +45,7 @@ final class PretragaOrganizacija
     /** @return Collection<int, Organizacija> */
     private function kandidati(Formular $formular): Collection
     {
-        return Organizacija::javne()->orderBy('naziv')->limit(self::NAJVISE_KANDIDATA)->get()
+        return Organizacija::javne()->poRedosledu()->limit(self::NAJVISE_KANDIDATA)->get()
             ->filter(fn (Organizacija $organizacija) => $formular->grad === null || $this->jeUGradu($organizacija, $formular->grad))
             ->values();
     }

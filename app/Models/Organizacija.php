@@ -18,8 +18,9 @@ use Illuminate\Validation\ValidationException;
  * @property StatusObjave $status
  * @property VrstaOrganizacije $vrsta
  * @property list<string>|null $usluge
+ * @property int|null $redosled manji broj ide gore na javnim stranama, prazno posle ostalih
  */
-#[Fillable(['naziv', 'slug', 'vrsta', 'kratak_opis', 'opis', 'mesto', 'online', 'telefon', 'eposta', 'sajt', 'usluge', 'beleska', 'status'])]
+#[Fillable(['naziv', 'slug', 'vrsta', 'kratak_opis', 'opis', 'mesto', 'online', 'telefon', 'eposta', 'sajt', 'usluge', 'beleska', 'redosled', 'status'])]
 class Organizacija extends Model
 {
     /** @use HasFactory<OrganizacijaFactory> */
@@ -49,7 +50,7 @@ class Organizacija extends Model
     /** @return array<string, mixed> */
     protected function casts(): array
     {
-        return ['status' => StatusObjave::class, 'vrsta' => VrstaOrganizacije::class, 'online' => 'boolean', 'usluge' => 'array'];
+        return ['status' => StatusObjave::class, 'vrsta' => VrstaOrganizacije::class, 'online' => 'boolean', 'usluge' => 'array', 'redosled' => 'integer'];
     }
 
     // Jedino mesto gde se odlučuje koje organizacije su javne.
@@ -58,6 +59,14 @@ class Organizacija extends Model
     protected function javne(Builder $upit): void
     {
         $upit->where('status', StatusObjave::Objavljeno);
+    }
+
+    // Jedino mesto gde se odlučuje redosled organizacija na javnim stranama i u pomoćniku: manji „redosled" ide gore, prazan posle, pa po nazivu, kao do sada.
+    /** @param  Builder<Organizacija>  $upit */
+    #[Scope]
+    protected function poRedosledu(Builder $upit): void
+    {
+        $upit->orderByRaw('redosled is null')->orderBy('redosled')->orderBy('naziv');
     }
 
     // Jedino mesto gde se odlučuje šta je nacrt za pregled; admin pita ovde.

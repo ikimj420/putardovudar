@@ -9,7 +9,7 @@ class JavneOrganizacijeController extends Controller
 {
     public function index(): View
     {
-        return view('javno.organizacije', ['organizacije' => Organizacija::javne()->orderBy('naziv')->get()]);
+        return view('javno.organizacije', ['organizacije' => Organizacija::javne()->poRedosledu()->get()]);
     }
 
     // Nejavna organizacija je za posetioca isto što i nepostojeća: 404, jer bi 403 potvrdio da zapis postoji.

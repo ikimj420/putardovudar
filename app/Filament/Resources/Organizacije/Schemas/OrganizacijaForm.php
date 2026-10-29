@@ -86,6 +86,12 @@ class OrganizacijaForm
                     ->helperText('Samo za tebe, ne vidi se na sajtu; npr. kada su podaci proveravani.')
                     ->autosize()
                     ->columnSpanFull(),
+                TextInput::make('redosled')
+                    ->label('Redosled')
+                    ->helperText('Broj; manji broj ide gore na strani „Organizacije“, a prazno ide posle ostalih, npr. 1 za prvu.')
+                    ->integer()
+                    ->minValue(1)
+                    ->maxValue(9999),
                 Select::make('status')
                     ->label('Status')
                     ->helperText('Nacrt se ne vidi javno, a Objavljeno se vidi na sajtu; za objavu je potreban sajt.')
