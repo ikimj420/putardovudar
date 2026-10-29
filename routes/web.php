@@ -29,3 +29,5 @@ Route::post('/pomocnik/napisi/{slug}', [PomocnikSablonController::class, 'napisi
 // Predlog prilike od posetioca (paket 79): samo link i napomena, a slanje je ograničeno kao pitanja pomoćniku.
 Route::get('/predlozi', [PredloziController::class, 'forma'])->name('predlozi.forma');
 Route::post('/predlozi', [PredloziController::class, 'posalji'])->middleware('throttle:predlozi')->name('predlozi.posalji');
+// Šta sajt pamti, a šta ne (paket 80).
+Route::view('/privatnost', 'javno.privatnost')->name('privatnost');

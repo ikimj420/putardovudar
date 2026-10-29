@@ -1600,6 +1600,11 @@ section + section > .naslov-izvora {
   font-weight: 700;
 }
 
+/* Strana „Privatnost" (paket 80): ceo tekst u jednoj ploči, uzak da se lako čita. */
+.o-privatnosti {
+  max-width: 760px;
+}
+
 /* Veza je red teksta, ali prst treba bar 44 px visine. */
 .predlozi-veza a {
   display: inline-block;

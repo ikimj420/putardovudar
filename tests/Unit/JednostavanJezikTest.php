@@ -21,6 +21,11 @@ class JednostavanJezikTest extends TestCase
         'Znaš za posao, stipendiju ili konkurs koji nije na sajtu? Pošalji nam link.' => ['strana reč: link'],
         'Link do prilike' => ['strana reč: link'],
         'Čuvamo samo link i napomenu, da bismo proverili priliku. Ne upisuj lične podatke.' => ['strana reč: link'],
+        // Paket 80: strana „Privatnost" je Ivanov tekst iz paketa (dve duge rečenice i reč „link"); kraći predlozi su u PITANJA-80.md.
+        'Pitanja pomoćniku i ono što upišeš u „Napiši moj" ne čuvamo i ne koristimo ni za šta drugo. Pomoćnik radi na našem računaru i to ne šalje drugim firmama.' => ['duga rečenica (18 reči)'],
+        'Kad predložiš priliku, čuvamo samo link i napomenu koje upišeš, da bismo proverili priliku. Ne upisuj lične podatke u napomenu.' => ['strana reč: link'],
+        'Dok si na sajtu, server privremeno pamti tehničke podatke (adresu uređaja i vrstu pregledača), da bi sajt radio i da bi sprečio zloupotrebu.' => ['duga rečenica (23 reči)'],
+        'Linkovi vode na druge sajtove (izvore prilika i organizacije). Oni imaju svoja pravila o privatnosti.' => ['strana reč: linkovi'],
         'Upiši link do prilike.' => ['strana reč: link'],
         'Link može imati najviše 2048 znakova.' => ['strana reč: link'],
     ];
