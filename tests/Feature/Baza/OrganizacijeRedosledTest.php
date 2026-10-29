@@ -74,7 +74,7 @@ class OrganizacijeRedosledTest extends AdminBazaTestCase
 
         $this->get(route('organizacije.index'))
             ->assertOk()
-            ->assertSeeInOrder([...self::SESTORKA, 'Aaa prva po abecedi', 'Zzz poslednja po abecedi'])
+            ->assertSeeInOrder([...self::SESTORKA, 'Aaa prva po abecedi', 'Bibija', 'Forum Roma Srbije', 'Kancelarija za inkluziju Roma', 'Zzz poslednja po abecedi'])
             ->assertDontSee('Nacrt sa brojem');
     }
 
@@ -86,9 +86,11 @@ class OrganizacijeRedosledTest extends AdminBazaTestCase
 
         $this->assertSame(
             array_combine(self::SESTORKA, [1, 2, 3, 4, 5, 6]),
-            Organizacija::query()->orderBy('redosled')->pluck('redosled', 'naziv')->all(),
+            Organizacija::query()->whereNotNull('redosled')->orderBy('redosled')->pluck('redosled', 'naziv')->all(),
         );
-        $this->assertSame(self::SESTORKA, $this->nazivi());
+        // Osam iz druge runde (paket 77) nema broj: idu ispod prvih šest.
+        $this->assertSame(8, Organizacija::query()->whereNull('redosled')->count());
+        $this->assertSame(self::SESTORKA, array_slice($this->nazivi(), 0, 6));
     }
 
     // Ogledalo: Ivanov broj na postojećem slugu seeder ne gazi, ni kad ga drugi put pokrene.
@@ -155,8 +157,11 @@ class OrganizacijeRedosledTest extends AdminBazaTestCase
 
         Livewire::test(EditOrganizacija::class, ['record' => $roma->getKey()])->fillForm(['redosled' => null])->call('save')->assertHasNoFormErrors();
 
+        // Bez broja ide iza svih sa brojem, među osam iz druge runde (po nazivu).
         $this->assertNull($roma->fresh()->redosled);
-        $this->assertSame('Roma for Democracy', $this->nazivi()[5]);
+        $this->assertNotContains('Roma for Democracy', array_slice($this->nazivi(), 0, 5));
+        $this->assertSame(['Opre Roma Srbija', 'Roma Education Fund (REF)'], array_slice(array_intersect($this->nazivi(), ['Opre Roma Srbija', 'Roma Education Fund (REF)']), 0, 2));
+        $this->assertContains('Roma for Democracy', $this->nazivi());
     }
 
     /** @return array<string, array{0: mixed}> vrednosti koje polje ne prima */

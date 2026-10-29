@@ -8,7 +8,8 @@ use App\Models\Organizacija;
 use Illuminate\Database\Seeder;
 
 // Romske organizacije iz Dokumentacija/ORGANIZACIJE-NOVE.md, samo ono što je Ivan odobrio (✅, 13.10.2026.); tekstovi su prepisani doslovno. Za razliku od OrganizacijeSeeder,
-// ulaze kao objavljene (Ivan je odobrio svaku, i hoće da se vide) i sa redosledom 1–6 (na vrhu strane). Slug koji već postoji se ne dira, ni polje „redosled". Ivan pokreće seeder sam.
+// ulaze kao objavljene (Ivan je odobrio svaku, i hoće da se vide). Prvih šest ima redosled 1–6 (na vrhu strane), osam iz druge runde (paket 77) nema broj, pa idu ispod.
+// Slug koji već postoji se ne dira, ni polje „redosled". Ivan pokreće seeder sam.
 class RomskeOrganizacijeSeeder extends Seeder
 {
     public function run(): void
@@ -20,7 +21,7 @@ class RomskeOrganizacijeSeeder extends Seeder
         }
     }
 
-    /** @return list<array{naziv: string, slug: string, vrsta: VrstaOrganizacije, kratak_opis: string, opis: string, mesto: string, online: bool, telefon?: string, eposta: string, sajt: string, usluge: list<string>, beleska: string, redosled: int}> */
+    /** @return list<array{naziv: string, slug: string, vrsta: VrstaOrganizacije, kratak_opis: string, opis: string, mesto: string, online: bool, telefon?: string, eposta: string, sajt: string, usluge: list<string>, beleska: string, redosled?: int}> */
     public static function organizacije(): array
     {
         return [
@@ -108,6 +109,115 @@ class RomskeOrganizacijeSeeder extends Seeder
                 'usluge' => ['Novosti na mejl', 'Uključi se (Act with us)'],
                 'beleska' => 'Provereno na zvaničnom sajtu https://romafordemocracy.org/ 13.10.2026.',
                 'redosled' => 6,
+            ],
+            [
+                'naziv' => 'Kancelarija za inkluziju Roma AP Vojvodine',
+                'slug' => 'kancelarija-za-inkluziju-roma',
+                'vrsta' => VrstaOrganizacije::JavnaInstitucija,
+                'kratak_opis' => 'Pokrajinska ustanova u Novom Sadu koja radi na uključivanju Roma u Vojvodini: škola, posao, zdravlje, stanovanje i prava.',
+                'opis' => 'Kancelariju za inkluziju Roma osnovala je Skupština AP Vojvodine 2006. godine. Radi na boljem položaju Roma u Vojvodini u obrazovanju, zapošljavanju, zdravstvu, stanovanju i ljudskim pravima, i na tome da Romi učestvuju u javnom životu. Raspisuje konkurse za romske studente, kao što su studentske stipendije i jednokratna novčana pomoć.',
+                'mesto' => 'Novi Sad, Bulevar Mihajla Pupina 25',
+                'online' => true,
+                'telefon' => '021/488-17-23',
+                'eposta' => 'inkluzija.roma@gmail.com',
+                'sajt' => 'https://inkluzijaromavojvodina.rs/',
+                'usluge' => ['Stipendije za romske studente', 'Jednokratna novčana pomoć za romske studente'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://inkluzijaromavojvodina.rs/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'Udruženje Romkinja „Osvit"',
+                'slug' => 'osvit',
+                'vrsta' => VrstaOrganizacije::Udruzenje,
+                'kratak_opis' => 'Udruženje Romkinja iz Niša koje pomaže ženama da izađu iz nasilja: besplatan SOS telefon na romskom i srpskom, 0–24 h.',
+                'opis' => 'Udruženje Romkinja „Osvit" osnovano je 2005. godine u Nišu. Pomaže ženama koje trpe nasilje u porodici ili u vezi, posebno Romkinjama, u Nišu i južnoj Srbiji. SOS telefon radi na romskom i srpskom jeziku, 24 sata dnevno, i besplatan je sa svakog fiksnog i mobilnog telefona. Ženama pružaju psihološku podršku, besplatnu pravnu pomoć i besplatno zastupanje na sudu.',
+                'mesto' => 'Niš, Vinaverova 46',
+                'online' => true,
+                'telefon' => '0800/100909 (SOS, besplatno, 0–24 h); kancelarija 018 515-318',
+                'eposta' => 'info@osvit.rs',
+                'sajt' => 'https://osvit.rs/',
+                'usluge' => ['SOS telefon za žene sa iskustvom nasilja (romski i srpski, 0–24 h)', 'Psihološka podrška', 'Besplatna pravna pomoć i zastupanje na sudu', 'E-konsultacije preko sajta (može i pod drugim imenom)'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://osvit.rs/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'Bibija – romski ženski centar',
+                'slug' => 'bibija',
+                'vrsta' => VrstaOrganizacije::Udruzenje,
+                'kratak_opis' => 'Romski ženski centar iz Beograda koji se bori protiv nasilja nad Romkinjama i dečjih brakova.',
+                'opis' => 'Romski ženski centar „Bibija" osnovan je 1998. godine u Beogradu. Pokazuje javnosti probleme sa kojima se Romkinje susreću u društvu i u svojoj sredini. Radi protiv nasilja nad ženama i dečjih brakova, na ekonomskom osnaživanju Romkinja i na ženskim ljudskim pravima. Organizuje obuke za romske aktivistkinje.',
+                'mesto' => 'Beograd',
+                'online' => true,
+                'eposta' => 'rzc@bibija.org.rs',
+                'sajt' => 'http://www.bibija.org.rs/',
+                'usluge' => ['Obuke za romske aktivistkinje'],
+                'beleska' => 'Provereno na zvaničnom sajtu http://www.bibija.org.rs/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'Romska ženska mreža Srbije',
+                'slug' => 'romska-zenska-mreza-srbije',
+                'vrsta' => VrstaOrganizacije::Inicijativa,
+                'kratak_opis' => 'Mreža 30 romskih ženskih organizacija i inicijativa iz cele Srbije koja se bori za prava Romkinja.',
+                'opis' => 'Romska ženska mreža Srbije osnovana je 2004. godine i okuplja 30 romskih ženskih organizacija i inicijativa iz cele zemlje. Radi u interesu Romkinja: ljudska prava, zdravlje, obrazovanje, posao, stanovanje, borba protiv nasilja nad ženama i trgovine ženama, sprečavanje dečjih i ugovorenih brakova i učešće Romkinja u politici. Objavljuje istraživanja, na primer o dečjim brakovima i zapošljavanju Romkinja, i vodi kampanje kao što je „Mesec romskog ženskog aktivizma".',
+                'mesto' => 'Cela Srbija (mreža organizacija)',
+                'online' => true,
+                'telefon' => '065 32 34 950',
+                'eposta' => 'koordinacijarzm@gmail.com',
+                'sajt' => 'https://rzm.rs/',
+                'usluge' => ['Spisak članica po gradovima', 'Istraživanja o dečjim brakovima i zapošljavanju Romkinja'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://rzm.rs/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'Udruženje Roma Novi Bečej',
+                'slug' => 'udruzenje-roma-novi-becej',
+                'vrsta' => VrstaOrganizacije::Udruzenje,
+                'kratak_opis' => 'Udruženje iz Novog Bečeja koje pomaže Romkinjama i drugim ženama iz manjina da izađu iz nasilja: SOS telefon na romskom i besplatna pravna pomoć.',
+                'opis' => 'Udruženje Roma Novi Bečej osnovano je 1999. godine. Pomaže Romkinjama i drugim ženama iz nacionalnih manjina u Vojvodini da žive bez nasilja. Ima SOS telefon na romskom, mađarskom, rumunskom i srpskom jeziku, a razgovor može biti anoniman. Ženama sa iskustvom nasilja daje besplatne pravne savete i zastupa ih na sudu. Radi i protiv dečjih brakova i trgovine ljudima.',
+                'mesto' => 'Novi Bečej, Đure Jakšića 29',
+                'online' => true,
+                'telefon' => '023 774-959 (SOS telefon, radnim danima 9.30–15 h)',
+                'eposta' => 'udruzenjeromanb@gmail.com',
+                'sajt' => 'https://udruzenjeromanb.org.rs/',
+                'usluge' => ['SOS telefon na romskom, mađarskom, rumunskom i srpskom', 'Besplatna pravna pomoć i zastupanje na sudu', 'Individualni razgovori za žene sa iskustvom nasilja'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://udruzenjeromanb.org.rs/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'Obrazovno-kulturna zajednica Roma „Rromanipen"',
+                'slug' => 'rromanipen',
+                'vrsta' => VrstaOrganizacije::Udruzenje,
+                'kratak_opis' => 'Romska organizacija iz Kragujevca koja pomaže romskoj deci i mladima da se školuju.',
+                'opis' => 'Obrazovno-kulturna zajednica Roma „Rromanipen" osnovana je 2005. godine u Kragujevcu. Osnovali su je mladi romski intelektualci i studenti. Pomaže romskoj deci i mladima da ostanu u školi i nastave školovanje, od vrtića do srednje škole, i čuva romski kulturni identitet. Vodi i projekat FORTUNA, za bolji pristup Roma zdravstvenoj zaštiti.',
+                'mesto' => 'Kragujevac, Laze Marinkovića 62/42',
+                'online' => true,
+                'telefon' => '034 311 869',
+                'eposta' => 'office@romanipen.org.rs',
+                'sajt' => 'https://www.romanipen.org.rs/',
+                'usluge' => ['Radionice za romsku decu i mlade za nastavak školovanja'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://www.romanipen.org.rs/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'ROSA – Romska obnova, saradnja i alternativa',
+                'slug' => 'rosa-leskovac',
+                'vrsta' => VrstaOrganizacije::Udruzenje,
+                'kratak_opis' => 'Romska organizacija iz Leskovca koja pomaže mladim Romima i Romkinjama i povratnicima, i bori se protiv dečjih brakova.',
+                'opis' => 'Organizacija „Romska obnova, saradnja i alternativa" (ROSA) osnovana je 2005. godine u Leskovcu. Pomaže da se Romi uključe u društvo: kroz obrazovanje i podršku mladima, informisanje na romskom jeziku i zaštitu ljudskih prava. Podržava ekonomsko osnaživanje Roma i povratnike po sporazumu o readmisiji. Radi na sprečavanju dečjih brakova i zavisnosti od droge.',
+                'mesto' => 'Leskovac, Janka Veselinovića L8',
+                'online' => true,
+                'eposta' => 'rosa.leskovac@gmail.com',
+                'sajt' => 'https://rosale.org/',
+                'usluge' => ['Podrška povratnicima po sporazumu o readmisiji', 'Podrška u obrazovanju za mlade Rome i Romkinje'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://rosale.org/ 29.10.2026.',
+            ],
+            [
+                'naziv' => 'Forum Roma Srbije',
+                'slug' => 'forum-roma-srbije',
+                'vrsta' => VrstaOrganizacije::Udruzenje,
+                'kratak_opis' => 'Romska organizacija iz Beograda koja radi na uključivanju Roma, borbi protiv diskriminacije i pravima povratnika.',
+                'opis' => 'Forum Roma Srbije je nevladina, neprofitna organizacija sa sedištem u Beogradu i kancelarijom u Novom Sadu. Radi na uključivanju romske zajednice u društvo, čuvanju romskog jezika i kulture i borbi protiv rasizma i anticiganizma. Bavi se pravima Roma povratnika i pomaže Romima da ostvare svoja prava. Raspisuje i javne pozive, na primer za opremu za romske preduzetnike.',
+                'mesto' => 'Beograd; kancelarija i u Novom Sadu',
+                'online' => true,
+                'eposta' => 'office@frs.org.rs',
+                'sajt' => 'https://www.frs.org.rs/',
+                'usluge' => ['Podrška Romima povratnicima', 'Javni pozivi za romske preduzetnike (oprema)'],
+                'beleska' => 'Provereno na zvaničnom sajtu https://www.frs.org.rs/ 29.10.2026.',
             ],
         ];
     }

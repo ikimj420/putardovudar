@@ -14,13 +14,23 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 
-// Paket 75/T1 (Ivan, 13.10.2026.): šest romskih organizacija iz Dokumentacija/ORGANIZACIJE-NOVE.md, samo ✅, doslovno; seeder dodaje samo slug koji još ne postoji.
+// Paket 75/T1 i 77/T1 (Ivan, 13.10. i 29.10.2026.): četrnaest romskih organizacija iz Dokumentacija/ORGANIZACIJE-NOVE.md (šest iz prve i osam iz druge runde), samo ✅, doslovno;
+// seeder dodaje samo slug koji još ne postoji.
 #[Group('baza')]
 class RomskeOrganizacijeSeederTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const SLUGOVI = ['opre-roma-srbija', 'eriac', 'roma-education-fund', 'redi', 'roma-foundation-for-europe', 'roma-for-democracy'];
+    private const SLUGOVI = [
+        'opre-roma-srbija', 'eriac', 'roma-education-fund', 'redi', 'roma-foundation-for-europe', 'roma-for-democracy',
+        'kancelarija-za-inkluziju-roma', 'osvit', 'bibija', 'romska-zenska-mreza-srbije', 'udruzenje-roma-novi-becej', 'rromanipen', 'rosa-leskovac', 'forum-roma-srbije',
+    ];
+
+    /** @var array<string, string> slug → broj iza „tel:" (prvi broj iz polja) za organizacije koje imaju telefon */
+    private const TELEFONI = [
+        'eriac' => '0116906139', 'kancelarija-za-inkluziju-roma' => '0214881723', 'osvit' => '0800100909', 'romska-zenska-mreza-srbije' => '0653234950',
+        'udruzenje-roma-novi-becej' => '023774959', 'rromanipen' => '034311869',
+    ];
 
     protected function setUp(): void
     {
@@ -30,14 +40,14 @@ class RomskeOrganizacijeSeederTest extends BazaTestCase
     }
 
     #[Test]
-    public function seeder_pravi_sest_organizacija_i_sve_su_objavljene_i_vide_se_na_strani(): void
+    public function seeder_pravi_cetrnaest_organizacija_i_sve_su_objavljene_i_vide_se_na_strani(): void
     {
         $this->seed(RomskeOrganizacijeSeeder::class);
 
-        $this->assertSame(6, Organizacija::query()->count());
+        $this->assertSame(14, Organizacija::query()->count());
         $this->assertSame(self::SLUGOVI, array_column(RomskeOrganizacijeSeeder::organizacije(), 'slug'));
-        $this->assertSame(6, Organizacija::query()->where('status', StatusObjave::Objavljeno)->count());
-        $this->assertSame(6, Organizacija::javne()->count());
+        $this->assertSame(14, Organizacija::query()->where('status', StatusObjave::Objavljeno)->count());
+        $this->assertSame(14, Organizacija::javne()->count());
 
         $strana = $this->get(route('organizacije.index'))->assertOk();
 
@@ -51,9 +61,10 @@ class RomskeOrganizacijeSeederTest extends BazaTestCase
     #[Test]
     public function svaka_organizacija_ima_ispravne_podatke(): void
     {
-        $this->assertCount(6, RomskeOrganizacijeSeeder::organizacije());
+        $this->assertCount(14, RomskeOrganizacijeSeeder::organizacije());
 
         foreach (RomskeOrganizacijeSeeder::organizacije() as $organizacija) {
+            $this->assertLessThanOrEqual(64, mb_strlen($organizacija['telefon'] ?? ''), $organizacija['slug']);
             $this->assertTrue(LinkSajta::jeIspravan($organizacija['sajt']), $organizacija['slug']);
             $this->assertTrue(EpostaAdresa::jeIspravna($organizacija['eposta']), $organizacija['slug']);
             $this->assertNotEmpty($organizacija['usluge'], $organizacija['slug']);
@@ -62,19 +73,24 @@ class RomskeOrganizacijeSeederTest extends BazaTestCase
         }
     }
 
-    // Bez telefona nema dugmeta „Pozovi"; ERIAC je jedini sa telefonom (011 6906139).
+    // Bez telefona nema dugmeta „Pozovi"; telefon imaju ERIAC, Kancelarija, Osvit, Romska ženska mreža, Novi Bečej i Rromanipen. Dugme uzima prvi broj iz polja (kod Osvita je to SOS).
     #[Test]
-    public function samo_eriac_ima_telefon_i_dugme_za_poziv(): void
+    public function telefon_i_dugme_za_poziv_imaju_samo_organizacije_sa_telefonom_a_dugme_uzima_prvi_broj(): void
     {
         $this->seed(RomskeOrganizacijeSeeder::class);
 
-        $this->assertSame(['eriac'], Organizacija::query()->whereNotNull('telefon')->pluck('slug')->all());
+        $this->assertEqualsCanonicalizing(array_keys(self::TELEFONI), Organizacija::query()->whereNotNull('telefon')->pluck('slug')->all());
         $this->assertSame('011 6906139', Organizacija::query()->where('slug', 'eriac')->sole()->telefon);
+        $this->assertStringStartsWith('0800/100909 (SOS', (string) Organizacija::query()->where('slug', 'osvit')->sole()->telefon);
 
-        $this->get(route('organizacije.index'))->assertOk()->assertSee('href="tel:0116906139"', false)->assertSee('aria-label="Pozovi: ERIAC', false);
-        $this->assertSame(1, substr_count($this->get(route('organizacije.index'))->getContent(), 'href="tel:'));
+        $strana = $this->get(route('organizacije.index'))->assertOk()->getContent();
+        $this->assertSame(count(self::TELEFONI), substr_count($strana, 'href="tel:'));
 
-        foreach (array_diff(self::SLUGOVI, ['eriac']) as $slug) {
+        foreach (self::TELEFONI as $slug => $broj) {
+            $this->assertStringContainsString('href="tel:'.$broj.'"', $strana, $slug);
+        }
+
+        foreach (array_diff(self::SLUGOVI, array_keys(self::TELEFONI)) as $slug) {
             $this->get(route('organizacije.show', $slug))->assertOk()->assertDontSee('href="tel:', false);
         }
     }
@@ -89,11 +105,11 @@ class RomskeOrganizacijeSeederTest extends BazaTestCase
         $this->travel(3)->hours();
         $this->seed(RomskeOrganizacijeSeeder::class);
 
-        $this->assertCount(6, $pre);
+        $this->assertCount(14, $pre);
         $this->assertSame($pre, Organizacija::query()->orderBy('id')->get()->map(fn (Organizacija $organizacija) => $organizacija->getAttributes())->all());
     }
 
-    // Ogledalo: organizacija čiji slug već postoji (ovde Ivanova verzija ERIAC-a kao nacrt) ostaje kakva je, a dodaju se samo ostale.
+    // Ogledalo: organizacija čiji slug već postoji (ovde Ivanova verzija ERIAC-a kao nacrt) ostaje kakva je, a dodaju se samo ostale (13).
     #[Test]
     public function slug_koji_vec_postoji_se_ne_dira_a_ostali_se_dodaju(): void
     {
@@ -102,9 +118,9 @@ class RomskeOrganizacijeSeederTest extends BazaTestCase
 
         $this->seed(RomskeOrganizacijeSeeder::class);
 
-        $this->assertSame(6, Organizacija::query()->count());
+        $this->assertSame(14, Organizacija::query()->count());
         $this->assertSame($pre, Organizacija::query()->where('slug', 'eriac')->sole()->getAttributes());
-        $this->assertSame(5, Organizacija::javne()->count());
+        $this->assertSame(13, Organizacija::javne()->count());
         $this->assertSame(StatusObjave::Nacrt, Organizacija::query()->where('slug', 'eriac')->sole()->status);
     }
 
@@ -144,6 +160,15 @@ class RomskeOrganizacijeSeederTest extends BazaTestCase
             $poredjeno++;
         }
 
-        $this->assertSame(6, $poredjeno);
+        $this->assertSame(14, $poredjeno);
+
+        // Obrnuto: svaka organizacija sa ✅ u dokumentu je u seederu, i ništa više („Čeka proveru" i „Preskočeno" nemaju ✅ u zaglavlju).
+        $uDokumentu = [];
+        foreach ($odeljci as $deo) {
+            if (preg_match('/^[^\n]*· `([a-z0-9-]+)` — ✅/', $deo, $zaglavlje) === 1) {
+                $uDokumentu[] = $zaglavlje[1];
+            }
+        }
+        $this->assertEqualsCanonicalizing(self::SLUGOVI, $uDokumentu);
     }
 }
