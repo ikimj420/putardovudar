@@ -8,10 +8,16 @@ final class RokSaInfostuda
 {
     private const SERVER = 'poslovi.infostud.com';
 
+    // Jedino mesto koje kaže da je adresa oglas sa Infostuda; koristi ga i čitanje strane (oglasi na engleskom dokazuju „posao" okvirom sajta, paket 76).
+    public static function jeInfostud(string $adresa): bool
+    {
+        return parse_url($adresa, PHP_URL_HOST) === self::SERVER;
+    }
+
     /** @return array{rok: string, citat: string}|null rok kao Y-m-d i datum kako piše u tekstu strane (d.m.Y.) */
     public function izStrane(string $adresa, string $html, string $tekst): ?array
     {
-        if (parse_url($adresa, PHP_URL_HOST) !== self::SERVER) {
+        if (! self::jeInfostud($adresa)) {
             return null;
         }
 

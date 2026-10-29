@@ -85,6 +85,73 @@ class TekstStraneTest extends TestCase
         $this->assertSame($izlaz, $normalizovano);
     }
 
+    private const MENI = '<div class="meni"><ul><li>Početna</li><li>Savetovalište za mlade</li></ul></div>';
+
+    private const PODNOZJE = '<div class="podnozje">Prijavi se na naš bilten</div>';
+
+    // Paket 76 (PITANJA-76, izbor A): meni, bočne trake i podnožje su van <article>; kad strana ima tačno jedan, čita se samo on.
+    #[Test]
+    public function strana_sa_tacno_jednim_article_daje_samo_njegov_tekst(): void
+    {
+        $html = '<html><body>'.self::MENI.'<article><h1>Poziv</h1><p>Pozivamo mlade da se prijave.</p></article>'.self::PODNOZJE.'</body></html>';
+
+        $this->assertSame('Poziv Pozivamo mlade da se prijave.', TekstStrane::izHtmla($html, true));
+    }
+
+    // Ogledalo: bez zahteva za <article> (podrazumevano) isti HTML daje celu stranu, sa menijem i podnožjem, kao do sada.
+    #[Test]
+    public function bez_zahteva_za_article_cita_se_cela_strana(): void
+    {
+        $html = '<html><body>'.self::MENI.'<article><h1>Poziv</h1><p>Pozivamo mlade da se prijave.</p></article>'.self::PODNOZJE.'</body></html>';
+
+        $this->assertSame('Početna Savetovalište za mlade Poziv Pozivamo mlade da se prijave. Prijavi se na naš bilten', TekstStrane::izHtmla($html));
+    }
+
+    // Ogledalo: strana bez <article> daje isti tekst sa zahtevom i bez njega.
+    #[Test]
+    public function strana_bez_article_daje_ceo_tekst_i_kad_se_trazi_samo_article(): void
+    {
+        $html = '<html><body>'.self::MENI.'<div><h1>Poziv</h1><p>Pozivamo mlade da se prijave.</p></div>'.self::PODNOZJE.'</body></html>';
+
+        $this->assertSame('Početna Savetovalište za mlade Poziv Pozivamo mlade da se prijave. Prijavi se na naš bilten', TekstStrane::izHtmla($html, true));
+        $this->assertSame(TekstStrane::izHtmla($html), TekstStrane::izHtmla($html, true));
+    }
+
+    // Ogledalo: sa dva <article> (spisak objava, povezani tekstovi) ostaje cela strana.
+    #[Test]
+    public function strana_sa_dva_article_daje_ceo_tekst_i_kad_se_trazi_samo_article(): void
+    {
+        $html = '<html><body>'.self::MENI.'<article><p>Prvi poziv.</p></article><article><p>Drugi poziv.</p></article>'.self::PODNOZJE.'</body></html>';
+
+        $this->assertSame('Početna Savetovalište za mlade Prvi poziv. Drugi poziv. Prijavi se na naš bilten', TekstStrane::izHtmla($html, true));
+    }
+
+    // Otvoren a nezatvoren (ili obrnuto) <article> nije pouzdan, pa ostaje cela strana.
+    #[Test]
+    public function article_koji_nije_zatvoren_ne_sece_stranu(): void
+    {
+        $nezatvoren = '<html><body>'.self::MENI.'<article><p>Poziv bez kraja.</p>'.self::PODNOZJE.'</body></html>';
+        $bezPocetka = '<html><body>'.self::MENI.'<p>Poziv bez početka.</p></article>'.self::PODNOZJE.'</body></html>';
+
+        $this->assertStringContainsString('Savetovalište za mlade', TekstStrane::izHtmla($nezatvoren, true));
+        $this->assertStringContainsString('Prijavi se na naš bilten', TekstStrane::izHtmla($nezatvoren, true));
+        $this->assertStringContainsString('Savetovalište za mlade', TekstStrane::izHtmla($bezPocetka, true));
+
+        // Jedan početak i dva kraja: ne zna se gde članak stvarno staje, pa cela strana.
+        $visakKraja = '<html><body>'.self::MENI.'<article><p>Poziv.</p></article><p>Ostatak.</p></article>'.self::PODNOZJE.'</body></html>';
+        $this->assertStringContainsString('Ostatak.', TekstStrane::izHtmla($visakKraja, true));
+        $this->assertStringContainsString('Savetovalište za mlade', TekstStrane::izHtmla($visakKraja, true));
+    }
+
+    // Reč „article" u imenu druge oznake („article-card", „articles") nije <article>: ovde je pravi samo jedan, pa se čita on.
+    #[Test]
+    public function oznaka_cije_ime_pocinje_sa_article_nije_article(): void
+    {
+        $html = '<html><body>'.self::MENI.'<article-card>Kartica</article-card><articles>Lista</articles><article><p>Pravi poziv.</p></article>'.self::PODNOZJE.'</body></html>';
+
+        $this->assertSame('Pravi poziv.', TekstStrane::izHtmla($html, true));
+    }
+
     // Paket 59/T4: razmak ispred . , ; : ! ? ) i iza ( se skida (strana ga ima iz izvlačenja teksta, citat modela ne); razmak između reči ostaje.
     #[Test]
     public function razmak_ispred_interpunkcije_i_iza_zagrade_se_skida_a_izmedju_reci_ostaje(): void

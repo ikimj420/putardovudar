@@ -31,7 +31,8 @@ final class TekstStrane
             throw new StranaNedostupna('strana nije u UTF-8');
         }
 
-        $tekst = self::izHtmla($odgovor->body());
+        // Infostud ostaje sa celom stranom: oglasi na engleskom nemaju „posao" u <article>, pa im se vrsta dokazuje okvirom sajta (PITANJA-76, izbor A).
+        $tekst = self::izHtmla($odgovor->body(), ! RokSaInfostuda::jeInfostud($adresa));
 
         if ($tekst === '') {
             throw new StranaNedostupna('strana nema teksta');
@@ -40,12 +41,27 @@ final class TekstStrane
         return new PreuzetaStrana(mb_substr($tekst, 0, $najviseZnakova), $odgovor->body());
     }
 
+    private static function clanak(string $html): string
+    {
+        if (preg_match_all('#<article(?=[\s>/])#i', $html) !== 1 || preg_match_all('#</article\s*>#i', $html) !== 1) {
+            return $html;
+        }
+
+        return preg_match('#<article(?=[\s>/])[^>]*>(.*?)</article\s*>#is', $html, $clanak) === 1 ? $clanak[1] : $html;
+    }
+
     // Oznake koje odvajaju tekst: blokovi, prelomi, tabele, liste, kontrole obrasca. Sve ostale (strong, em, span, a, b, i…) stoje usred reda i ne odvajaju ništa,
     // jer ih strane ume da zalepe usred reči („<strong>n</strong><strong>ovembar</strong>"); razmak koji piše između reči u HTML-u ostaje.
     private const BLOKOVI = 'p|div|br|hr|h[1-6]|ul|ol|li|dl|dt|dd|table|thead|tbody|tfoot|tr|td|th|caption|section|article|header|footer|main|aside|nav|blockquote|pre|form|fieldset|legend|figure|figcaption|address|details|summary|select|option|textarea|button|input|iframe|video|audio|canvas|object';
 
-    public static function izHtmla(string $html): string
+    // Meni, bočne trake i podnožje sajta (u div-ovima, ne u nav/footer) nisu tekst poziva, a model i provera citata bi ih čitali kao dokaz. Sa $samoClanak, kad strana ima tačno jedan
+    // <article> (otvoren i zatvoren po jednom), čita se samo on; inače cela strana (paket 76). Oznaka je <article> samo ako iza imena sledi razmak, „>" ili „/".
+    public static function izHtmla(string $html, bool $samoClanak = false): string
     {
+        if ($samoClanak) {
+            $html = self::clanak($html);
+        }
+
         $html = preg_replace('#<(script|style|noscript|svg|head|nav|footer)\b.*?</\1>#is', ' ', $html) ?? '';
         $html = preg_replace('#</?(?:'.self::BLOKOVI.')\b[^>]*>#i', ' ', $html) ?? '';
         $tekst = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
