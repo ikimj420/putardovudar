@@ -15,6 +15,17 @@ return [
         ['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/'],
         // Infostud vraća istih 20 poslednjih oglasa na svakoj strani (izmereno 13.10.2026.), pa se čita samo prva.
         ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php', 'najvise_strana' => 1],
+        // Sajtovi romskih organizacija (paket 78, izmereno 29.10.2026.). Opre Roma Srbija nije ovde: nema RSS (adrese /feed i /rss vode na početnu stranu u HTML-u).
+        // ERIAC i REF nisu ovde: pišu na engleskom. Forum Roma Srbije ima i engleski feed (/en/feed/), koji se ne uvozi.
+        ['ime' => 'Forum Roma Srbije', 'adresa' => 'https://www.frs.org.rs/feed/'],
+        ['ime' => 'Kancelarija za inkluziju Roma', 'adresa' => 'https://inkluzijaromavojvodina.rs/feed/'],
+        ['ime' => 'Romska ženska mreža', 'adresa' => 'https://rzm.rs/feed/'],
+        ['ime' => 'Bibija', 'adresa' => 'https://www.bibija.org.rs/feed/'],
+        ['ime' => 'Rromanipen', 'adresa' => 'https://www.romanipen.org.rs/feed/'],
+        ['ime' => 'ROSA', 'adresa' => 'https://rosale.org/feed/'],
+        ['ime' => 'Osvit', 'adresa' => 'https://osvit.rs/feed/'],
+        // Joomla: ne zna „paged" (druga strana je ista kao prva, izmereno), pa se čita samo prva.
+        ['ime' => 'Udruženje Roma Novi Bečej', 'adresa' => 'https://udruzenjeromanb.org.rs/vesti?format=feed&type=rss', 'najvise_strana' => 1],
     ],
 
     // Izvori bez RSS-a: strana sa spiskom poziva (HTML). Uvozi ih uvoz:spiskovi; čita se samo prva strana spiska, a naslov sa „ZATVOREN" se preskače.
