@@ -8,6 +8,7 @@
     <script src="{{ asset('js/javno.js') }}?v={{ filemtime(public_path('js/javno.js')) }}"></script>
 </head>
 {{-- Svaka strana ima svoju boju (paket 57): prilike narandžasta, vodiči ljubičasta, organizacije bobica, kalendar zlato; početna i pomoćnik su noć. --}}
+{{-- „Stipendije" je veza ka spisku prilika sa izabranom vrstom (paket 80): oznaku „ovde si" nosi samo kad je ta vrsta zaista izabrana (spisak šalje $izabrana), a tada je „Prilike" nemaju. --}}
 @php
     $strana = match (true) {
         request()->routeIs('prilike.*') => 'prilike',
@@ -16,6 +17,7 @@
         request()->routeIs('kalendar.*') => 'kalendar',
         default => null,
     };
+    $stipendije = ($izabrana ?? null) === \App\Enums\VrstaPrilike::Stipendija;
     $atributiTela = trim(($strana ? 'data-strana="'.$strana.'" ' : '').(View::hasSection('traka') || View::hasSection('hero') ? 'class="ima-traku"' : ''));
 @endphp
 {!! '<body'.($atributiTela !== '' ? ' '.$atributiTela : '').'>' !!}
@@ -35,7 +37,8 @@
             <button class="dugme-meni" type="button" aria-label="{{ \App\Support\PrikazZaglavlja::OTVORI_MENI }}" aria-controls="meni" aria-expanded="false" hidden>☰</button>
             <div class="meni" id="meni">
                 <div class="meni-sredina">
-                    <a href="{{ route('prilike.index') }}"@if ($strana === 'prilike') aria-current="page"@endif>Prilike</a>
+                    <a href="{{ route('prilike.index') }}"@if ($strana === 'prilike' && ! $stipendije) aria-current="page"@endif>Prilike</a>
+                    <a href="{{ route('prilike.index', ['vrsta' => \App\Enums\VrstaPrilike::Stipendija->value]) }}"@if ($stipendije) aria-current="page"@endif>{{ \App\Support\PrikazZaglavlja::STIPENDIJE }}</a>
                     <a href="{{ route('vodici.index') }}"@if ($strana === 'vodici') aria-current="page"@endif>{{ \App\Support\PrikazVodica::NASLOV }}</a>
                     <a href="{{ route('organizacije.index') }}"@if ($strana === 'organizacije') aria-current="page"@endif>{{ \App\Support\PrikazOrganizacija::NASLOV }}</a>
                     <a href="{{ route('kalendar.index') }}"@if ($strana === 'kalendar') aria-current="page"@endif>{{ \App\Support\PrikazKalendara::NASLOV }}</a>

@@ -16,7 +16,7 @@ class JavnoZaglavljeTest extends BazaTestCase
     use RefreshDatabase, StilJavnihStrana;
 
     #[Test]
-    public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_meni_prilike_vodici_organizacije_kalendar_sabloni_bez_pomocnika(): void
+    public function zaglavlje_na_praznom_spisku_spisku_i_strani_prilike_nosi_ime_sajta_i_meni_prilike_stipendije_vodici_organizacije_kalendar_bez_pomocnika(): void
     {
         $adrese = [route('prilike.index')];
         $this->assertStringContainsString('Trenutno nema otvorenih prilika.', $this->get($adrese[0])->getContent());
@@ -34,8 +34,8 @@ class JavnoZaglavljeTest extends BazaTestCase
 
             // Ime sajta (u dva reda, pa u dva dela) vodi na početnu, pa meni tim redom, svaka veza tačno jednom.
             // Od paketa 57 (Ivan, 10.10.2026.) u zaglavlju nema dugmeta „Pomoćnik": pomoćnik je dugme dole desno.
-            $this->assertSame(['Putardo Vudar Otvorena vrata', 'Prilike', 'Vodiči', 'Organizacije', 'Kalendar'], $nazivi, $adresa);
-            $this->assertSame([route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
+            $this->assertSame(['Putardo Vudar Otvorena vrata', 'Prilike', 'Stipendije', 'Vodiči', 'Organizacije', 'Kalendar'], $nazivi, $adresa);
+            $this->assertSame([route('pocetna'), route('prilike.index'), route('prilike.index', ['vrsta' => 'stipendija']), route('vodici.index'), route('organizacije.index'), route('kalendar.index')], array_map(fn (array $veza) => $veza[2], $veze), $adresa);
             $this->assertStringContainsString('class="logo"', $veze[0][1]);
             $this->assertStringNotContainsString('asistent', $zaglavlje[1] ?? '');
             $this->assertStringNotContainsString('data-pomocnik-otvori', $zaglavlje[1] ?? '');
@@ -43,7 +43,7 @@ class JavnoZaglavljeTest extends BazaTestCase
     }
 
     // Ogledalo: zaglavlje je ime sajta i tačno ovaj meni, bez drugih stavki. Do paketa 18 bio je jedan link (Prilike);
-    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, a Organizacije posle paketa 20, Kalendar posle paketa 44; „Pomoćnik" je od paketa 57 samo dugme dole desno; Šabloni (paket 51) su od paketa 56 samo u adminu.
+    // Ivanova odluka 10.10.2026.: meni Prilike, Vodiči, a Organizacije posle paketa 20, Kalendar posle paketa 44, Stipendije (posle Prilika) od paketa 80 (Ivan, 29.10.2026.); „Pomoćnik" je od paketa 57 samo dugme dole desno; Šabloni (paket 51) su od paketa 56 samo u adminu.
     #[Test]
     public function zaglavlje_nema_drugih_linkova_osim_menija(): void
     {
@@ -52,7 +52,7 @@ class JavnoZaglavljeTest extends BazaTestCase
         preg_match_all('#<a\b[^>]*href="([^"]*)"#', $zaglavlje[1] ?? '', $adrese);
 
         $this->assertSame(
-            [route('pocetna'), route('prilike.index'), route('vodici.index'), route('organizacije.index'), route('kalendar.index')],
+            [route('pocetna'), route('prilike.index'), route('prilike.index', ['vrsta' => 'stipendija']), route('vodici.index'), route('organizacije.index'), route('kalendar.index')],
             $adrese[1],
         );
     }

@@ -13,4 +13,7 @@ final class PrikazZaglavlja
 
     // Ispod imena sajta (paket 57, tekst iz paketa).
     public const SLOGAN = 'Otvorena vrata';
+
+    // Veza u meniju posle „Prilike" (paket 80, tekst iz paketa).
+    public const STIPENDIJE = 'Stipendije';
 }
