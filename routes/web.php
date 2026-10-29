@@ -7,6 +7,7 @@ use App\Http\Controllers\JavniKalendarController;
 use App\Http\Controllers\JavniVodiciController;
 use App\Http\Controllers\PomocnikController;
 use App\Http\Controllers\PomocnikSablonController;
+use App\Http\Controllers\PredloziController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [JavnaPocetnaController::class, 'index'])->name('pocetna');
@@ -25,3 +26,6 @@ Route::get('/pomocnik', [PomocnikController::class, 'index'])->name('pomocnik.in
 Route::post('/pomocnik', [PomocnikController::class, 'pitaj'])->middleware('throttle:pomocnik')->name('pomocnik.pitaj');
 Route::get('/pomocnik/napisi/{slug}', [PomocnikSablonController::class, 'forma'])->name('pomocnik.napisi.forma');
 Route::post('/pomocnik/napisi/{slug}', [PomocnikSablonController::class, 'napisi'])->middleware('throttle:pomocnik')->name('pomocnik.napisi');
+// Predlog prilike od posetioca (paket 79): samo link i napomena, a slanje je ograničeno kao pitanja pomoćniku.
+Route::get('/predlozi', [PredloziController::class, 'forma'])->name('predlozi.forma');
+Route::post('/predlozi', [PredloziController::class, 'posalji'])->middleware('throttle:predlozi')->name('predlozi.posalji');

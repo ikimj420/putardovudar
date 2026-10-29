@@ -1589,6 +1589,23 @@ section + section > .naslov-izvora {
   font-weight: 700;
 }
 
+/* Strana „Predloži priliku" (paket 79): zahvalnica iznad forme i veza ispod spiska prilika. */
+.hvala {
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+
+.predlozi-veza {
+  margin-top: 24px;
+  font-weight: 700;
+}
+
+/* Veza je red teksta, ali prst treba bar 44 px visine. */
+.predlozi-veza a {
+  display: inline-block;
+  padding: 12px 0;
+}
+
 .odgovor {
   margin-bottom: 24px;
 }

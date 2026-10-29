@@ -31,4 +31,6 @@
     @empty
         <p class="prazno">{{ $pretraga !== '' ? \App\Support\PrikazPrilike::NEMA_REZULTATA : ($uskoro ? \App\Support\PrikazPrilike::NEMA_USKORO : \App\Support\PrikazPrilike::NEMA_PRILIKA) }}</p>
     @endforelse
+
+    <p class="predlozi-veza"><a href="{{ route('predlozi.forma') }}">{{ \App\Support\PrikazPredloga::VEZA_SA_PRILIKA }}</a></p>
 @endsection

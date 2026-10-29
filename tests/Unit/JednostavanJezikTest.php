@@ -17,6 +17,12 @@ class JednostavanJezikTest extends TestCase
     private const IZUZECI = [
         'Online' => ['strana reč: online'],
         'Brzi filteri' => ['strana reč: filteri'],
+        // Paket 79: strana „Predloži priliku" piše „link", kako stoji u paketu (Ivanov tekst); predlog zamene („veza") je u PITANJA-79.md.
+        'Znaš za posao, stipendiju ili konkurs koji nije na sajtu? Pošalji nam link.' => ['strana reč: link'],
+        'Link do prilike' => ['strana reč: link'],
+        'Čuvamo samo link i napomenu, da bismo proverili priliku. Ne upisuj lične podatke.' => ['strana reč: link'],
+        'Upiši link do prilike.' => ['strana reč: link'],
+        'Link može imati najviše 2048 znakova.' => ['strana reč: link'],
     ];
 
     /** @return array<string, list<string>> tekst => razlozi, za svaki tekst koji nije jednostavan */
