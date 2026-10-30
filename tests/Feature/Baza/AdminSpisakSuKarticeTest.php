@@ -9,6 +9,7 @@ use App\Filament\Resources\Prilike\Pages\ListPrilike;
 use App\Filament\Resources\Prilike\PrilikaResource;
 use App\Models\Prilika;
 use App\Models\User;
+use App\Support\PrikazKalendara;
 use App\Support\PrikazPrilike;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -126,17 +127,34 @@ class AdminSpisakSuKarticeTest extends AdminBazaTestCase
             ->assertTableActionDoesNotHaveUrl('edit', $adresaDruge, record: $prva);
     }
 
-    // Širinu meri pregledač (279 px od 311 na telefonu); ovde se čuva da dugme i dalje traži celu širinu kartice.
-    #[Test]
-    public function dugme_uredi_trazi_celu_sirinu_kartice(): void
-    {
-        $this->prilika();
+    private const SIRINA_DUGMETA = 'style="flex: 1 1 0; min-width: 0; justify-content: center;"';
 
-        $this->spisak()->assertSeeHtml('style="width: 100%; justify-content: center;"');
+    // Širinu meri pregledač (paket 84: oba dugmeta unutar kartice na 375 i 1280 px); ovde se čuva da dugmad dele širinu kartice, a ne traže po celu (dva od po 100 % izlaze iz kartice na laptopu).
+    #[Test]
+    public function dugmad_dele_sirinu_kartice_a_ne_traze_po_celu(): void
+    {
+        $this->prilika(['rok' => today()->addDays(10)->toDateString()]);
+
+        $html = $this->spisak()->assertSeeHtml(self::SIRINA_DUGMETA)->html();
+
+        $this->assertSame(1, substr_count($html, self::SIRINA_DUGMETA));
+        $this->assertStringNotContainsString('width: 100%; justify-content: center;', $html);
 
         Prilika::query()->delete();
 
-        $this->spisak()->assertDontSeeHtml('style="width: 100%; justify-content: center;"');
+        $this->spisak()->assertDontSeeHtml(self::SIRINA_DUGMETA);
+    }
+
+    // Kad je rok prošao kartica ima dva dugmeta, „Uredi" i „Dodaj u kalendar", i oba dele širinu; ogledalo je kartica sa rokom koji nije prošao, sa jednim dugmetom.
+    #[Test]
+    public function kartica_sa_proslim_rokom_ima_oba_dugmeta_sa_zajednickom_sirinom(): void
+    {
+        $this->prilika(['status' => StatusPrilike::Objavljeno, 'rok' => today()->subDays(3)->toDateString()]);
+
+        $html = $this->spisak()->assertSee(PrikazKalendara::DODAJ)->html();
+
+        $this->assertSame(2, substr_count($html, self::SIRINA_DUGMETA));
+        $this->assertStringNotContainsString('width: 100%; justify-content: center;', $html);
     }
 
     #[Test]
