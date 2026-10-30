@@ -47,6 +47,9 @@ TEXT;
     // Najduža rečenica koju kod uzima kao citat roka celu; duža se seče oko datuma.
     private const NAJVISE_ZNAKOVA_CITATA_ROKA = 300;
 
+    // Rok bez godine koji pada dalje od ovoliko meseci posle datuma objave ostaje nacrt (paket 84): „5. decembra" u vesti od 8. decembra 2025. nije 5. decembar 2026.
+    private const NAJVISE_MESECI_ROKA_BEZ_GODINE = 6;
+
     // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
     private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', 'rok ne piše u tekstu strane'];
 
@@ -371,7 +374,7 @@ TEXT;
 
     /**
      * Vraća razlog zbog kog nacrt ostaje nacrt (ili null kad je sve proverivo) i rok koji važi: datum iz odgovora, ili, kad na strani piše dan i
-     * mesec bez godine, prvi takav dan posle datuma objave u izvoru. Godinu ne bira model. Za vrstu „posao" mišljenje modela (vazi_pravilo) ne računa.
+     * mesec bez godine, prvi takav dan posle datuma objave u izvoru, najviše šest meseci posle njega. Godinu ne bira model. Za vrstu „posao" mišljenje modela (vazi_pravilo) ne računa.
      *
      * @param  array<string, mixed>  $forma
      * @param  list<Grupa>  $prihvacene
@@ -422,6 +425,10 @@ TEXT;
 
             if ($rok === null) {
                 return ['rok ne piše u tekstu strane', null];
+            }
+
+            if ($objavljeno !== null && $rok->greaterThan(CarbonImmutable::parse($objavljeno->toDateString())->addMonthsNoOverflow(self::NAJVISE_MESECI_ROKA_BEZ_GODINE))) {
+                return ['rok bez godine je daleko od datuma objave', null];
             }
         }
 
