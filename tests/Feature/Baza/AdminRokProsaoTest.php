@@ -7,7 +7,6 @@ use App\Enums\VrstaPrilike;
 use App\Filament\Resources\Prilike\Pages\ListPrilike;
 use App\Models\Prilika;
 use App\Models\User;
-use App\Support\PrikazPrilike;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -43,6 +42,12 @@ class AdminRokProsaoTest extends AdminBazaTestCase
         ];
     }
 
+    // Oznaka na kartici je značka; isti natpis stoji i kao ime izbora „Rok prošao" u panelu sa izborima (paket 86), pa se broje samo značke.
+    private function brojOznaka(string $html): int
+    {
+        return (int) preg_match_all('/<span class="fi-badge[^"]*">\s*Rok prošao\s*</u', $html);
+    }
+
     private function prilika(?string $rok, bool $stalno, StatusPrilike $status = StatusPrilike::Objavljeno): Prilika
     {
         return Prilika::factory()->create(['naslov' => 'Prilika za proveru roka', 'rok' => $rok, 'rok_stalno_otvoren' => $stalno, 'status' => $status]);
@@ -56,7 +61,7 @@ class AdminRokProsaoTest extends AdminBazaTestCase
 
         $spisak = Livewire::test(ListPrilike::class)->assertSee('Prilika za proveru roka');
 
-        $prosao ? $spisak->assertSee(PrikazPrilike::ROK_PROSAO) : $spisak->assertDontSee(PrikazPrilike::ROK_PROSAO);
+        $this->assertSame($prosao ? 1 : 0, $this->brojOznaka($spisak->html()));
     }
 
     // Isto važi za svaki status: nacrt kome je rok prošao je ono što Ivan treba da vidi pre objave.
@@ -66,7 +71,7 @@ class AdminRokProsaoTest extends AdminBazaTestCase
     {
         $this->prilika('2026-10-09', false, $status);
 
-        Livewire::test(ListPrilike::class)->assertSee('Rok prošao');
+        $this->assertSame(1, $this->brojOznaka(Livewire::test(ListPrilike::class)->html()));
     }
 
     /** @return array<string, array{StatusPrilike}> */
@@ -93,7 +98,7 @@ class AdminRokProsaoTest extends AdminBazaTestCase
             $this->assertNotNull($kartica, $naziv.': nema kartice');
             $nadjeno++;
 
-            $this->assertSame($prosao, str_contains((string) $kartica, 'Rok prošao'), $naziv);
+            $this->assertSame($prosao ? 1 : 0, $this->brojOznaka((string) $kartica), $naziv);
         }
 
         $this->assertSame(count(self::slucajevi()), $nadjeno);
@@ -161,7 +166,7 @@ class AdminRokProsaoTest extends AdminBazaTestCase
         $this->travelTo(Carbon::parse('2026-10-10 22:30:00', 'UTC'));
         $this->assertSame('2026-10-10', now('UTC')->toDateString());
         $this->assertTrue($prilika->rokJeProsao());
-        Livewire::test(ListPrilike::class)->assertSee('Rok prošao');
+        $this->assertSame(1, $this->brojOznaka(Livewire::test(ListPrilike::class)->html()));
     }
 
     // Kartica ne pita bazu za svaki zapis posebno: isti broj upita za jedan i za osam zapisa.
@@ -184,7 +189,7 @@ class AdminRokProsaoTest extends AdminBazaTestCase
     {
         DB::flushQueryLog();
         DB::enableQueryLog();
-        Livewire::test(ListPrilike::class)->assertSee('Rok prošao');
+        $this->assertGreaterThan(0, $this->brojOznaka(Livewire::test(ListPrilike::class)->html()));
 
         $upita = collect(DB::getQueryLog())->filter(fn (array $upit) => str_contains($upit['query'], 'rok_stalno_otvoren` = 0') || str_contains($upit['query'], 'rok_stalno_otvoren = 0'))->count();
         DB::disableQueryLog();

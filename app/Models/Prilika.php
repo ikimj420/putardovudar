@@ -217,6 +217,29 @@ class Prilika extends Model
         $upit->where('status', StatusPrilike::Nacrt);
     }
 
+    private const RAZLOG_JE_TEKST = "json_type(json_extract(predlog, '$.odbijeno')) = 'STRING'";
+
+    // Nacrt koji je obrada ostavila iz datog razloga (predlog.odbijeno, tekst koji piše obrada). JSON null („nema razloga") nije razlog, pa ga upit ne hvata.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function nacrtZbog(Builder $upit, string $razlog): void
+    {
+        $upit->nacrti()->whereRaw(self::RAZLOG_JE_TEKST)->whereRaw("json_unquote(json_extract(predlog, '$.odbijeno')) = ?", [$razlog]);
+    }
+
+    /** @return list<string> razlozi koje nacrti u bazi stvarno imaju, po abecedi; za izbor u adminu */
+    public static function razloziNacrta(): array
+    {
+        return self::query()->nacrti()->whereRaw(self::RAZLOG_JE_TEKST)
+            ->selectRaw("distinct json_unquote(json_extract(predlog, '$.odbijeno')) as razlog")->orderBy('razlog')->pluck('razlog')->all();
+    }
+
+    /** @return list<string> imena izvora koja prilike u bazi stvarno imaju, po abecedi; za izbor u adminu */
+    public static function izvori(): array
+    {
+        return self::query()->whereNotNull('naziv_izvora')->where('naziv_izvora', '!=', '')->distinct()->orderBy('naziv_izvora')->pluck('naziv_izvora')->all();
+    }
+
     private static function jeLink(?string $vrednost): bool
     {
         $link = trim((string) $vrednost);

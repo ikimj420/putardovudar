@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Prilike\Tables;
 
 use App\Enums\StatusPrilike;
+use App\Enums\VrstaPrilike;
 use App\Filament\Resources\Kalendar\KalendarResource;
 use App\Models\Prilika;
 use App\Services\KalendarIzPrilike;
@@ -18,6 +19,7 @@ use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -51,8 +53,22 @@ class PrilikeTable
                 ])->space(2),
             ])
             ->filters([
-                // Veza sa početne strane admina vodi ovde, na spisak samo sa nacrtima.
+                // Veza sa početne strane admina vodi ovde, na spisak samo sa nacrtima; ključ „status" ostaje.
                 SelectFilter::make('status')->label('Status')->options(StatusPrilike::class),
+                SelectFilter::make('naziv_izvora')->label(PrikazPrilike::IZBOR_IZVOR)->options(function (): array {
+                    $izvori = Prilika::izvori();
+
+                    return array_combine($izvori, $izvori);
+                }),
+                SelectFilter::make('vrsta')->label(PrikazPrilike::IZBOR_VRSTA)->options(VrstaPrilike::class),
+                // Razlozi su tekstovi koje piše obrada; nudi se samo ono što nacrti u bazi stvarno imaju. Veliko početno slovo je samo prikaz.
+                SelectFilter::make('zasto_je_nacrt')->label(PrikazPrilike::IZBOR_ZASTO_NACRT)
+                    ->options(fn (): array => collect(Prilika::razloziNacrta())->mapWithKeys(fn (string $razlog): array => [$razlog => mb_strtoupper(mb_substr($razlog, 0, 1)).mb_substr($razlog, 1)])->all())
+                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null) ? self::nacrtZbog($query, (string) $data['value']) : $query),
+                // Isti uslov kao oznaka „Rok prošao" na kartici i kao javni spisak: odlučuje ga samo Prilika::rokProsao.
+                TernaryFilter::make('rok_prosao')->label(PrikazPrilike::ROK_PROSAO)
+                    ->placeholder(PrikazPrilike::IZBOR_SVE)->trueLabel(PrikazPrilike::DA)->falseLabel(PrikazPrilike::NE)
+                    ->queries(true: fn (Builder $query): Builder => self::rokProsao($query, true), false: fn (Builder $query): Builder => self::rokProsao($query, false), blank: fn (Builder $query): Builder => $query),
             ])
             // Filament upit ubacuje po imenu parametra: mora da se zove $query, inače dobija prazan Builder.
             ->modifyQueryUsing(fn (Builder $query) => Prilika::saOznakomRoka($query))
@@ -77,6 +93,24 @@ class PrilikeTable
                         $action->redirect(KalendarResource::getUrl('edit', ['record' => $stavka]));
                     }),
             ]);
+    }
+
+    /**
+     * @param  Builder<Prilika>  $query
+     * @return Builder<Prilika>
+     */
+    private static function nacrtZbog(Builder $query, string $razlog): Builder
+    {
+        return $query->nacrtZbog($razlog);
+    }
+
+    /**
+     * @param  Builder<Prilika>  $query
+     * @return Builder<Prilika>
+     */
+    private static function rokProsao(Builder $query, bool $prosao): Builder
+    {
+        return $prosao ? $query->rokProsao() : $query->rokNijeProsao();
     }
 
     // Isti tekstovi kao na sajtu (PrikazPrilike), a datum kroz Prikaz; oznaka „Rok:“ je ovde u samom redu.
