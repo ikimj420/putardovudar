@@ -130,6 +130,15 @@ class Prilika extends Model
         $upit->whereRaw('not ('.self::ROK_PROSAO.')', [today()->toDateString()]);
     }
 
+    // Prilike koje idu u kalendar (paket 81): objavljene, rok prošao, a vrsta nije „posao" (oglas za posao se ne ponavlja svake godine; predlog iz paketa,
+    // Ivan može drugačije). Jedino mesto tog pravila; komanda kalendar:iz-prilika pita ovde.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function zaKalendar(Builder $upit): void
+    {
+        $upit->where('status', StatusPrilike::Objavljeno)->where('vrsta', '!=', VrstaPrilike::Posao)->rokProsao();
+    }
+
     // Koliko dana unapred se rok računa kao „uskoro" (paket 61); jedini broj, pa početna i spisak ne mogu da se razilaze.
     public const DANA_USKORO = 14;
 
