@@ -466,7 +466,7 @@ class PrilikeProveraTest extends BazaTestCase
         $this->assertSame(0, Artisan::call('uvoz:dnevno'));
         $ispis = Artisan::output();
 
-        $redosled = array_map(fn (string $komanda) => strpos($ispis, '→ '.$komanda), ['uvoz:obradi', 'prilike:provera', 'kalendar:iz-prilika']);
+        $redosled = array_map(fn (string $komanda) => strpos($ispis, '→ '.$komanda), ['uvoz:obradi', 'prilike:provera', 'prilike:arhiviraj-stare', 'kalendar:iz-prilika']);
         $this->assertNotContains(false, $redosled);
         $this->assertSame($redosled, collect($redosled)->sort()->values()->all());
     }

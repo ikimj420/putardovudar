@@ -237,6 +237,17 @@ class Prilika extends Model
         return true;
     }
 
+    // Koliko dana posle roka nacrt čeka pre nego što ga dnevni posao arhivira (paket 86/T2b, Ivan 30.10.2026.).
+    public const DANA_DO_ARHIVIRANJA = 30;
+
+    // Nacrt kome je rok prošao pre više od DANA_DO_ARHIVIRANJA dana; objavljene i već arhivirane se ne hvataju. Komanda prilike:arhiviraj-stare pita ovde.
+    /** @param  Builder<Prilika>  $upit */
+    #[Scope]
+    protected function zaArhiviranje(Builder $upit): void
+    {
+        $upit->nacrti()->rokProsao()->where('prilike.rok', '<', today()->subDays(self::DANA_DO_ARHIVIRANJA)->toDateString());
+    }
+
     // Jedino mesto gde se objavljena prilika vraća u nacrt zbog provere sa stranom izvora (paket 85). Razlog ide u predlog.odbijeno, kao razlozi obrade, pa ga admin vidi u izboru
     // „Zašto je nacrt"; šta piše na strani ide u predlog.provera.
     public function vratiUNacrt(string $razlog, string $citat): void
