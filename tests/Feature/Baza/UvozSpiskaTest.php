@@ -30,6 +30,14 @@ class UvozSpiskaTest extends BazaTestCase
 
     private const IME_OPRE_ROMA = 'Opre Roma Srbija - vesti';
 
+    private const MTO_KONKURSI = 'https://mto.gov.rs/tekst/13534/konkursi-2026-godina.php';
+
+    private const MTO_POZIVI = 'https://mto.gov.rs/tekst/13588/javni-pozivi-2026-godina.php';
+
+    private const IME_MTO_KONKURSI = 'Ministarstvo turizma i omladine - konkursi';
+
+    private const IME_MTO_POZIVI = 'Ministarstvo turizma i omladine - javni pozivi';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -44,13 +52,18 @@ class UvozSpiskaTest extends BazaTestCase
     }
 
     // Paket 70/T7: od NSZ-a samo „Konkursi NSZ"; regionalni i lokalni spisak (25 nacrta, nijedna objava u probi 68) nije u podešavanju. Paket 84/T5: uz njega vesti Opre Roma Srbija, sa izgledom strane.
+    // Paket 87/T2: uz njih dva spiska Ministarstva turizma i omladine (feed te strane ima pogrešnu adresu sajta, pa nije uvezen).
     #[Test]
-    public function podesavanje_ima_spisak_konkursa_nsz_i_vesti_opre_roma_sa_imenom_adresom_i_izgledom(): void
+    public function podesavanje_ima_spiskove_nsz_opre_roma_i_ministarstva_turizma_i_omladine_sa_imenom_adresom_i_izgledom(): void
     {
         $this->assertSame([
             ['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI],
             ['ime' => self::IME_OPRE_ROMA, 'adresa' => self::OPRE_ROMA, 'izgled' => 'opre-roma'],
+            ['ime' => self::IME_MTO_KONKURSI, 'adresa' => self::MTO_KONKURSI, 'izgled' => 'mto'],
+            ['ime' => self::IME_MTO_POZIVI, 'adresa' => self::MTO_POZIVI, 'izgled' => 'mto'],
         ], config('uvoz.spiskovi'));
+        $this->assertStringNotContainsString('/rss', (string) json_encode(config('uvoz.spiskovi')));
+        $this->assertArrayHasKey('mto', UvozSpiska::IZGLEDI);
         $this->assertStringNotContainsString('lokalne-samouprave', (string) json_encode(config('uvoz.spiskovi')));
         $this->assertStringNotContainsString('regionalni', mb_strtolower((string) json_encode(config('uvoz.spiskovi'), JSON_UNESCAPED_UNICODE)));
         $this->assertStringNotContainsString('/rom/', (string) json_encode(config('uvoz.spiskovi')));
@@ -233,6 +246,82 @@ class UvozSpiskaTest extends BazaTestCase
         $this->assertSame(0, Prilika::query()->count());
     }
 
+    // Paket 87/T2: dva spiska Ministarstva turizma i omladine (snimci pravih strana, samo spisak), ćirilica pretvorena u latinicu, bez datuma objave na spisku.
+    #[Test]
+    public function konkursi_ministarstva_turizma_i_omladine_ulaze_kao_nacrti_latinicom(): void
+    {
+        Http::fake([self::MTO_KONKURSI => Http::response($this->snimak('mto-konkursi.html'))]);
+
+        $rezultat = app(UvozSpiska::class)->uvezi(self::IME_MTO_KONKURSI, self::MTO_KONKURSI, 'mto');
+
+        $this->assertNull($rezultat->greska);
+        $this->assertSame(16, $rezultat->novih);
+        $this->assertSame(0, $rezultat->preskoceno);
+        $this->assertSame(16, Prilika::query()->where('naziv_izvora', self::IME_MTO_KONKURSI)->count());
+
+        foreach (Prilika::query()->pluck('naslov') as $naslov) {
+            $this->assertSame(0, preg_match('/\p{Cyrillic}/u', $naslov), $naslov);
+        }
+
+        $omladinski = Prilika::query()->where('link_izvora', 'like', 'https://mto.gov.rs/tekst/14032/%')->firstOrFail();
+
+        $this->assertStringContainsString('JAVNI KONKURSI ZA PROGRAME I PROJEKTE OD JAVNOG INTERESA', mb_strtoupper($omladinski->naslov));
+        $this->assertSame(StatusPrilike::Nacrt, $omladinski->status);
+        $this->assertSame(VrstaPrilike::Drugo, $omladinski->vrsta);
+        $this->assertNull($omladinski->rok);
+        $this->assertNull($omladinski->izvor_objavljen);
+        $this->assertNull($omladinski->obradeno_at);
+        $this->assertSame(0, Prilika::query()->whereNotNull('izvor_objavljen')->count());
+    }
+
+    #[Test]
+    public function javni_pozivi_ministarstva_turizma_i_omladine_ulaze_kao_nacrti_a_drugi_uvoz_ne_pravi_duplikate(): void
+    {
+        Http::fake([self::MTO_POZIVI => Http::response($this->snimak('mto-javni-pozivi.html'))]);
+
+        $prvi = app(UvozSpiska::class)->uvezi(self::IME_MTO_POZIVI, self::MTO_POZIVI, 'mto');
+        $drugi = app(UvozSpiska::class)->uvezi(self::IME_MTO_POZIVI, self::MTO_POZIVI, 'mto');
+
+        $this->assertSame(5, $prvi->novih);
+        $this->assertSame(0, $drugi->novih);
+        $this->assertSame(5, $drugi->preskoceno);
+        $this->assertSame(5, Prilika::query()->count());
+        $this->assertSame(5, Prilika::query()->where('link_izvora', 'like', 'https://mto.gov.rs/tekst/%')->count());
+    }
+
+    // Prava strana ima i meni sa vezama (isti „li" i „a"): ulaze samo stavke iz spiska „article-list", a datum objave se na ovoj strani ne čita ni kad bi naslov bio datum.
+    #[Test]
+    public function izgled_ministarstva_uzima_samo_stavke_iz_spiska_a_ne_meni_i_ne_cita_datum(): void
+    {
+        $meni = '<ul class="meni"><li><a href="/tekst/1/javne-nabavke.php">Javne nabavke</a></li><li><a href="/tekst/2/kontakt.php">Kontakt</a></li></ul>';
+        $spisak = '<ul class="article-list list-unstyled"><li class="printable"><div><a href="/tekst/17683/javni-konkurs.php">01.10.2026.</a></div></li></ul>';
+        Http::fake([self::MTO_POZIVI => Http::response('<html><body>'.$meni.'<div>'.$spisak.'</div></body></html>')]);
+
+        $rezultat = app(UvozSpiska::class)->uvezi(self::IME_MTO_POZIVI, self::MTO_POZIVI, 'mto');
+
+        $this->assertSame(1, $rezultat->novih);
+        $this->assertSame(['https://mto.gov.rs/tekst/17683/javni-konkurs.php'], Prilika::query()->pluck('link_izvora')->all());
+        $this->assertNull(Prilika::query()->firstOrFail()->izvor_objavljen);
+    }
+
+    // Ogledalo: izgled „mto" ne čita strane drugih spiskova, a njihovi izgledi ne čitaju stranu ministarstva.
+    #[Test]
+    public function izgled_ministarstva_cita_samo_svoju_stranu(): void
+    {
+        Http::fake([
+            self::MTO_KONKURSI => Http::response($this->snimak('mto-konkursi.html')),
+            self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')),
+            self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html')),
+        ]);
+        $neprocitan = 'spisak nije pročitan, izgled strane se verovatno promenio';
+
+        $this->assertSame($neprocitan, app(UvozSpiska::class)->uvezi('A', self::MTO_KONKURSI, 'nsz')->greska);
+        $this->assertSame($neprocitan, app(UvozSpiska::class)->uvezi('B', self::MTO_KONKURSI, 'opre-roma')->greska);
+        $this->assertSame($neprocitan, app(UvozSpiska::class)->uvezi('C', self::KONKURSI, 'mto')->greska);
+        $this->assertSame($neprocitan, app(UvozSpiska::class)->uvezi('D', self::OPRE_ROMA, 'mto')->greska);
+        $this->assertSame(0, Prilika::query()->count());
+    }
+
     #[Test]
     public function nepoznat_izgled_daje_gresku_bez_poziva_izvora(): void
     {
@@ -245,19 +334,26 @@ class UvozSpiskaTest extends BazaTestCase
         $this->assertSame(0, Prilika::query()->count());
     }
 
-    // Komanda uzima izgled iz podešavanja: bez toga bi se Opre Roma čitala izgledom NSZ-a i ne bi dala nijednu vest.
+    // Komanda uzima izgled iz podešavanja: bez toga bi se Opre Roma i ministarstvo čitali izgledom NSZ-a i ne bi dali nijednu stavku.
     #[Test]
-    public function komanda_cita_izgled_iz_podesavanja_za_oba_spiska(): void
+    public function komanda_cita_izgled_iz_podesavanja_za_svaki_spisak(): void
     {
-        Http::fake([self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')), self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html'))]);
+        Http::fake([
+            self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')),
+            self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html')),
+            self::MTO_KONKURSI => Http::response($this->snimak('mto-konkursi.html')),
+            self::MTO_POZIVI => Http::response($this->snimak('mto-javni-pozivi.html')),
+        ]);
 
         $this->artisan('uvoz:spiskovi')
             ->expectsOutput('Nacionalna služba za zapošljavanje - konkursi: novih 6, preskočeno 3, greška: nema')
             ->expectsOutput('Opre Roma Srbija - vesti: novih 6, preskočeno 0, greška: nema')
+            ->expectsOutput('Ministarstvo turizma i omladine - konkursi: novih 16, preskočeno 0, greška: nema')
+            ->expectsOutput('Ministarstvo turizma i omladine - javni pozivi: novih 5, preskočeno 0, greška: nema')
             ->assertExitCode(0);
 
-        $this->assertSame(12, Prilika::query()->count());
-        $this->assertSame(6, Prilika::query()->where('naziv_izvora', self::IME_OPRE_ROMA)->count());
+        $this->assertSame(33, Prilika::query()->count());
+        $this->assertSame(21, Prilika::query()->where('naziv_izvora', 'like', 'Ministarstvo turizma i omladine%')->count());
     }
 
     #[Test]

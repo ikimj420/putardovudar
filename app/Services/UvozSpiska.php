@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-// Uvozi spisak poziva sa HTML strane koja nema RSS (Nacionalna služba za zapošljavanje, Opre Roma Srbija) kao nacrte, istim poljima kao UvozRss; dalje ide ista obrada.
+// Uvozi spisak poziva sa HTML strane koja nema RSS (Nacionalna služba za zapošljavanje, Opre Roma Srbija, Ministarstvo turizma i omladine) kao nacrte, istim poljima kao UvozRss; dalje ide ista obrada.
 // Ništa ne objavljuje i ne menja postojeće prilike. Čita se samo prva strana spiska, a „ZATVOREN" u naslovu znači da poziv više ne važi.
 final class UvozSpiska
 {
@@ -24,6 +24,12 @@ final class UvozSpiska
             'stavka' => "//article[contains(concat(' ', normalize-space(@class), ' '), ' news-item ')]",
             'veza' => ".//*[contains(concat(' ', normalize-space(@class), ' '), ' news-item-title ')]//a",
             'datum' => ".//*[contains(concat(' ', normalize-space(@class), ' '), ' time-published ')]",
+        ],
+        // Ministarstvo turizma i omladine: stavka je red u spisku „article-list", bez datuma objave na spisku.
+        'mto' => [
+            'stavka' => "//ul[contains(concat(' ', normalize-space(@class), ' '), ' article-list ')]/li",
+            'veza' => './/a',
+            'datum' => null,
         ],
         'opre-roma' => [
             'stavka' => "//div[contains(concat(' ', normalize-space(@class), ' '), ' ul-blog ')]",

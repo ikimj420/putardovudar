@@ -33,6 +33,9 @@ return [
     'spiskovi' => [
         ['ime' => 'Nacionalna služba za zapošljavanje - konkursi', 'adresa' => 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10'],
         ['ime' => 'Opre Roma Srbija - vesti', 'adresa' => 'https://opreromasrbija.rs/rs/vesti', 'izgled' => 'opre-roma'],
+        // Ministarstvo turizma i omladine (paket 87, izmereno 30.10.2026.): feed (/rss) ima ćirilično „о" u adresi sajta, pa veze iz njega ne rade, a stavke su vesti. Godina je u adresi: u januaru 2027. adrese se menjaju.
+        ['ime' => 'Ministarstvo turizma i omladine - konkursi', 'adresa' => 'https://mto.gov.rs/tekst/13534/konkursi-2026-godina.php', 'izgled' => 'mto'],
+        ['ime' => 'Ministarstvo turizma i omladine - javni pozivi', 'adresa' => 'https://mto.gov.rs/tekst/13588/javni-pozivi-2026-godina.php', 'izgled' => 'mto'],
     ],
 
     // Ograničenja da jedan izvor ne može da zaglavi uvoz ni da napuni bazu.
