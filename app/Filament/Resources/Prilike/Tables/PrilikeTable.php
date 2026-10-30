@@ -12,9 +12,12 @@ use App\Support\PrikazKalendara;
 use App\Support\PrikazPrilike;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
@@ -22,6 +25,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 // Spisak su kartice: jedna kolona na telefonu, tri na laptopu. Jedan podatak po redu, oznaka levo i vrednost desno;
 // prazna vrednost ne crta red.
@@ -74,6 +78,27 @@ class PrilikeTable
             ->modifyQueryUsing(fn (Builder $query) => Prilika::saOznakomRoka($query))
             ->contentGrid(['xl' => 3])
             ->defaultSort('created_at', 'desc')
+            // Masovno se arhiviraju samo nacrti: kartica druge prilike nema polje za izbor (a model ionako ne arhivira šta nije nacrt). Brisanja nema.
+            ->checkIfRecordIsSelectableUsing(fn (Prilika $record): bool => $record->jeNacrt())
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('arhiviraj')
+                        ->label(PrikazPrilike::ARHIVIRAJ)
+                        ->icon(Heroicon::OutlinedArchiveBox)
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->modalHeading(PrikazPrilike::ARHIVIRAJ_NASLOV)
+                        ->modalDescription(PrikazPrilike::ARHIVIRAJ_OPIS)
+                        ->modalSubmitActionLabel(PrikazPrilike::ARHIVIRAJ)
+                        ->authorizeIndividualRecords('update')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records): void {
+                            $arhivirano = $records->filter(fn (Prilika $prilika): bool => $prilika->arhiviraj())->count();
+
+                            Notification::make()->title(PrikazPrilike::ARHIVIRANO.$arhivirano.'.')->success()->send();
+                        }),
+                ]),
+            ])
             ->recordActions([
                 // Dugme ide ispod kartice preko cele širine (pravilo za telefon); Filament nema opciju za to, a admin nema svoju temu.
                 EditAction::make()->label('Uredi')->button()->extraAttributes(self::SIRINA),

@@ -57,7 +57,7 @@ final class PrikazPrilike
     // Oznaka na kartici u adminu; sajt je ne piše jer prilike sa prošlim rokom ne prikazuje.
     public const ROK_PROSAO = 'Rok prošao';
 
-    // Admin „Prilike", izbori (paket 86); tekstovi su predlog (PITANJA-86.md), Ivan odobrava.
+    // Admin „Prilike", izbori i masovna radnja (paket 86); tekstovi su predlog (PITANJA-86.md), Ivan odobrava.
     public const IZBOR_IZVOR = 'Izvor';
 
     public const IZBOR_VRSTA = 'Vrsta';
@@ -69,6 +69,14 @@ final class PrikazPrilike
     public const DA = 'Da';
 
     public const NE = 'Ne';
+
+    public const ARHIVIRAJ = 'Arhiviraj';
+
+    public const ARHIVIRAJ_NASLOV = 'Arhivirati izabrane nacrte?';
+
+    public const ARHIVIRAJ_OPIS = 'Arhivirano se ne objavljuje i ne ide ponovo u obradu. Objavljene prilike se ovde ne arhiviraju.';
+
+    public const ARHIVIRANO = 'Arhivirano nacrta: ';
 
     // Dugme na strani prilike i događaj u kalendaru telefona; tekstovi su predlog (PITANJA-46-52.md, paket 49).
     public const DODAJ_ROK = 'Dodaj rok u telefon';

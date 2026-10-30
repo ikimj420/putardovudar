@@ -217,6 +217,24 @@ class Prilika extends Model
         $upit->where('status', StatusPrilike::Nacrt);
     }
 
+    public function jeNacrt(): bool
+    {
+        return $this->status === StatusPrilike::Nacrt;
+    }
+
+    // Jedino mesto gde se arhivira (paket 86): samo nacrt; objavljena prilika se ovde ne dira, a arhivirana ne ide ni u obradu ni na sajt.
+    public function arhiviraj(): bool
+    {
+        if (! $this->jeNacrt()) {
+            return false;
+        }
+
+        $this->status = StatusPrilike::Arhivirano;
+        $this->save();
+
+        return true;
+    }
+
     private const RAZLOG_JE_TEKST = "json_type(json_extract(predlog, '$.odbijeno')) = 'STRING'";
 
     // Nacrt koji je obrada ostavila iz datog razloga (predlog.odbijeno, tekst koji piše obrada). JSON null („nema razloga") nije razlog, pa ga upit ne hvata.
