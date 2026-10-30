@@ -17,17 +17,6 @@ class JednostavanJezikTest extends TestCase
     private const IZUZECI = [
         'Online' => ['strana reč: online'],
         'Brzi filteri' => ['strana reč: filteri'],
-        // Paket 79: strana „Predloži priliku" piše „link", kako stoji u paketu (Ivanov tekst); predlog zamene („veza") je u PITANJA-79.md.
-        'Znaš za posao, stipendiju ili konkurs koji nije na sajtu? Pošalji nam link.' => ['strana reč: link'],
-        'Link do prilike' => ['strana reč: link'],
-        'Čuvamo samo link i napomenu, da bismo proverili priliku. Ne upisuj lične podatke.' => ['strana reč: link'],
-        // Paket 80: strana „Privatnost" je Ivanov tekst iz paketa (dve duge rečenice i reč „link"); kraći predlozi su u PITANJA-80.md.
-        'Pitanja pomoćniku i ono što upišeš u „Napiši moj" ne čuvamo i ne koristimo ni za šta drugo. Pomoćnik radi na našem računaru i to ne šalje drugim firmama.' => ['duga rečenica (18 reči)'],
-        'Kad predložiš priliku, čuvamo samo link i napomenu koje upišeš, da bismo proverili priliku. Ne upisuj lične podatke u napomenu.' => ['strana reč: link'],
-        'Dok si na sajtu, server privremeno pamti tehničke podatke (adresu uređaja i vrstu pregledača), da bi sajt radio i da bi sprečio zloupotrebu.' => ['duga rečenica (23 reči)'],
-        'Linkovi vode na druge sajtove (izvore prilika i organizacije). Oni imaju svoja pravila o privatnosti.' => ['strana reč: linkovi'],
-        'Upiši link do prilike.' => ['strana reč: link'],
-        'Link može imati najviše 2048 znakova.' => ['strana reč: link'],
     ];
 
     /** @return array<string, list<string>> tekst => razlozi, za svaki tekst koji nije jednostavan */
@@ -84,8 +73,9 @@ class JednostavanJezikTest extends TestCase
             'šesnaest reči ne prolazi' => ['Ovde piše '.$petnaest, ['duga rečenica (17 reči)']],
             'dve kratke rečenice prolaze' => ['Prva rečenica ima malo reči. Druga rečenica takođe ima malo reči.', []],
             'duga rečenica posle kratke' => ['Kratko je. '.$petnaest.' I još ovo!', []],
-            'strana reč' => ['Ostavi link ovde.', ['strana reč: link']],
-            'strana reč velikim slovom i padež' => ['Brzi Filteri i Linkovi.', ['strana reč: filteri', 'strana reč: linkovi']],
+            'strana reč' => ['Ostavi feed ovde.', ['strana reč: feed']],
+            'strana reč velikim slovom i padež' => ['Brzi Filteri i Klikovi.', ['strana reč: filteri', 'strana reč: klikovi']],
+            'link i linkovi nisu strane reči (Ivan, 30.10.2026.)' => ['Ostavi link ili Linkove ovde.', []],
             'mejl' => ['Pošalji mejl.', ['strana reč: mejl']],
             'e-mail' => ['Napiši E-mail.', ['strana reč: e-mail']],
             'Viber i WhatsApp su imena' => ['Pošalji komšiji preko Vibera ili WhatsApp.', []],

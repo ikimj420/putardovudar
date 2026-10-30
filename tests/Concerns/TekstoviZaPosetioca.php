@@ -87,10 +87,10 @@ trait TekstoviZaPosetioca
     }
 
     // Najviše reči u rečenici i reči koje običan čovek ne mora da zna (predlog; Ivan odobrava, PITANJA-46-52.md, paket 52). „Sajt", „Viber"
-    // i „WhatsApp" nisu na spisku: prve dve su ovde u običnoj upotrebi, a ostale su imena.
+    // i „WhatsApp" nisu na spisku: prve dve su ovde u običnoj upotrebi, a ostale su imena. „Link" i „linkovi" su skinuti sa spiska (Ivan, 30.10.2026.: „link" ostaje).
     protected const NAJVISE_RECI_U_RECENICI = 15;
 
-    protected const STRANE_RECI = '/^(?:online|links?|linkov\w*|filter\w*|mejl\w*|e-?mail\w*|web|download\w*|klik\w*|info|feed|rss|api|pdf|ics|url|chat|cookies?|login|logout|update|upload|template|widget)$/u';
+    protected const STRANE_RECI = '/^(?:online|filter\w*|mejl\w*|e-?mail\w*|web|download\w*|klik\w*|info|feed|rss|api|pdf|ics|url|chat|cookies?|login|logout|update|upload|template|widget)$/u';
 
     /** @return list<string> razlozi zbog kojih tekst nije jednostavan: „duga rečenica (N reči)" i „strana reč: X" */
     protected function razloziZaNalaz(string $tekst): array
