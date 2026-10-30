@@ -1,58 +1,55 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Putardo Vudar
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sajt pomaže Romima da nađu informacije: zapošljavanje, pisanje (molbe i prijave) i konkurse.
+Podaci stižu sa interneta. Pomoćnik radi na ovom računaru i odgovara samo iz baze, uz izvor.
 
-## About Laravel
+Ovo je vežba. Sajt ne ide na produkciju.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Šta ti treba
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- PHP i Composer.
+- MariaDB. Baza je ista i na računaru i u testovima.
+- Ollama. Preko nje rade pomoćnik i „Napiši moj".
+- Node, samo da se izgradi stil sajta.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Kako se pokreće
 
-## Learning Laravel
+1. Kopiraj `.env.example` u `.env` i upiši svoje vrednosti.
+2. Pusti `composer setup`.
+3. Pusti `php artisan serve`.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+U `.env` stoje, između ostalog, ova podešavanja. Vrednosti su tvoje i ne pišu se u dokumente.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`: baza.
+- `OLLAMA_ADRESA`, `OLLAMA_MODEL`, `OLLAMA_VREME_CEKANJA`: Ollama.
+- `MODEL_OBRADE`: ko obrađuje nove prilike, `ollama` ili `claude`. Za `claude` treba i `ANTHROPIC_API_KEY`.
+- `JOOBLE_KLJUC`: ključ za poslove sa Jooble-a. Bez njega se taj izvor preskače.
+- `ADMIN_PATH`: bez njega administratorski deo ne postoji.
+- `PREDLOZI_SLANJA_U_MINUTI`, `POMOCNIK_UKUPNO_ZA_PITANJE`, `POMOCNIK_PITANJA_U_MINUTI`: ograničenja slanja.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Komande koje puštaš
 
-## Agentic Development
+Sve se puštaju sa `php artisan`, iz glavnog foldera.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- `uvoz:dnevno`: dnevni posao. Zove `uvoz:rss`, `uvoz:spiskovi`, `uvoz:jooble` i `uvoz:obradi`, pa `kalendar:iz-prilika`. U rasporedu se pušta svakog dana u 06:00.
+- `uvoz:obradi --ponovo`: ponovo obrađuje nacrte koje je obradilo starije pravilo.
+- `kalendar:iz-prilika`: od objavljenih prilika kojima je rok prošao pravi nacrte stavki kalendara.
+- `sabloni:prazna-polja`: upisuje pravila praznih polja u šablone.
 
-```bash
-composer require laravel/boost --dev
+Seederi dodaju sadržaj, a ono što već postoji ne diraju. Puštaju se ovako: `db:seed --class=` i ime.
 
-php artisan boost:install
-```
+- `OrganizacijeSeeder`: organizacije iz starog projekta, kao nacrt.
+- `RomskeOrganizacijeSeeder`: romske organizacije, objavljene.
+- `KalendarProslaGodinaSeeder`: kalendar „šta je bilo otvoreno prošle godine".
+- `VodiciSeeder`, `VodiciPrimeriSeeder` i `SabloniSeeder`: vodiči, primeri i šabloni, kao nacrt.
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Ne puštaj `db:seed` bez imena. Taj poziv pravi probnog korisnika.
 
-## Contributing
+## Provera
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- `composer test`: ceo prolaz testova. Testovi brišu i pune svoju bazu, koja ima drugo ime od radne.
+- `composer provera`: formater, statička analiza i testovi, jedno za drugim.
 
-## Code of Conduct
+## Gde su pravila
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Pravila rada su u `CLAUDE.md` i u folderu `.ai/rules/`. Folder `Dokumentacija/` nije u gitu.
