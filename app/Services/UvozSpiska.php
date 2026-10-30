@@ -14,16 +14,32 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Throwable;
 
-// Uvozi spisak poziva sa HTML strane koja nema RSS (Nacionalna služba za zapošljavanje) kao nacrte, istim poljima kao UvozRss; dalje ide ista obrada.
+// Uvozi spisak poziva sa HTML strane koja nema RSS (Nacionalna služba za zapošljavanje, Opre Roma Srbija) kao nacrte, istim poljima kao UvozRss; dalje ide ista obrada.
 // Ništa ne objavljuje i ne menja postojeće prilike. Čita se samo prva strana spiska, a „ZATVOREN" u naslovu znači da poziv više ne važi.
 final class UvozSpiska
 {
-    private const STAVKA = "//article[contains(concat(' ', normalize-space(@class), ' '), ' news-item ')]";
+    // Izgled strane je zasebno od izvora: gde je stavka, gde je veza naslova i gde datum objave (null kad strana datum nema ili ga piše bez godine, pa se rok bez godine ne prima).
+    public const IZGLEDI = [
+        'nsz' => [
+            'stavka' => "//article[contains(concat(' ', normalize-space(@class), ' '), ' news-item ')]",
+            'veza' => ".//*[contains(concat(' ', normalize-space(@class), ' '), ' news-item-title ')]//a",
+            'datum' => ".//*[contains(concat(' ', normalize-space(@class), ' '), ' time-published ')]",
+        ],
+        'opre-roma' => [
+            'stavka' => "//div[contains(concat(' ', normalize-space(@class), ' '), ' ul-blog ')]",
+            'veza' => ".//a[contains(concat(' ', normalize-space(@class), ' '), ' ul-blog-title ')]",
+            'datum' => null,
+        ],
+    ];
 
     public function __construct(private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
 
-    public function uvezi(string $ime, string $adresa): RezultatUvoza
+    public function uvezi(string $ime, string $adresa, string $izgled = 'nsz'): RezultatUvoza
     {
+        if (! isset(self::IZGLEDI[$izgled])) {
+            return new RezultatUvoza(greska: 'nepoznat izgled strane: '.$izgled);
+        }
+
         $novih = 0;
         $preskoceno = 0;
         $dopunjeno = 0;
@@ -39,7 +55,7 @@ final class UvozSpiska
                 return new RezultatUvoza(greska: 'odgovor je veći od dozvoljene veličine');
             }
 
-            $stavke = $this->stavke($odgovor->body());
+            $stavke = $this->stavke($odgovor->body(), self::IZGLEDI[$izgled]['stavka']);
 
             // Spisak se čita po izgledu strane; kad se izgled promeni, nijedna stavka se ne nalazi i to se vidi u ispisu.
             if ($stavke === []) {
@@ -47,7 +63,7 @@ final class UvozSpiska
             }
 
             foreach (array_slice($stavke, 0, config('uvoz.najvise_stavki')) as $stavka) {
-                $podaci = $this->podaci($stavka, $ime, $adresa);
+                $podaci = $this->podaci($stavka, $ime, $adresa, self::IZGLEDI[$izgled]);
 
                 if ($podaci === null) {
                     $preskoceno++;
@@ -76,7 +92,7 @@ final class UvozSpiska
     }
 
     /** @return list<DOMElement> */
-    private function stavke(string $telo): array
+    private function stavke(string $telo, string $izraz): array
     {
         $dokument = new DOMDocument;
         $prethodno = libxml_use_internal_errors(true);
@@ -86,7 +102,7 @@ final class UvozSpiska
 
         $stavke = [];
 
-        foreach ((new DOMXPath($dokument))->query(self::STAVKA) ?: [] as $stavka) {
+        foreach ((new DOMXPath($dokument))->query($izraz) ?: [] as $stavka) {
             if ($stavka instanceof DOMElement) {
                 $stavke[] = $stavka;
             }
@@ -95,11 +111,14 @@ final class UvozSpiska
         return $stavke;
     }
 
-    /** @return array<string, mixed>|null */
-    private function podaci(DOMElement $stavka, string $imeIzvora, string $adresaSpiska): ?array
+    /**
+     * @param  array{stavka: string, veza: string, datum: ?string}  $izgled
+     * @return array<string, mixed>|null
+     */
+    private function podaci(DOMElement $stavka, string $imeIzvora, string $adresaSpiska, array $izgled): ?array
     {
         $xpath = new DOMXPath($stavka->ownerDocument);
-        $veza = $this->prvi($xpath, ".//*[contains(concat(' ', normalize-space(@class), ' '), ' news-item-title ')]//a", $stavka);
+        $veza = $this->prvi($xpath, $izgled['veza'], $stavka);
 
         if (! $veza instanceof DOMElement) {
             return null;
@@ -113,7 +132,7 @@ final class UvozSpiska
             return null;
         }
 
-        $objavljeno = $this->prvi($xpath, ".//*[contains(concat(' ', normalize-space(@class), ' '), ' time-published ')]", $stavka);
+        $objavljeno = $izgled['datum'] === null ? null : $this->prvi($xpath, $izgled['datum'], $stavka);
 
         return [
             'naslov' => mb_substr($naslov, 0, 255),

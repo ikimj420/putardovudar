@@ -26,6 +26,10 @@ class UvozSpiskaTest extends BazaTestCase
 
     private const IME_KONKURSI = 'Nacionalna služba za zapošljavanje - konkursi';
 
+    private const OPRE_ROMA = 'https://opreromasrbija.rs/rs/vesti';
+
+    private const IME_OPRE_ROMA = 'Opre Roma Srbija - vesti';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,13 +43,18 @@ class UvozSpiskaTest extends BazaTestCase
         return (string) file_get_contents(base_path('tests/Fixtures/spiskovi/'.$ime));
     }
 
-    // Paket 70/T7: samo „Konkursi NSZ"; regionalni i lokalni spisak (25 nacrta, nijedna objava u probi 68) nije u podešavanju.
+    // Paket 70/T7: od NSZ-a samo „Konkursi NSZ"; regionalni i lokalni spisak (25 nacrta, nijedna objava u probi 68) nije u podešavanju. Paket 84/T5: uz njega vesti Opre Roma Srbija, sa izgledom strane.
     #[Test]
-    public function podesavanje_ima_samo_spisak_konkursa_nsz_sa_imenom_i_adresom(): void
+    public function podesavanje_ima_spisak_konkursa_nsz_i_vesti_opre_roma_sa_imenom_adresom_i_izgledom(): void
     {
-        $this->assertSame([['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI]], config('uvoz.spiskovi'));
+        $this->assertSame([
+            ['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI],
+            ['ime' => self::IME_OPRE_ROMA, 'adresa' => self::OPRE_ROMA, 'izgled' => 'opre-roma'],
+        ], config('uvoz.spiskovi'));
         $this->assertStringNotContainsString('lokalne-samouprave', (string) json_encode(config('uvoz.spiskovi')));
         $this->assertStringNotContainsString('regionalni', mb_strtolower((string) json_encode(config('uvoz.spiskovi'), JSON_UNESCAPED_UNICODE)));
+        $this->assertStringNotContainsString('/rom/', (string) json_encode(config('uvoz.spiskovi')));
+        $this->assertArrayHasKey('opre-roma', UvozSpiska::IZGLEDI);
     }
 
     // Snimak ima devet stavki, tri sa „ZATVOREN" u naslovu; šest otvorenih ulazi kao nacrt, tačnog naslova (latinica), datuma i veze.
@@ -162,6 +171,93 @@ class UvozSpiskaTest extends BazaTestCase
         $prilika = Prilika::query()->firstOrFail();
         $this->assertSame('https://www.nsz.gov.rs/sadrzaj/poziv-bez-adrese/1', $prilika->link_izvora);
         $this->assertNull($prilika->izvor_objavljen);
+    }
+
+    // Paket 84/T5: srpska verzija vesti Opre Roma Srbija (snimak prve strane spiska; opisi, slike i ime osobe u naslovu izbačeni). Strana ima šest vesti sa danom i mesecom bez godine.
+    #[Test]
+    public function vesti_opre_roma_ulaze_kao_nacrti_sa_prve_strane_spiska(): void
+    {
+        Http::fake([self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html'))]);
+
+        $rezultat = app(UvozSpiska::class)->uvezi(self::IME_OPRE_ROMA, self::OPRE_ROMA, 'opre-roma');
+
+        $this->assertNull($rezultat->greska);
+        $this->assertSame(6, $rezultat->novih);
+        $this->assertSame(0, $rezultat->preskoceno);
+        $this->assertSame([
+            'Ako niste spremni da reagujete kada fašizam kuca na vrata Roma, onda niste protiv fašizma',
+            'Nova vizija moći koju vode Romi',
+            'Ime poziva na prekid govora mržnje i ekstremizma u Bujanovcu i traži izvinjenje za romsku zajednicu od odbornika Alternative za promene',
+            'Protest ispred češke ambasade. Romi neće da ćute!',
+            'Rasizam ubija! Romi žele da žive!',
+            'Rom ponovo žrtva policijske brutalnosti!',
+        ], Prilika::query()->orderBy('id')->pluck('naslov')->all());
+
+        $prva = Prilika::query()->orderBy('id')->firstOrFail();
+
+        $this->assertSame('https://opreromasrbija.rs/rs/vesti/blog-28-rs', $prva->link_izvora);
+        $this->assertSame(self::IME_OPRE_ROMA, $prva->naziv_izvora);
+        $this->assertSame(StatusPrilike::Nacrt, $prva->status);
+        $this->assertSame(VrstaPrilike::Drugo, $prva->vrsta);
+        $this->assertNull($prva->rok);
+        $this->assertNull($prva->obradeno_at);
+        // Strana piše „09 / May" bez godine, pa datum objave ostaje prazan (rok bez godine se tada ne prima).
+        $this->assertSame(6, Prilika::query()->whereNull('izvor_objavljen')->count());
+        $this->assertSame(6, Prilika::query()->where('naziv_izvora', self::IME_OPRE_ROMA)->count());
+    }
+
+    // Ogledalo: drugi uvoz ne pravi duplikate, i svaki izgled čita samo svoju stranu.
+    #[Test]
+    public function isti_spisak_opre_roma_drugi_put_ne_pravi_duplikate(): void
+    {
+        Http::fake([self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html'))]);
+
+        app(UvozSpiska::class)->uvezi(self::IME_OPRE_ROMA, self::OPRE_ROMA, 'opre-roma');
+        $drugi = app(UvozSpiska::class)->uvezi(self::IME_OPRE_ROMA, self::OPRE_ROMA, 'opre-roma');
+
+        $this->assertSame(0, $drugi->novih);
+        $this->assertSame(6, $drugi->preskoceno);
+        $this->assertSame(6, Prilika::query()->count());
+    }
+
+    #[Test]
+    public function svaki_izgled_cita_samo_svoju_stranu(): void
+    {
+        Http::fake([self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html')), self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html'))]);
+
+        $opreIzgledomNsz = app(UvozSpiska::class)->uvezi(self::IME_OPRE_ROMA, self::OPRE_ROMA);
+        $nszIzgledomOpre = app(UvozSpiska::class)->uvezi(self::IME_KONKURSI, self::KONKURSI, 'opre-roma');
+
+        $this->assertSame('spisak nije pročitan, izgled strane se verovatno promenio', $opreIzgledomNsz->greska);
+        $this->assertSame('spisak nije pročitan, izgled strane se verovatno promenio', $nszIzgledomOpre->greska);
+        $this->assertSame(0, Prilika::query()->count());
+    }
+
+    #[Test]
+    public function nepoznat_izgled_daje_gresku_bez_poziva_izvora(): void
+    {
+        Http::fake();
+
+        $rezultat = app(UvozSpiska::class)->uvezi('Izvor', self::OPRE_ROMA, 'nema-takav');
+
+        $this->assertSame('nepoznat izgled strane: nema-takav', $rezultat->greska);
+        Http::assertNothingSent();
+        $this->assertSame(0, Prilika::query()->count());
+    }
+
+    // Komanda uzima izgled iz podešavanja: bez toga bi se Opre Roma čitala izgledom NSZ-a i ne bi dala nijednu vest.
+    #[Test]
+    public function komanda_cita_izgled_iz_podesavanja_za_oba_spiska(): void
+    {
+        Http::fake([self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')), self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html'))]);
+
+        $this->artisan('uvoz:spiskovi')
+            ->expectsOutput('Nacionalna služba za zapošljavanje - konkursi: novih 6, preskočeno 3, greška: nema')
+            ->expectsOutput('Opre Roma Srbija - vesti: novih 6, preskočeno 0, greška: nema')
+            ->assertExitCode(0);
+
+        $this->assertSame(12, Prilika::query()->count());
+        $this->assertSame(6, Prilika::query()->where('naziv_izvora', self::IME_OPRE_ROMA)->count());
     }
 
     #[Test]

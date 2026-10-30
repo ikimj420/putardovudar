@@ -15,7 +15,7 @@ return [
         ['ime' => 'Ministarstvo za ljudska i manjinska prava', 'adresa' => 'https://minljmpdd.gov.rs/category/konkursi-i-javni-pozivi-2026/feed/'],
         // Infostud vraća istih 20 poslednjih oglasa na svakoj strani (izmereno 13.10.2026.), pa se čita samo prva.
         ['ime' => 'Infostud Poslovi', 'adresa' => 'https://rss.infostud.com/poslovi/rss.php', 'najvise_strana' => 1],
-        // Sajtovi romskih organizacija (paket 78, izmereno 29.10.2026.). Opre Roma Srbija nije ovde: nema RSS (adrese /feed i /rss vode na početnu stranu u HTML-u).
+        // Sajtovi romskih organizacija (paket 78, izmereno 29.10.2026.). Opre Roma Srbija nije ovde: nema RSS (adrese /feed i /rss vode na početnu stranu u HTML-u), pa je u spiskovima.
         // ERIAC i REF nisu ovde: pišu na engleskom. Forum Roma Srbije ima i engleski feed (/en/feed/), koji se ne uvozi.
         ['ime' => 'Forum Roma Srbije', 'adresa' => 'https://www.frs.org.rs/feed/'],
         ['ime' => 'Kancelarija za inkluziju Roma', 'adresa' => 'https://inkluzijaromavojvodina.rs/feed/'],
@@ -29,8 +29,10 @@ return [
     ],
 
     // Izvori bez RSS-a: strana sa spiskom poziva (HTML). Uvozi ih uvoz:spiskovi; čita se samo prva strana spiska, a naslov sa „ZATVOREN" se preskače.
+    // „izgled" je ključ iz UvozSpiska::IZGLEDI (bez njega „nsz"). Opre Roma: srpska verzija je /rs/vesti (/rom/vesti je na romskom), a datum na strani nema godinu.
     'spiskovi' => [
         ['ime' => 'Nacionalna služba za zapošljavanje - konkursi', 'adresa' => 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10'],
+        ['ime' => 'Opre Roma Srbija - vesti', 'adresa' => 'https://opreromasrbija.rs/rs/vesti', 'izgled' => 'opre-roma'],
     ],
 
     // Ograničenja da jedan izvor ne može da zaglavi uvoz ni da napuni bazu.

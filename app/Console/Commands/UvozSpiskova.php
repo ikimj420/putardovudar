@@ -22,7 +22,7 @@ class UvozSpiskova extends Command
 
         foreach ($spiskovi as $spisak) {
             $ime = (string) ($spisak['ime'] ?? '');
-            $rezultat = $uvoz->uvezi($ime, (string) ($spisak['adresa'] ?? ''));
+            $rezultat = $uvoz->uvezi($ime, (string) ($spisak['adresa'] ?? ''), (string) ($spisak['izgled'] ?? 'nsz'));
 
             $this->line(sprintf('%s: novih %d, preskočeno %d, greška: %s%s', $ime, $rezultat->novih, $rezultat->preskoceno, $rezultat->greska ?? 'nema', $rezultat->dopunjeno > 0 ? ', dopunjen datum objave: '.$rezultat->dopunjeno : ''));
 
