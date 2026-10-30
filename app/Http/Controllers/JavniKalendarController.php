@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\KalendarStavka;
 use App\Models\Prilika;
 use App\Support\Prikaz;
-use App\Support\PrikazKalendara;
 use Illuminate\Contracts\View\View;
 
 class JavniKalendarController extends Controller
@@ -16,8 +15,8 @@ class JavniKalendarController extends Controller
     {
         $stavke = KalendarStavka::javne()->orderBy('otvoreno_do', 'desc')->orderBy('id')->get();
 
-        // Ista stvar je sada otvorena kad javna prilika ima isti link izvora.
-        $otvorene = Prilika::javne()->whereNotNull('link_izvora')->orderBy('id')->get();
+        // Ista stvar je sada otvorena kad je javna prilika koju je Ivan izabrao uz stavku, ili kad javna prilika ima isti link izvora (KalendarStavka::sadaOtvorena).
+        $otvorene = Prilika::javne()->orderBy('id')->get();
 
         $meseci = [];
 
@@ -32,7 +31,7 @@ class JavniKalendarController extends Controller
                     'naziv' => Prikaz::mesec($mesec->month),
                     'stavke' => $uMesecu->map(fn (KalendarStavka $stavka) => [
                         'stavka' => $stavka,
-                        'prilika' => $otvorene->first(fn (Prilika $prilika) => PrikazKalendara::istiLink($prilika->link_izvora, $stavka->link_izvora)),
+                        'prilika' => $stavka->sadaOtvorena($otvorene),
                     ])->all(),
                 ];
             }

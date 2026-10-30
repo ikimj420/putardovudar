@@ -5,13 +5,16 @@ namespace App\Models;
 use App\Enums\Grupa;
 use App\Enums\StatusObjave;
 use App\Support\LinkSajta;
+use App\Support\PrikazKalendara;
 use Database\Factories\KalendarStavkaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -21,14 +24,17 @@ use Illuminate\Validation\ValidationException;
  * @property list<string>|null $grupe
  * @property Carbon|null $otvoreno_od
  * @property Carbon $otvoreno_do
+ * @property int|null $prilika_id
  */
-#[Fillable(['naziv', 'ko_daje', 'grupe', 'otvoreno_od', 'otvoreno_do', 'link_izvora', 'napomena', 'status'])]
+#[Fillable(['naziv', 'ko_daje', 'grupe', 'otvoreno_od', 'otvoreno_do', 'link_izvora', 'prilika_id', 'napomena', 'status'])]
 class KalendarStavka extends Model
 {
     /** @use HasFactory<KalendarStavkaFactory> */
     use HasFactory;
 
     public const PORUKA_BEZ_IZVORA = 'Za objavu je potreban link izvora.';
+
+    public const PORUKA_PRILIKA_NIJE_JAVNA = 'Izaberi priliku koja je sada na sajtu.';
 
     protected $table = 'kalendar_stavke';
 
@@ -45,6 +51,11 @@ class KalendarStavka extends Model
             // Objava bez ispravnog linka izvora ne prolazi, ma odakle stigla.
             if ($stavka->status->jeJavno() && ! LinkSajta::jeIspravan($stavka->link_izvora)) {
                 throw ValidationException::withMessages(['link_izvora' => self::PORUKA_BEZ_IZVORA]);
+            }
+
+            // Nova ručna veza sme samo na javnu priliku; veza koja je već stajala ostaje i kad prilika prestane da bude javna (tada se samo ne vidi).
+            if ($stavka->prilika_id !== null && $stavka->isDirty('prilika_id') && ! self::prilikaJeJavna($stavka->prilika_id)) {
+                throw ValidationException::withMessages(['prilika_id' => self::PORUKA_PRILIKA_NIJE_JAVNA]);
             }
         });
     }
@@ -73,6 +84,27 @@ class KalendarStavka extends Model
     public static function brojMesecaSaStavkama(): int
     {
         return (int) self::query()->javne()->selectRaw('count(distinct month(otvoreno_do)) as broj')->value('broj');
+    }
+
+    public static function prilikaJeJavna(int|string|null $id): bool
+    {
+        return $id !== null && Prilika::javne()->whereKey($id)->exists();
+    }
+
+    /** @return BelongsTo<Prilika, $this> */
+    public function prilika(): BelongsTo
+    {
+        return $this->belongsTo(Prilika::class);
+    }
+
+    // Jedino mesto gde se odlučuje šta je „sada otvoreno" uz stavku (paket 89): prvo prilika koju je Ivan izabrao, ako je javna; inače javna prilika sa istim
+    // linkom izvora. Kad izabrana prilika prestane da bude javna, ostaje samo pravilo linka; bez oba, stavka nema oznaku.
+    /** @param  Collection<int, Prilika>  $javnePrilike prilike koje su sada javne (Prilika::javne) */
+    public function sadaOtvorena(Collection $javnePrilike): ?Prilika
+    {
+        $izabrana = $this->prilika_id === null ? null : $javnePrilike->first(fn (Prilika $prilika) => (int) $prilika->getKey() === (int) $this->prilika_id);
+
+        return $izabrana ?? $javnePrilike->first(fn (Prilika $prilika) => PrikazKalendara::istiLink($prilika->link_izvora, $this->link_izvora));
     }
 
     /** @return list<Grupa> */

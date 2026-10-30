@@ -5,13 +5,17 @@ namespace App\Filament\Resources\Kalendar\Schemas;
 use App\Enums\Grupa;
 use App\Enums\StatusObjave;
 use App\Models\KalendarStavka;
+use App\Models\Prilika;
 use App\Support\Prikaz;
+use App\Support\PrikazKalendara;
+use Closure;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Builder;
 
 class KalendarForm
 {
@@ -52,6 +56,19 @@ class KalendarForm
                     ->required(fn (Get $get): bool => self::statusJeObjavljeno($get('status')))
                     ->validationMessages(['required' => KalendarStavka::PORUKA_BEZ_IZVORA])
                     ->maxLength(2048),
+                // Biraju se samo javne prilike; izabrana koja je u međuvremenu nestala sa sajta i dalje se vidi po imenu, ali se nova takva ne može izabrati.
+                Select::make('prilika_id')
+                    ->label(PrikazKalendara::SADA_OTVORENO_KAO)
+                    ->helperText(PrikazKalendara::SADA_OTVORENO_KAO_OPIS)
+                    ->searchable()
+                    ->options(fn (): array => self::javnePrilike(Prilika::javne()))
+                    ->getSearchResultsUsing(fn (string $search): array => self::javnePrilike(Prilika::javne()->pretraga($search)))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => self::natpis(Prilika::query()->find($value)))
+                    ->rule(fn (?KalendarStavka $record): Closure => function (string $atribut, mixed $vrednost, Closure $neuspeh) use ($record): void {
+                        if ($vrednost !== null && (int) $vrednost !== $record?->prilika_id && ! KalendarStavka::prilikaJeJavna($vrednost)) {
+                            $neuspeh(KalendarStavka::PORUKA_PRILIKA_NIJE_JAVNA);
+                        }
+                    }),
                 Textarea::make('napomena')
                     ->label('Napomena')
                     ->helperText('Šta još treba znati o tom roku (vidi se na sajtu), npr. „Prijave su išle preko eUprave.“')
@@ -65,6 +82,21 @@ class KalendarForm
                     ->live()
                     ->required(),
             ]);
+    }
+
+    /**
+     * @param  Builder<Prilika>  $upit
+     * @return array<int, string> id => natpis, najviše sto, po naslovu
+     */
+    private static function javnePrilike(Builder $upit): array
+    {
+        return $upit->orderBy('naslov')->limit(100)->get()->mapWithKeys(fn (Prilika $prilika): array => [$prilika->getKey() => (string) self::natpis($prilika)])->all();
+    }
+
+    // Isti naslov ume da stoji kod dva izvora, pa uz naslov ide i izvor.
+    private static function natpis(?Prilika $prilika): ?string
+    {
+        return $prilika === null ? null : $prilika->naslov.(filled($prilika->naziv_izvora) ? ' ('.$prilika->naziv_izvora.')' : '');
     }
 
     private static function statusJeObjavljeno(mixed $status): bool

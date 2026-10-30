@@ -25,6 +25,11 @@ final class PrikazKalendara
 
     public const VEC_JE = 'Ova prilika je već u kalendaru.';
 
+    // Admin, polje uz stavku (paket 89); tekstovi su predlog (PITANJA-89.md), Ivan odobrava.
+    public const SADA_OTVORENO_KAO = 'Sada otvoreno kao';
+
+    public const SADA_OTVORENO_KAO_OPIS = 'Izaberi priliku sa sajta koja je ista kao ova stavka. Kalendar tada piše „Sada otvoreno“ dok je prilika na sajtu.';
+
     // „Prošli put: do 26.01.2026." ili, kad se zna i početak, „Prošli put: od 01.12.2025. do 26.01.2026.".
     public static function prosliPut(KalendarStavka $stavka): string
     {
