@@ -12,7 +12,6 @@ use App\Services\Ollama\OllamaNedostupna;
 use App\Support\DatumiUTekstu;
 use App\Support\DatumUTekstu;
 use App\Support\Latinica;
-use App\Support\PoredjenjeTeksta;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Validation\ValidationException;
@@ -41,17 +40,11 @@ TEXT;
     // Razlog objave oglasa za posao, uvek kodov (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md), a Ivan ga je prihvatio 11.10.2026.
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
 
-    // Koliko reči ispred datuma se gleda za reč roka (paket 70).
-    private const NAJVISE_RECI_PRE_DATUMA = 12;
-
-    // Najduža rečenica koju kod uzima kao citat roka celu; duža se seče oko datuma.
-    private const NAJVISE_ZNAKOVA_CITATA_ROKA = 300;
-
-    // Rok bez godine koji pada dalje od ovoliko meseci posle datuma objave ostaje nacrt (paket 84): „5. decembra" u vesti od 8. decembra 2025. nije 5. decembar 2026.
-    private const NAJVISE_MESECI_ROKA_BEZ_GODINE = 6;
+    // Razlog nacrta kad rok ne piše na strani; isti tekst piše i dnevna provera javnih prilika (paket 85), pa ih izbor „Zašto je nacrt" u adminu svrstava zajedno.
+    public const RAZLOG_ROK_NE_PISE = 'rok ne piše u tekstu strane';
 
     // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
-    private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', 'rok ne piše u tekstu strane'];
+    private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', self::RAZLOG_ROK_NE_PISE];
 
     public function __construct(private readonly ModelObrade $model, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
 
@@ -301,69 +294,9 @@ TEXT;
             return [$forma, 'model'];
         }
 
-        $nadjena = $this->recenicaSaRokom($rok, $tekst);
+        $nadjena = CitatRoka::recenicaSaRokom($rok, $tekst);
 
         return $nadjena === null ? [$forma, 'model'] : [[...$forma, 'citat' => $nadjena], 'kod'];
-    }
-
-    // Reč roka mora da stoji najviše 12 reči ispred datuma, i posle prethodnog datuma u rečenici (osim kad ih spaja samo „do" ili crtica, kao u „od 28. septembra do 12.
-    // oktobra"): „Rok za prijavu je 11. oktobra, a radionica je 17. oktobra." dokazuje samo 11. oktobar (paket 70). Prva rečenica sa „rok…" ima prednost; inače prva sa „prijav…",
-    // ili sa „do" uz „otvoren…", „konkurs…" ili „poziv…". Delovi se dele samo pre velikog slova, da „28. septembra" i „12. 10. 2026." ostanu u jednoj rečenici.
-    private function recenicaSaRokom(CarbonImmutable $rok, string $tekst): ?string
-    {
-        $prva = null;
-
-        foreach (preg_split('/(?<=[.!?])\s+(?=\p{Lu})/u', $tekst) ?: [] as $deo) {
-            $deo = trim($deo);
-            $mala = mb_strtolower($deo);
-            $pojave = DatumiUTekstu::pojave($deo);
-
-            foreach ($pojave as $i => $pojava) {
-                if ($pojava['dan'] !== $rok->day || $pojava['mesec'] !== $rok->month || ($pojava['godina'] !== null && $pojava['godina'] !== $rok->year)) {
-                    continue;
-                }
-
-                $pocetak = 0;
-
-                for ($j = $i - 1; $j >= 0; $j--) {
-                    $izmedju = substr($mala, $pojave[$j]['do'], $pojave[$j + 1]['od'] - $pojave[$j]['do']);
-
-                    if (preg_match('/^[\s.,]*(?:do|-|–|—)[\s.,]*$/u', $izmedju) !== 1) {
-                        $pocetak = $pojave[$j]['do'];
-
-                        break;
-                    }
-                }
-
-                $reci = preg_split('/\s+/u', trim(substr($mala, $pocetak, $pojava['od'] - $pocetak)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-                $prozor = PoredjenjeTeksta::normalizuj(implode(' ', array_slice($reci, -self::NAJVISE_RECI_PRE_DATUMA)));
-
-                if (preg_match('/\brok\w*/', $prozor) === 1) {
-                    return $this->okoDatuma($deo, $rok);
-                }
-
-                if ($prva === null && (preg_match('/\bprijav\w*/', $prozor) === 1 || (preg_match('/\bdo\b/', $prozor) === 1 && preg_match('/\b(?:otvoren|konkurs|poziv)\w*/', $prozor) === 1))) {
-                    $prva = $deo;
-                }
-            }
-        }
-
-        return $prva === null ? null : $this->okoDatuma($prva, $rok);
-    }
-
-    // Duga rečenica se seče oko datuma na cele reči (najviše 12 pre i 14 posle), da citat ostane kratak i doslovan.
-    private function okoDatuma(string $recenica, CarbonImmutable $rok): string
-    {
-        $polozaj = mb_strlen($recenica) > self::NAJVISE_ZNAKOVA_CITATA_ROKA ? DatumUTekstu::prviPolozaj($recenica, $rok->day, $rok->month) : null;
-
-        if ($polozaj === null) {
-            return $recenica;
-        }
-
-        $pre = preg_split('/\s+/u', trim(substr($recenica, 0, $polozaj))) ?: [];
-        $posle = preg_split('/\s+/u', trim(substr($recenica, $polozaj))) ?: [];
-
-        return implode(' ', [...array_slice($pre, -12), ...array_slice($posle, 0, 14)]);
     }
 
     // Citat piše na strani samo kao cele reči: „roma" nije na strani na kojoj piše samo „Romania".
@@ -417,18 +350,18 @@ TEXT;
         $citat = TekstStrane::normalizuj((string) $forma['citat']);
 
         if (! $this->pisePoRecima($strana, $citat)) {
-            return ['rok ne piše u tekstu strane', null];
+            return [self::RAZLOG_ROK_NE_PISE, null];
         }
 
         if (! DatumUTekstu::postoji($citat, $forma['rok'])) {
             $rok = $this->rokBezGodine($rok, $citat, $objavljeno);
 
             if ($rok === null) {
-                return ['rok ne piše u tekstu strane', null];
+                return [self::RAZLOG_ROK_NE_PISE, null];
             }
 
-            if ($objavljeno !== null && $rok->greaterThan(CarbonImmutable::parse($objavljeno->toDateString())->addMonthsNoOverflow(self::NAJVISE_MESECI_ROKA_BEZ_GODINE))) {
-                return ['rok bez godine je daleko od datuma objave', null];
+            if ($objavljeno !== null && RokBezGodine::jeDalekoOdObjave($rok, $objavljeno)) {
+                return [RokBezGodine::RAZLOG, null];
             }
         }
 

@@ -102,6 +102,9 @@ class PrilikaForm
                     ->dehydrated(false)
                     ->visible(fn (?Prilika $record): bool => filled($record?->razlog_objave))
                     ->columnSpanFull(),
+                self::predlog('provera', PrikazPrilike::PROVERA_NASLOV, fn (mixed $state): string => PrikazPrilike::provera($state), dug: true)
+                    ->helperText(PrikazPrilike::PROVERA_OPIS)
+                    ->columnSpanFull(),
                 self::predlog('citat_pravila', 'Citat pravila', dug: true)
                     ->helperText('Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.')
                     ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'citat_pravila')))

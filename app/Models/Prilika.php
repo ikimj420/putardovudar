@@ -7,6 +7,8 @@ use App\Enums\KoJeObjavio;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Support\PoredjenjeTeksta;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
 use Database\Factories\PrilikaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -233,6 +235,48 @@ class Prilika extends Model
         $this->save();
 
         return true;
+    }
+
+    // Jedino mesto gde se objavljena prilika vraća u nacrt zbog provere sa stranom izvora (paket 85). Razlog ide u predlog.odbijeno, kao razlozi obrade, pa ga admin vidi u izboru
+    // „Zašto je nacrt"; šta piše na strani ide u predlog.provera.
+    public function vratiUNacrt(string $razlog, string $citat): void
+    {
+        $this->status = StatusPrilike::Nacrt;
+        $this->predlog = [...($this->predlog ?? []), 'odbijeno' => $razlog, 'provera' => ['ishod' => 'nacrt', 'razlog' => $razlog, 'citat' => $citat, 'datum' => today()->toDateString()]];
+        $this->save();
+    }
+
+    // Nov rok koji strana sama piše (paket 85). Stari rok ostaje u predlog.provera; predlog.rok i predlog.citat se slažu sa novim, da ga provera roka bez godine ne bi dirala.
+    public function promeniRok(CarbonInterface $rok, string $citat): void
+    {
+        $this->predlog = [...($this->predlog ?? []), 'rok' => $rok->toDateString(), 'citat' => $citat, 'provera' => ['ishod' => 'rok', 'rok_pre' => $this->rok?->toDateString(), 'rok_posle' => $rok->toDateString(), 'citat' => $citat, 'datum' => today()->toDateString()]];
+        $this->setAttribute('rok', $rok->toDateString());
+        $this->save();
+    }
+
+    // Strana koje nema računa se kao „ne postoji" tek kad je nema dva dana zaredom (paket 85): prvi dan se samo upiše, a svaki odgovor strane brisanje vraća na početak.
+    public function nedostupnaOd(): ?CarbonImmutable
+    {
+        $dan = data_get($this->predlog, 'nedostupna_od');
+
+        return is_string($dan) ? CarbonImmutable::parse($dan)->startOfDay() : null;
+    }
+
+    public function zapamtiNedostupnu(): void
+    {
+        $this->predlog = [...($this->predlog ?? []), 'nedostupna_od' => today()->toDateString()];
+        $this->save();
+    }
+
+    public function zaboraviNedostupnu(): void
+    {
+        $predlog = $this->predlog ?? [];
+
+        if (array_key_exists('nedostupna_od', $predlog)) {
+            unset($predlog['nedostupna_od']);
+            $this->predlog = $predlog === [] ? null : $predlog;
+            $this->save();
+        }
     }
 
     private const RAZLOG_JE_TEKST = "json_type(json_extract(predlog, '$.odbijeno')) = 'STRING'";

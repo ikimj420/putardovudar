@@ -6,6 +6,7 @@ use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use Carbon\CarbonImmutable;
 
 // Tekstovi o prilici koje vidi posetilac, na jednom mestu, da kartica i strana ne pišu isto na dva načina.
 final class PrikazPrilike
@@ -78,6 +79,11 @@ final class PrikazPrilike
 
     public const ARHIVIRANO = 'Arhivirano nacrta: ';
 
+    // Polje u formi prilike: šta je dnevna provera sajta uradila sa njom (paket 85); tekstovi su predlog (PITANJA-85.md), Ivan odobrava.
+    public const PROVERA_NASLOV = 'Provera sajta';
+
+    public const PROVERA_OPIS = 'Šta je dnevna provera našla na strani izvora.';
+
     // Dugme na strani prilike i događaj u kalendaru telefona; tekstovi su predlog (PITANJA-46-52.md, paket 49).
     public const DODAJ_ROK = 'Dodaj rok u telefon';
 
@@ -89,6 +95,27 @@ final class PrikazPrilike
         $model = data_get($prilika->predlog, 'model');
 
         return is_string($model) && $model !== '' ? $model : null;
+    }
+
+    // Šta je provera uradila (predlog.provera, upisuje ga Prilika::vratiUNacrt i promeniRok): „Vraćeno u nacrt 30.10.2026.: rok ne piše u tekstu strane." ili
+    // „Rok promenjen 30.10.2026.: sa 31.10.2026. na 15.11.2026."; uz njih rečenica sa strane, kad je ima. Šta nema oblik zapisa ne piše ništa.
+    public static function provera(mixed $provera): string
+    {
+        if (! is_array($provera) || ! is_string($provera['datum'] ?? null)) {
+            return '';
+        }
+
+        $datum = Prikaz::datum(CarbonImmutable::parse($provera['datum']));
+        $citat = is_string($provera['citat'] ?? null) && $provera['citat'] !== '' ? ' Na strani: „'.$provera['citat'].'“' : '';
+
+        if (($provera['ishod'] ?? null) === 'rok' && is_string($provera['rok_posle'] ?? null)) {
+            $posle = Prikaz::datum(CarbonImmutable::parse($provera['rok_posle']));
+            $pre = is_string($provera['rok_pre'] ?? null) ? 'sa '.Prikaz::datum(CarbonImmutable::parse($provera['rok_pre'])).' na ' : 'na ';
+
+            return 'Rok promenjen '.$datum.': '.$pre.$posle.$citat;
+        }
+
+        return is_string($provera['razlog'] ?? null) ? 'Vraćeno u nacrt '.$datum.': '.$provera['razlog'].'.'.$citat : '';
     }
 
     // Ko je objavio, za admin: „Ivan", ili „Model · claude-haiku-5-5"; bez imena modela samo „Model". Na jednom mestu za karticu i formu.

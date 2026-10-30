@@ -19,7 +19,7 @@ final class TekstStrane
         }
 
         if (! $odgovor->successful()) {
-            throw new StranaNedostupna('strana je odgovorila sa HTTP '.$odgovor->status());
+            throw new StranaNedostupna('strana je odgovorila sa HTTP '.$odgovor->status(), $odgovor->status());
         }
 
         if (strlen($odgovor->body()) > config('uvoz.najvise_bajtova')) {
