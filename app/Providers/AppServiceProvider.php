@@ -6,6 +6,8 @@ use App\Http\Controllers\PomocnikSablonController;
 use App\Services\Claude\Claude;
 use App\Services\Model\ModelObrade;
 use App\Services\Ollama\Ollama;
+use App\Services\RazresivacImena;
+use App\Services\SistemskiRazresivac;
 use App\Support\PrikazPomocnika;
 use App\Support\PrikazPredloga;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -20,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(RazresivacImena::class, SistemskiRazresivac::class);
+
         // Model obrade prilika (MODEL_OBRADE): samo ObradaNacrta i uvoz:obradi traže ModelObrade; pomoćnik i „Napiši moj" traže Ollamu izričito, pa uvek idu lokalno (paket 71).
         // Jedan objekat za ceo prolaz, da se potrošnja zbraja na jednom mestu.
         $this->app->singleton(ModelObrade::class, fn () => config('claude.model_obrade') === 'claude' ? $this->app->make(Claude::class) : $this->app->make(Ollama::class));

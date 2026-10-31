@@ -54,6 +54,11 @@ TEXT;
         try {
             $preuzeta = $this->strana->preuzmi((string) $prilika->link_izvora, $this->model->najviseZnakova());
             $tekst = $preuzeta->tekst;
+        } catch (AdresaNijeJavna $izuzetak) {
+            // Odluka, ne kvar veze: nacrt ostaje sa razlogom i ne obrađuje se svakog dana iznova.
+            $prilika->forceFill(['obradeno_at' => now(), 'predlog' => ['pravilo' => self::PRAVILO, 'odbijeno' => $izuzetak->getMessage(), 'model' => $this->model->model()]])->save();
+
+            return new IshodObrade(IshodObrade::NACRT, $izuzetak->getMessage());
         } catch (StranaNedostupna $izuzetak) {
             return new IshodObrade(IshodObrade::NIJE_OBRADJENO, $izuzetak->getMessage());
         }

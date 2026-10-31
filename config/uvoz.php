@@ -43,6 +43,8 @@ return [
     'najvise_strana' => 5,
     'najvise_stavki' => 50,
     'vreme_cekanja' => 30,
+    // Koliko preusmeravanja se prati pre odbijanja; isto koliko je ranije pratio HTTP klijent sam (Guzzle, 5).
+    'najvise_preusmeravanja' => 5,
     'najvise_bajtova' => 2_000_000,
     'korisnicki_agent' => 'PutardoVudar/0.1 (local learning project)',
 

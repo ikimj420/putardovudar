@@ -11,7 +11,6 @@ use DOMElement;
 use DOMNode;
 use DOMXPath;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use Throwable;
 
 // Uvozi spisak poziva sa HTML strane koja nema RSS (Nacionalna služba za zapošljavanje, Opre Roma Srbija, Ministarstvo turizma i omladine) kao nacrte, istim poljima kao UvozRss; dalje ide ista obrada.
@@ -38,7 +37,7 @@ final class UvozSpiska
         ],
     ];
 
-    public function __construct(private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
+    public function __construct(private readonly JavnoPreuzimanje $preuzimanje, private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
 
     public function uvezi(string $ime, string $adresa, string $izgled = 'nsz'): RezultatUvoza
     {
@@ -51,7 +50,7 @@ final class UvozSpiska
         $dopunjeno = 0;
 
         try {
-            $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa);
+            $odgovor = $this->preuzimanje->preuzmi($adresa);
 
             if (! $odgovor->successful()) {
                 return new RezultatUvoza(greska: 'izvor je odgovorio sa HTTP '.$odgovor->status());
@@ -90,6 +89,8 @@ final class UvozSpiska
                 Prilika::query()->create($podaci);
                 $novih++;
             }
+        } catch (StranaNedostupna $izuzetak) {
+            return new RezultatUvoza($novih, $preskoceno, $izuzetak->getMessage(), $dopunjeno);
         } catch (Throwable $izuzetak) {
             return new RezultatUvoza($novih, $preskoceno, 'neočekivana greška: '.$izuzetak->getMessage(), $dopunjeno);
         }

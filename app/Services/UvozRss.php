@@ -7,7 +7,6 @@ use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Support\Latinica;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use SimpleXMLElement;
 use Throwable;
 
@@ -19,7 +18,7 @@ final class UvozRss
 
     private const INFOSTUD_HTTPS = '#^https://(poslovi\.infostud\.com/)#i';
 
-    public function __construct(private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
+    public function __construct(private readonly JavnoPreuzimanje $preuzimanje, private readonly DopunaDatumaObjave $dopuna = new DopunaDatumaObjave) {}
 
     // Čita strane izvora redom (?paged=2…, WordPress), najviše koliko piše u podešavanju. Prva strana je kao do sada (greška se prijavljuje); druga i dalje staju tiho na prvoj
     // koja ne stigne, nije RSS, nema stavki ili nema nijednu novu vezu (izvor koji ne zna „paged" vraća istu stranu).
@@ -80,7 +79,11 @@ final class UvozRss
     /** @return list<SimpleXMLElement>|RezultatUvoza stavke prve strane ili greška uvoza */
     private function prvaStrana(string $adresa): array|RezultatUvoza
     {
-        $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa);
+        try {
+            $odgovor = $this->preuzimanje->preuzmi($adresa);
+        } catch (StranaNedostupna $izuzetak) {
+            return new RezultatUvoza(greska: $izuzetak->getMessage());
+        }
 
         if (! $odgovor->successful()) {
             return new RezultatUvoza(greska: 'izvor je odgovorio sa HTTP '.$odgovor->status());
@@ -97,7 +100,7 @@ final class UvozRss
     private function sledecaStrana(string $adresa, int $strana): array
     {
         try {
-            $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->get($adresa.(str_contains($adresa, '?') ? '&' : '?').'paged='.$strana);
+            $odgovor = $this->preuzimanje->preuzmi($adresa.(str_contains($adresa, '?') ? '&' : '?').'paged='.$strana);
         } catch (Throwable) {
             return [];
         }
