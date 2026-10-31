@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Http\Controllers\PomocnikSablonController;
 use App\Services\Claude\Claude;
 use App\Services\Model\ModelObrade;
+use App\Services\Ollama\LokalnaAdresa;
 use App\Services\Ollama\Ollama;
 use App\Services\RazresivacImena;
 use App\Services\SistemskiRazresivac;
@@ -24,9 +25,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(RazresivacImena::class, SistemskiRazresivac::class);
 
-        // Model obrade prilika (MODEL_OBRADE): samo ObradaNacrta i uvoz:obradi traže ModelObrade; pomoćnik i „Napiši moj" traže Ollamu izričito, pa uvek idu lokalno (paket 71).
+        // Pomoćnik i „Napiši moj" traže Ollamu izričito i dobijaju je samo uz adresu koja je petlja ili privatna mreža (paket 95).
+        $this->app->bind(Ollama::class, fn () => new Ollama($this->app->make(LokalnaAdresa::class)));
+
+        // Model obrade prilika (MODEL_OBRADE): samo ObradaNacrta i uvoz:obradi traže ModelObrade, bez te granice, jer šalju samo tekst javnih strana.
         // Jedan objekat za ceo prolaz, da se potrošnja zbraja na jednom mestu.
-        $this->app->singleton(ModelObrade::class, fn () => config('claude.model_obrade') === 'claude' ? $this->app->make(Claude::class) : $this->app->make(Ollama::class));
+        $this->app->singleton(ModelObrade::class, fn () => config('claude.model_obrade') === 'claude' ? $this->app->make(Claude::class) : new Ollama);
     }
 
     /**
