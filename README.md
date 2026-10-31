@@ -36,6 +36,7 @@ Sve se puštaju sa `php artisan`, iz glavnog foldera.
 - `prilike:provera`: proverava svaku javnu priliku prema strani izvora. Vraća u nacrt onu koja je zatvorena ili čiji rok ne piše na strani. Nov rok upisuje samo kad ga strana sama piše.
 - `prilike:arhiviraj-stare`: arhivira nacrte kojima je rok prošao pre više od 30 dana.
 - `kalendar:iz-prilika`: od objavljenih prilika kojima je rok prošao pravi nacrte stavki kalendara.
+- `sesije:ocisti`: briše sesije starije od `SESSION_LIFETIME`. U rasporedu se pušta svakog sata.
 - `sabloni:prazna-polja`: upisuje pravila praznih polja u šablone.
 
 Seederi dodaju sadržaj, a ono što već postoji ne diraju. Izuzetak je `Ispravke20261031Seeder`. Puštaju se ovako: `db:seed --class=` i ime.

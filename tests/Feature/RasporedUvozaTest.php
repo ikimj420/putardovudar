@@ -29,11 +29,12 @@ class RasporedUvozaTest extends TestCase
     }
 
     #[Test]
-    public function u_rasporedu_je_samo_dnevni_uvoz_jednom_dnevno_ujutru_po_beogradskom_vremenu(): void
+    public function u_rasporedu_su_samo_dnevni_uvoz_i_ciscenje_sesija_a_uvoz_ide_jednom_dnevno_ujutru_po_beogradskom_vremenu(): void
     {
         $dogadjaj = $this->dnevniUvoz();
 
-        $this->assertCount(1, $this->dogadjaji());
+        $this->assertCount(2, $this->dogadjaji());
+        $this->assertCount(1, array_filter($this->dogadjaji(), fn (Event $drugi) => str_contains($drugi->command, 'sesije:ocisti')));
         $this->assertSame('0 6 * * *', $dogadjaj->expression);
         $this->assertSame('Europe/Belgrade', (string) $dogadjaj->timezone);
     }

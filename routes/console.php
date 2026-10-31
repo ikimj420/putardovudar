@@ -14,3 +14,6 @@ Schedule::command('uvoz:dnevno')
     ->timezone('Europe/Belgrade')
     ->withoutOverlapping(180)
     ->appendOutputTo(storage_path('logs/uvoz-dnevno.log'));
+
+// Svakog sata: stara sesija ne čeka slučajno brisanje (lottery u config/session.php), nego nestane najkasnije sat posle isteka; tako „privremeno pamti" na strani „Privatnost" važi.
+Schedule::command('sesije:ocisti')->hourly();
