@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\AvatarBezSpoljneAdrese;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -45,6 +46,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(self::adresa())
             ->login()
+            ->defaultAvatarProvider(AvatarBezSpoljneAdrese::class)
             ->colors([
                 'primary' => Color::Amber,
             ])
