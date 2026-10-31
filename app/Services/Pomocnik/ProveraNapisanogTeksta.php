@@ -113,22 +113,26 @@ final class ProveraNapisanogTeksta
         return rtrim(mb_strtolower((string) preg_replace('~^(?:https?://)?(?:www\.)?~i', '', trim($tekst))), '/.,;:!?');
     }
 
+    // Jedino mesto gde se ime i tekst svode na isti oblik pre poređenja: mala slova, jedan razmak, ćirilica kao latinica (tekst modela je već latinica).
+    private function zaPoredjenjeImena(string $tekst): string
+    {
+        return trim((string) preg_replace('/[\s\x{00A0}]+/u', ' ', mb_strtolower(Latinica::izCirilice($tekst))));
+    }
+
     // Prva reč teksta je ime autora (cela reč ili niz reči), pa iza njega slovo ili broj ne stoji: „Ana Marković," počinje imenom, „Ana Markovićeva" ne.
     private function pocinjeImenom(string $tekst, string $ime): bool
     {
-        $uporedi = fn (string $v) => trim((string) preg_replace('/[\s\x{00A0}]+/u', ' ', mb_strtolower(Latinica::izCirilice($v))));
-        $ime = $uporedi($ime);
+        $ime = $this->zaPoredjenjeImena($ime);
 
-        return $ime !== '' && preg_match('/^'.preg_quote($ime, '/').'(?![\p{L}\d])/u', $uporedi($tekst)) === 1;
+        return $ime !== '' && preg_match('/^'.preg_quote($ime, '/').'(?![\p{L}\d])/u', $this->zaPoredjenjeImena($tekst)) === 1;
     }
 
     // Model ume da „popravi" ime (upisano „Marko Marković", napisano „Marka Marković"). Ćirilica upisanog imena se poredi kao latinica, jer je i tekst modela već latinica.
     private function imeJeKaoUpisano(string $tekst, string $ime): bool
     {
-        $uporedi = fn (string $v) => trim((string) preg_replace('/[\s\x{00A0}]+/u', ' ', mb_strtolower(Latinica::izCirilice($v))));
-        $ime = $uporedi($ime);
+        $ime = $this->zaPoredjenjeImena($ime);
 
         // Ime je cela reč (ili niz reči): „Marko Markovića" nije „Marko Marković".
-        return $ime === '' || preg_match('/(?<![\p{L}\d])'.preg_quote($ime, '/').'(?![\p{L}\d])/u', $uporedi($tekst)) === 1;
+        return $ime === '' || preg_match('/(?<![\p{L}\d])'.preg_quote($ime, '/').'(?![\p{L}\d])/u', $this->zaPoredjenjeImena($tekst)) === 1;
     }
 }

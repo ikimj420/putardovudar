@@ -70,7 +70,7 @@ class OrganizacijaForm
                     ->label('Sajt')
                     ->helperText('Adresa zvaničnog sajta; bez nje se organizacija ne može objaviti.')
                     ->url()
-                    ->required(fn (Get $get): bool => self::statusJeObjavljeno($get('status')))
+                    ->required(fn (Get $get): bool => StatusObjave::jeJavnaVrednost($get('status')))
                     ->validationMessages(['required' => Organizacija::PORUKA_BEZ_SAJTA])
                     ->maxLength(2048),
                 Repeater::make('usluge')
@@ -100,12 +100,5 @@ class OrganizacijaForm
                     ->live()
                     ->required(),
             ]);
-    }
-
-    private static function statusJeObjavljeno(mixed $status): bool
-    {
-        $status = $status instanceof StatusObjave ? $status : StatusObjave::tryFrom((string) $status);
-
-        return $status?->jeJavno() ?? false;
     }
 }

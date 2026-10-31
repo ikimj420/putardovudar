@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Predlozi\Tables;
 
 use App\Enums\StatusPredloga;
+use App\Filament\DugmadNaKartici;
 use App\Models\Predlog;
 use App\Support\LinkSajta;
 use App\Support\Prikaz;
@@ -19,9 +20,6 @@ use Filament\Tables\Table;
 // Spisak su kartice: jedna kolona na telefonu, tri na laptopu. Jedan podatak po redu; prazna vrednost ne crta red.
 class PredloziTable
 {
-    // Dva dugmeta dele širinu kartice (Filament ih na laptopu ne prelama, pa bi dva od po 100 % izašla iz kartice); jedno samo zauzima celu.
-    private const SIRINA = ['style' => 'flex: 1 1 0; min-width: 0; justify-content: center;'];
-
     public static function configure(Table $table): Table
     {
         return $table
@@ -53,7 +51,7 @@ class PredloziTable
                 Action::make('pregledano')
                     ->label('Pregledano')
                     ->button()
-                    ->extraAttributes(self::SIRINA)
+                    ->extraAttributes(DugmadNaKartici::SIRINA)
                     ->visible(fn (?Predlog $record): bool => $record !== null && $record->status === StatusPredloga::Nov)
                     ->authorize('update')
                     ->action(fn (Predlog $record) => $record->update(['status' => StatusPredloga::Pregledan])),
@@ -61,7 +59,7 @@ class PredloziTable
                     ->label('Obriši')
                     ->button()
                     ->color('gray')
-                    ->extraAttributes(self::SIRINA)
+                    ->extraAttributes(DugmadNaKartici::SIRINA)
                     ->modalHeading('Obrisati predlog?')
                     ->modalDescription('Predlog se briše zauvek.')
                     ->modalSubmitActionLabel('Obriši'),

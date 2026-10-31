@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\Predlog;
+
 // Tekstovi strane „Predloži priliku" koje vidi posetilac, na jednom mestu (kao PrikazPomocnika). Naslov, uvod, polja, natpis i zahvalnica su iz paketa 79;
 // objašnjenja ispod polja, primer, dugme i poruke o grešci su predlog (PITANJA-79.md), Ivan odobrava.
 final class PrikazPredloga
@@ -18,7 +20,7 @@ final class PrikazPredloga
 
     public const OZNAKA_NAPOMENE = 'Napomena (nije obavezna)';
 
-    public const OBJASNJENJE_NAPOMENE = 'Šta je to i do kada traje, ako znaš. Najviše 500 znakova.';
+    public const OBJASNJENJE_NAPOMENE = 'Šta je to i do kada traje, ako znaš. Najviše '.Predlog::NAJVISE_ZNAKOVA_NAPOMENE.' znakova.';
 
     public const PRIMER_NAPOMENE = 'Na primer: Konkurs za stipendije, prijave su do 15. novembra.';
 
@@ -32,9 +34,9 @@ final class PrikazPredloga
 
     public const GRESKA_LINK = 'Link nije ispravan. Mora da počne sa http:// ili https://.';
 
-    public const GRESKA_LINK_DUGACAK = 'Link može imati najviše 2048 znakova.';
+    public const GRESKA_LINK_DUGACAK = 'Link može imati najviše '.Predlog::NAJVISE_ZNAKOVA_LINKA.' znakova.';
 
-    public const GRESKA_NAPOMENA_DUGACKA = 'Napomena može imati najviše 500 znakova.';
+    public const GRESKA_NAPOMENA_DUGACKA = 'Napomena može imati najviše '.Predlog::NAJVISE_ZNAKOVA_NAPOMENE.' znakova.';
 
     public const PREVISE_PREDLOGA = 'Predlozi stižu prebrzo. Probaj ponovo za minut.';
 

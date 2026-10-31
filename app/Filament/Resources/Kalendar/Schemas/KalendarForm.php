@@ -53,7 +53,7 @@ class KalendarForm
                     ->label('Link izvora')
                     ->helperText('Adresa zvaničnog izvora; bez nje se stavka ne može objaviti.')
                     ->url()
-                    ->required(fn (Get $get): bool => self::statusJeObjavljeno($get('status')))
+                    ->required(fn (Get $get): bool => StatusObjave::jeJavnaVrednost($get('status')))
                     ->validationMessages(['required' => KalendarStavka::PORUKA_BEZ_IZVORA])
                     ->maxLength(2048),
                 // Biraju se samo javne prilike; izabrana koja je u međuvremenu nestala sa sajta i dalje se vidi po imenu, ali se nova takva ne može izabrati.
@@ -97,12 +97,5 @@ class KalendarForm
     private static function natpis(?Prilika $prilika): ?string
     {
         return $prilika === null ? null : $prilika->naslov.(filled($prilika->naziv_izvora) ? ' ('.$prilika->naziv_izvora.')' : '');
-    }
-
-    private static function statusJeObjavljeno(mixed $status): bool
-    {
-        $status = $status instanceof StatusObjave ? $status : StatusObjave::tryFrom((string) $status);
-
-        return $status?->jeJavno() ?? false;
     }
 }

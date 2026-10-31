@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Prilike\Tables;
 
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
+use App\Filament\DugmadNaKartici;
 use App\Filament\Resources\Kalendar\KalendarResource;
 use App\Models\Prilika;
 use App\Services\KalendarIzPrilike;
@@ -31,9 +32,6 @@ use Illuminate\Support\Collection;
 // prazna vrednost ne crta red.
 class PrilikeTable
 {
-    // Dva dugmeta dele širinu kartice (Filament ih na laptopu ne prelama, pa bi dva od po 100 % izašla iz kartice); jedno samo zauzima celu.
-    private const SIRINA = ['style' => 'flex: 1 1 0; min-width: 0; justify-content: center;'];
-
     public static function configure(Table $table): Table
     {
         return $table
@@ -101,13 +99,13 @@ class PrilikeTable
             ])
             ->recordActions([
                 // Dugme ide ispod kartice preko cele širine (pravilo za telefon); Filament nema opciju za to, a admin nema svoju temu.
-                EditAction::make()->label('Uredi')->button()->extraAttributes(self::SIRINA),
+                EditAction::make()->label('Uredi')->button()->extraAttributes(DugmadNaKartici::SIRINA),
                 // Samo kad je rok prošao, i samo ko sme da dodaje u kalendar (brava na radnji koja piše). Stavka je nacrt popunjen iz prilike.
                 Action::make('dodajUKalendar')
                     ->label(PrikazKalendara::DODAJ)
                     ->button()
                     ->color('gray')
-                    ->extraAttributes(self::SIRINA)
+                    ->extraAttributes(DugmadNaKartici::SIRINA)
                     ->visible(fn (?Prilika $record): bool => $record !== null && $record->rokJeProsao() && KalendarResource::canCreate())
                     ->authorize(fn (): bool => KalendarResource::canCreate())
                     ->action(function (Prilika $record, Action $action): void {
