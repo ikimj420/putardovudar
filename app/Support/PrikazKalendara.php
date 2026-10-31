@@ -38,11 +38,26 @@ final class PrikazKalendara
         return 'Prošli put: '.$od.'do '.Prikaz::datum($stavka->otvoreno_do);
     }
 
-    // Adrese se porede bez razmaka i bez kose crte na kraju, da isti izvor ne promakne zbog sitnice.
+    // Ista adresa je ista strana: razlika u http/https, „www.", velikim slovima sajta, podrazumevanom portu, kosi crti na kraju i delu iza „#" se ne računa, a putanja i upit se računaju
+    // (strana sa drugim upitom je druga strana, a „novosti.sajt.rs" nije „sajt.rs"). Ono što nije adresa poredi se kao tekst, bez razmaka i kose crte na kraju.
     public static function istiLink(?string $prvi, ?string $drugi): bool
     {
-        $prvi = rtrim(trim((string) $prvi), '/');
+        $prvi = self::kljucLinka((string) $prvi);
 
-        return $prvi !== '' && $prvi === rtrim(trim((string) $drugi), '/');
+        return $prvi !== '' && $prvi === self::kljucLinka((string) $drugi);
+    }
+
+    private static function kljucLinka(string $link): string
+    {
+        $link = rtrim(trim($link), '/');
+        $delovi = parse_url($link);
+
+        if (! is_array($delovi) || ! is_string($delovi['host'] ?? null) || $delovi['host'] === '') {
+            return $link;
+        }
+
+        $port = isset($delovi['port']) && ! in_array($delovi['port'], [80, 443], true) ? ':'.$delovi['port'] : '';
+
+        return (string) preg_replace('/^www\./', '', mb_strtolower($delovi['host'])).$port.rtrim($delovi['path'] ?? '', '/').(isset($delovi['query']) ? '?'.$delovi['query'] : '');
     }
 }
