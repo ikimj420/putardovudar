@@ -22,6 +22,10 @@ return [
     // Modeli 5.5 ne primaju „temperature" (HTTP 400: „deprecated for this model", izmereno 13.10.2026.), pa se ne šalje; za stariji model može da se zada.
     'temperatura' => null,
 
+    // Najviše poziva modela u jednom prolazu uvoz:obradi, za Ollamu i za Claude; posle toga obrada staje, a ostatak čeka sledeći prolaz (paket 95, PITANJA-92 5).
+    // Najviše nacrta obrađenih u jednom danu je 336 (obradeno_at, 30.10.2026.), pa je granica iznad toga; broj je Ivanov (PITANJA-95.md).
+    'najvise_poziva_po_prolazu' => (int) env('OBRADA_NAJVISE_POZIVA', 500),
+
     // Koliko znakova teksta strane ide modelu; isto kao kod Ollame.
     'najvise_znakova' => 12000,
 

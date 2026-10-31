@@ -38,6 +38,7 @@
         <env name="JOOBLE_LOKACIJA" value="Srbija"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="MODEL_OBRADE" value="ollama"/>
+        <env name="OBRADA_NAJVISE_POZIVA" value="500"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

@@ -45,9 +45,18 @@ class UvozObradi extends Command
 
         $objavljeno = 0;
         $nijeObradjeno = 0;
+        $obradjeno = 0;
         $razlozi = [];
+        $najvisePoziva = max(1, (int) config('claude.najvise_poziva_po_prolazu'));
+        $pozivaNaPocetku = $model->potrosnja()->poziva;
 
         foreach ($nacrti as $nacrt) {
+            if ($model->potrosnja()->poziva - $pozivaNaPocetku >= $najvisePoziva) {
+                $this->line(sprintf('Granica od %d poziva modela po prolazu je dostignuta; obrada staje. Čeka sledeći prolaz: %d.', $najvisePoziva, $nacrti->count() - $obradjeno));
+
+                break;
+            }
+
             try {
                 $ishod = $obrada->obradi($nacrt);
             } catch (OllamaNedostupna $izuzetak) {
@@ -68,9 +77,10 @@ class UvozObradi extends Command
             };
 
             $this->line(sprintf('%s (%s): %s', $ishod->ishod === IshodObrade::OBJAVA ? 'objavljen' : ($ishod->ishod === IshodObrade::NACRT ? 'ostaje nacrt' : 'nije obrađen'), $ishod->razlog, $nacrt->naslov));
+            $obradjeno++;
         }
 
-        $this->line(sprintf('Obrađeno nacrta: %d. Objavljeno: %d. Ostalo nacrt: %d. Nije obrađeno: %d.', $nacrti->count() - $nijeObradjeno, $objavljeno, array_sum($razlozi), $nijeObradjeno));
+        $this->line(sprintf('Obrađeno nacrta: %d. Objavljeno: %d. Ostalo nacrt: %d. Nije obrađeno: %d.', $obradjeno - $nijeObradjeno, $objavljeno, array_sum($razlozi), $nijeObradjeno));
 
         foreach ($razlozi as $razlog => $broj) {
             $this->line(sprintf('  nacrt zbog „%s": %d', $razlog, $broj));

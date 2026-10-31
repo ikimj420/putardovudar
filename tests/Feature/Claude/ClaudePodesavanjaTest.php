@@ -17,7 +17,7 @@ class ClaudePodesavanjaTest extends TestCase
     public function bez_env_fajla_podrazumevana_podesavanja_su_ollama_haiku_i_izmerene_cene(): void
     {
         // phpunit.xml zadaje obradu na Ollami i prazan ključ; da bi se videlo šta stoji u podešavanju, ta tri zadavanja se skidaju.
-        foreach (['MODEL_OBRADE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL', 'CLAUDE_ADRESA', 'CLAUDE_VREME_CEKANJA', 'CLAUDE_RAZMISLJANJE'] as $naziv) {
+        foreach (['MODEL_OBRADE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL', 'CLAUDE_ADRESA', 'CLAUDE_VREME_CEKANJA', 'CLAUDE_RAZMISLJANJE', 'OBRADA_NAJVISE_POZIVA'] as $naziv) {
             $this->postaviOkruzenje($naziv, null);
         }
         $this->refreshApplication();
@@ -31,6 +31,7 @@ class ClaudePodesavanjaTest extends TestCase
         $this->assertNull(config('claude.temperatura'));
         $this->assertNull(config('claude.razmisljanje'));
         $this->assertSame(4000, config('claude.najvise_izlaznih_tokena'));
+        $this->assertSame(500, config('claude.najvise_poziva_po_prolazu'));
         $this->assertSame(['claude-haiku-5-5' => ['ulaz' => 0.10, 'izlaz' => 0.50], 'claude-sonnet-5-5' => ['ulaz' => 2.00, 'izlaz' => 10.00]], config('claude.cene'));
     }
 
@@ -57,11 +58,13 @@ class ClaudePodesavanjaTest extends TestCase
         $this->postaviOkruzenje('MODEL_OBRADE', 'claude');
         $this->postaviOkruzenje('CLAUDE_MODEL', 'claude-sonnet-5-5');
         $this->postaviOkruzenje('ANTHROPIC_API_KEY', 'probni-kljuc-nije-pravi');
+        $this->postaviOkruzenje('OBRADA_NAJVISE_POZIVA', '7');
         $this->refreshApplication();
 
         $this->assertSame('claude', config('claude.model_obrade'));
         $this->assertSame('claude-sonnet-5-5', config('claude.model'));
         $this->assertSame('probni-kljuc-nije-pravi', config('claude.kljuc'));
+        $this->assertSame(7, config('claude.najvise_poziva_po_prolazu'));
     }
 
     // Testovi nikad ne vide ključ iz Ivanovog okruženja: phpunit.xml ga prazni, a obradu vraća na Ollamu.
