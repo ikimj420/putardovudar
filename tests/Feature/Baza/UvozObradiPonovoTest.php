@@ -78,11 +78,11 @@ class UvozObradiPonovoTest extends BazaTestCase
         $this->assertSame(1, $this->pozivaOllame());
     }
 
-    // Paket 59/T5 i 63/T3: verzija pravila je 5 (paket 68/T1: nova grupa); nacrt obrađen bilo kojom manjom verzijom (ili bez verzije) se ponovo obrađuje, a obrađen tekućom ne.
+    // Paket 59/T5, 63/T3 i 97/T1: verzija pravila je 6 (paket 84/T1: rok bez godine daleko od objave menja ishod); nacrt obrađen bilo kojom manjom verzijom (ili bez verzije) se ponovo obrađuje, a obrađen tekućom ne.
     #[Test]
     public function ponovo_obradjuje_i_nacrt_obradjen_prethodnom_verzijom_pravila_a_tekucom_ne(): void
     {
-        $this->assertSame(5, ObradaNacrta::PRAVILO);
+        $this->assertSame(6, ObradaNacrta::PRAVILO);
 
         $odbijen = fn (int $verzija) => ['pravilo' => $verzija, 'odbijeno' => 'pravilo za objavu ne važi', 'model' => 'qwen2.5:7b'];
         $starija = $this->starNacrt(['naslov' => 'Starija verzija', 'link_izvora' => 'https://a.test/starija', 'predlog' => $odbijen(ObradaNacrta::PRAVILO - 2)]);

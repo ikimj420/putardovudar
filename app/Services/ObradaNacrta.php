@@ -34,8 +34,9 @@ rok (poslednji dan za prijavu, oblika YYYY-MM-DD, ili null ako u tekstu ne piše
 citat (tačan isečak iz teksta u kome piše rok, ili prazan tekst).
 TEXT;
 
-    // Verzija pravila upisana u predlog; nacrt obrađen starim pravilom je nema, pa ga uvoz:obradi --ponovo prepoznaje.
-    public const PRAVILO = 5;
+    // Verzija pravila upisana u predlog; podiže se uz izmenu koja menja ishod (6: granica za rok bez godine, paket 84/T1), da zapis kaže pod kojim je pravilom nastao.
+    // Nacrt obrađen manjom verzijom (ili bez nje) uzima uvoz:obradi --ponovo; objave ne diraju ni on ni ova verzija.
+    public const PRAVILO = 6;
 
     // Razlog objave oglasa za posao, uvek kodov (admin ga vidi uz priliku); tekst je predlog (PITANJA-63.md), a Ivan ga je prihvatio 11.10.2026.
     public const RAZLOG_POSAO = 'Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.';
