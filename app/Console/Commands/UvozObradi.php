@@ -7,6 +7,7 @@ use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Services\IshodObrade;
 use App\Services\Model\ModelObrade;
+use App\Services\Model\NepoznatModelObrade;
 use App\Services\ObradaNacrta;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Prikaz;
@@ -19,8 +20,18 @@ class UvozObradi extends Command
 
     protected $description = 'Model (Ollama ili Claude, MODEL_OBRADE) predlaže, a kod proverava: nacrti iz uvoza koji ispune pravilo za objavu postaju objavljeni, ostali ostaju nacrti';
 
-    public function handle(ObradaNacrta $obrada, ModelObrade $model): int
+    public function handle(): int
     {
+        // Model se traži ovde, ne u potpisu: pogrešan MODEL_OBRADE tako postaje poruka i izlaz 1, a dnevni posao nastavlja sa ostalim koracima (paket 95).
+        try {
+            $obrada = app(ObradaNacrta::class);
+            $model = app(ModelObrade::class);
+        } catch (NepoznatModelObrade $izuzetak) {
+            $this->line($izuzetak->getMessage());
+
+            return self::FAILURE;
+        }
+
         // Nacrt iz uvoza je onaj koji uvoz ostavlja netaknut: vrsta „Drugo", bez roka, naziv izvora iz config/uvoz.php ili Jooble.
         $upit = Prilika::query()
             ->where('status', StatusPrilike::Nacrt)

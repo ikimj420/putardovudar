@@ -43,6 +43,26 @@ class UvozDnevnoTest extends BazaTestCase
         });
     }
 
+    // Paket 95/T6: pogrešan MODEL_OBRADE obara samo obradu (izlaz 1, poruka), a uvoz i ostali koraci idu; ni Ollama ni Claude ne dobijaju nijedan zahtev.
+    #[Test]
+    public function pogresan_model_obrade_zaustavlja_samo_obradu(): void
+    {
+        config()->set('claude.model_obrade', 'Claude');
+        $this->internet();
+
+        $this->artisan('uvoz:dnevno')
+            ->expectsOutputToContain('→ uvoz:rss')
+            ->expectsOutputToContain('Nepoznata vrednost MODEL_OBRADE')
+            ->expectsOutputToContain('→ prilike:provera')
+            ->expectsOutputToContain('→ kalendar:iz-prilika')
+            ->assertExitCode(1);
+
+        $this->assertSame(3, Prilika::query()->count());
+        $this->assertSame(3, Prilika::query()->whereNull('obradeno_at')->count());
+        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA || str_contains($zahtev->url(), 'anthropic'));
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::FEED);
+    }
+
     #[Test]
     public function dnevni_posao_prvo_uvozi_pa_obradjuje_ono_sto_je_upravo_uvezeno(): void
     {

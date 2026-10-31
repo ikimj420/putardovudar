@@ -22,7 +22,7 @@ U `.env` stoje, između ostalog, ova podešavanja. Vrednosti su tvoje i ne pišu
 
 - `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`: baza.
 - `OLLAMA_ADRESA`, `OLLAMA_MODEL`, `OLLAMA_VREME_CEKANJA`: Ollama.
-- `MODEL_OBRADE`: ko obrađuje nove prilike, `ollama` ili `claude`. Za `claude` treba i `ANTHROPIC_API_KEY`.
+- `MODEL_OBRADE`: ko obrađuje nove prilike, `ollama` ili `claude`. Svaka druga vrednost je greška. Za `claude` treba i `ANTHROPIC_API_KEY`.
 - `JOOBLE_KLJUC`: ključ za poslove sa Jooble-a. Bez njega se taj izvor preskače.
 - `ADMIN_PATH`: bez njega administratorski deo ne postoji.
 - `PREDLOZI_SLANJA_U_MINUTI`, `POMOCNIK_UKUPNO_ZA_PITANJE`, `POMOCNIK_PITANJA_U_MINUTI`: ograničenja slanja.

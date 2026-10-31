@@ -8,6 +8,7 @@ use App\Models\Prilika;
 use App\Models\Sablon;
 use App\Services\Claude\Claude;
 use App\Services\Model\ModelObrade;
+use App\Services\Model\NepoznatModelObrade;
 use App\Services\Ollama\Ollama;
 use App\Services\Pomocnik\PisanjeOdgovora;
 use App\Services\Pomocnik\PisanjeSablona;
@@ -203,17 +204,54 @@ class ModelObradeTest extends BazaTestCase
         Http::assertNotSent(fn (Request $zahtev) => str_contains($zahtev->url(), 'anthropic'));
     }
 
-    // Izbor modela je jedno mesto: ModelObrade je Claude samo kad je MODEL_OBRADE „claude", inače Ollama; klase pomoćnika traže Ollamu izričito.
-    // Sve osim tačnog „claude" je Ollama (greška u kucanju ne šalje strane Claude-u; na kraju obrade piše koji je model radio).
+    // Izbor modela je jedno mesto: ModelObrade je Ollama samo uz tačno „ollama", a Claude samo uz tačno „claude"; sve drugo je greška, ne tiho Ollama (paket 95, PITANJA-92 14).
+    // Greška u kucanju („Claude") i dalje ne šalje strane Claude-u, a sada ne šalje ni Ollami: obrada staje i kaže zašto.
     #[Test]
-    public function svaka_druga_vrednost_od_claude_je_ollama(): void
+    public function samo_tacno_ollama_i_claude_biraju_model(): void
     {
-        foreach (['ollama', '', 'Claude', 'CLAUDE', 'claude ', 'neki-drugi', null] as $vrednost) {
+        foreach (['ollama' => Ollama::class, 'claude' => Claude::class] as $vrednost => $klasa) {
             config()->set('claude.model_obrade', $vrednost);
             $this->app->forgetInstance(ModelObrade::class);
 
-            $this->assertInstanceOf(Ollama::class, app(ModelObrade::class), var_export($vrednost, true));
+            $this->assertInstanceOf($klasa, app(ModelObrade::class), $vrednost);
         }
+    }
+
+    #[Test]
+    public function svaka_druga_vrednost_je_greska_a_poruka_ne_ispisuje_vrednost(): void
+    {
+        Http::fake(['*' => Http::response('{}')]);
+
+        foreach (['', 'Claude', 'CLAUDE', 'claude ', ' ollama', 'Ollama', 'neki-drugi', 'tajna-vrednost-123', null] as $vrednost) {
+            config()->set('claude.model_obrade', $vrednost);
+            $this->app->forgetInstance(ModelObrade::class);
+
+            try {
+                app(ModelObrade::class);
+                $this->fail('Vrednost '.var_export($vrednost, true).' je prošla.');
+            } catch (NepoznatModelObrade $izuzetak) {
+                $this->assertSame('Nepoznata vrednost MODEL_OBRADE: dozvoljeno je „ollama" ili „claude", tačno tako, malim slovima.', $izuzetak->getMessage());
+            }
+        }
+
+        Http::assertNothingSent();
+    }
+
+    // Komanda kaže poruku i vraća 1, bez poziva ijednom modelu i bez diranja nacrta; dnevni posao zato nastavlja sa ostalim koracima (vidi UvozDnevnoTest).
+    #[Test]
+    public function obrada_sa_nepoznatim_modelom_staje_sa_porukom_i_nista_ne_dira(): void
+    {
+        config()->set('claude.model_obrade', 'Claude');
+        $nacrt = $this->nacrt();
+        Http::fake(['*' => $this->strana()]);
+
+        $this->artisan('uvoz:obradi')
+            ->expectsOutput('Nepoznata vrednost MODEL_OBRADE: dozvoljeno je „ollama" ili „claude", tačno tako, malim slovima.')
+            ->assertExitCode(1);
+
+        Http::assertNothingSent();
+        $this->assertNull($nacrt->fresh()->obradeno_at);
+        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
     }
 
     #[Test]
