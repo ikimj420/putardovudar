@@ -52,21 +52,22 @@ class UvozSpiskaTest extends BazaTestCase
     }
 
     // Paket 70/T7: od NSZ-a samo „Konkursi NSZ"; regionalni i lokalni spisak (25 nacrta, nijedna objava u probi 68) nije u podešavanju. Paket 84/T5: uz njega vesti Opre Roma Srbija, sa izgledom strane.
-    // Paket 87/T2: uz njih dva spiska Ministarstva turizma i omladine (feed te strane ima pogrešnu adresu sajta, pa nije uvezen).
+    // Paket 96/T3: dva spiska Ministarstva turizma i omladine (paket 87/T2) skinuta su jer ne daju nijednu objavu, tekst im je u prilozima; izgled „mto" ostaje spreman.
     #[Test]
-    public function podesavanje_ima_spiskove_nsz_opre_roma_i_ministarstva_turizma_i_omladine_sa_imenom_adresom_i_izgledom(): void
+    public function podesavanje_ima_samo_spiskove_nsz_i_opre_roma_sa_imenom_adresom_i_izgledom(): void
     {
         $this->assertSame([
             ['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI],
             ['ime' => self::IME_OPRE_ROMA, 'adresa' => self::OPRE_ROMA, 'izgled' => 'opre-roma'],
-            ['ime' => self::IME_MTO_KONKURSI, 'adresa' => self::MTO_KONKURSI, 'izgled' => 'mto'],
-            ['ime' => self::IME_MTO_POZIVI, 'adresa' => self::MTO_POZIVI, 'izgled' => 'mto'],
         ], config('uvoz.spiskovi'));
-        $this->assertStringNotContainsString('/rss', (string) json_encode(config('uvoz.spiskovi')));
+        $json = (string) json_encode(config('uvoz.spiskovi'));
+        $this->assertStringNotContainsString('mto.gov.rs', $json);
+        $this->assertStringNotContainsString('Ministarstvo turizma', (string) json_encode(config('uvoz.spiskovi'), JSON_UNESCAPED_UNICODE));
         $this->assertArrayHasKey('mto', UvozSpiska::IZGLEDI);
-        $this->assertStringNotContainsString('lokalne-samouprave', (string) json_encode(config('uvoz.spiskovi')));
+        $this->assertStringNotContainsString('/rss', $json);
+        $this->assertStringNotContainsString('lokalne-samouprave', $json);
         $this->assertStringNotContainsString('regionalni', mb_strtolower((string) json_encode(config('uvoz.spiskovi'), JSON_UNESCAPED_UNICODE)));
-        $this->assertStringNotContainsString('/rom/', (string) json_encode(config('uvoz.spiskovi')));
+        $this->assertStringNotContainsString('/rom/', $json);
         $this->assertArrayHasKey('opre-roma', UvozSpiska::IZGLEDI);
     }
 
@@ -334,10 +335,17 @@ class UvozSpiskaTest extends BazaTestCase
         $this->assertSame(0, Prilika::query()->count());
     }
 
-    // Komanda uzima izgled iz podešavanja: bez toga bi se Opre Roma i ministarstvo čitali izgledom NSZ-a i ne bi dali nijednu stavku.
+    // Komanda uzima izgled iz podešavanja: bez toga bi se Opre Roma i ministarstvo čitali izgledom NSZ-a i ne bi dali nijednu stavku. Izgled „mto" se meri sa spiskovima zadatim u testu,
+    // jer ih podešavanje više nema (paket 96/T3).
     #[Test]
     public function komanda_cita_izgled_iz_podesavanja_za_svaki_spisak(): void
     {
+        config()->set('uvoz.spiskovi', [
+            ['ime' => self::IME_KONKURSI, 'adresa' => self::KONKURSI],
+            ['ime' => self::IME_OPRE_ROMA, 'adresa' => self::OPRE_ROMA, 'izgled' => 'opre-roma'],
+            ['ime' => self::IME_MTO_KONKURSI, 'adresa' => self::MTO_KONKURSI, 'izgled' => 'mto'],
+            ['ime' => self::IME_MTO_POZIVI, 'adresa' => self::MTO_POZIVI, 'izgled' => 'mto'],
+        ]);
         Http::fake([
             self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')),
             self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html')),
@@ -354,6 +362,26 @@ class UvozSpiskaTest extends BazaTestCase
 
         $this->assertSame(33, Prilika::query()->count());
         $this->assertSame(21, Prilika::query()->where('naziv_izvora', 'like', 'Ministarstvo turizma i omladine%')->count());
+    }
+
+    // Ogledalo: sa podešavanjem kakvo jeste uvoz čita samo NSZ i Opre Romu, i ne traži nijednu stranu Ministarstva turizma i omladine.
+    #[Test]
+    public function uvoz_spiskova_iz_podesavanja_ne_dira_ministarstvo_turizma_i_omladine(): void
+    {
+        Http::fake([
+            self::KONKURSI => Http::response($this->snimak('nsz-konkursi.html')),
+            self::OPRE_ROMA => Http::response($this->snimak('opre-roma-vesti.html')),
+        ]);
+
+        $this->artisan('uvoz:spiskovi')
+            ->expectsOutput('Nacionalna služba za zapošljavanje - konkursi: novih 6, preskočeno 3, greška: nema')
+            ->expectsOutput('Opre Roma Srbija - vesti: novih 6, preskočeno 0, greška: nema')
+            ->doesntExpectOutputToContain('Ministarstvo turizma')
+            ->assertExitCode(0);
+
+        $this->assertSame(12, Prilika::query()->count());
+        $this->assertSame(0, Prilika::query()->where('naziv_izvora', 'like', 'Ministarstvo turizma%')->count());
+        Http::assertNotSent(fn (Request $zahtev) => str_contains($zahtev->url(), 'mto.gov.rs'));
     }
 
     #[Test]
