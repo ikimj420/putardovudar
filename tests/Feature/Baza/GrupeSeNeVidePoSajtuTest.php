@@ -139,16 +139,16 @@ class GrupeSeNeVidePoSajtuTest extends BazaTestCase
         }
     }
 
-    // Grupe ostaju u podacima: opseg po grupi radi (njega koristi pomoćnik), a tekst „Kome je namenjeno" i dalje postoji za admina i pomoćnika.
+    // Grupe ostaju u podacima: zapis se pretražuje po grupi (pomoćnik traži isto), a tekst „Kome je namenjeno" i dalje postoji za admina i pomoćnika.
     #[Test]
-    public function grupe_ostaju_u_podacima_i_u_opsegu(): void
+    public function grupe_ostaju_u_podacima_i_mogu_da_se_pretraze(): void
     {
         Prilika::factory()->objavljena()->zaGrupe(Grupa::Studenti)->create(['naslov' => 'Javna', 'rok' => '2026-12-15']);
         Prilika::factory()->zaGrupe(Grupa::Studenti)->create(['naslov' => 'Nacrt', 'status' => StatusPrilike::Nacrt, 'rok' => '2026-12-15']);
         Prilika::factory()->objavljena()->create(['naslov' => 'Bez grupe', 'rok' => '2026-12-15']);
 
-        $this->assertSame(2, Prilika::query()->zaGrupu(Grupa::Studenti)->count());
-        $this->assertSame(['Javna'], Prilika::javne()->zaGrupu(Grupa::Studenti)->pluck('naslov')->all());
+        $this->assertSame(2, Prilika::query()->whereJsonContains('grupe', Grupa::Studenti->value)->count());
+        $this->assertSame(['Javna'], Prilika::javne()->whereJsonContains('grupe', Grupa::Studenti->value)->pluck('naslov')->all());
         $this->assertSame('Studenti', PrikazPrilike::grupe(Prilika::query()->where('naslov', 'Javna')->firstOrFail()));
         $this->assertSame('Kome je namenjeno', PrikazPrilike::KOME);
     }

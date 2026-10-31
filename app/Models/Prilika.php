@@ -97,14 +97,6 @@ class Prilika extends Model
         ];
     }
 
-    // Prilika je namenjena grupi kad je grupa u njenom zapisu; prilika bez grupa ne ulazi ni za jednu.
-    /** @param  Builder<Prilika>  $upit */
-    #[Scope]
-    protected function zaGrupu(Builder $upit, Grupa $grupa): void
-    {
-        $upit->whereJsonContains('grupe', $grupa->value);
-    }
-
     /** @return list<Grupa> */
     public function izabraneGrupe(): array
     {

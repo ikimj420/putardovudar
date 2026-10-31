@@ -83,7 +83,7 @@ class PomocnikKratakOdgovorTest extends BazaTestCase
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
         $this->assertSame('Našao sam posao u Nišu.', $odgovor->tekst);
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         $this->assertSame(['Radnik u skladištu'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
 
         $this->odgovorModela = 'Ima posla u Nišu. Za radnika u skladištu. Puno radno vreme. Rok je 15. novembra 2026.';
@@ -98,13 +98,13 @@ class PomocnikKratakOdgovorTest extends BazaTestCase
         $this->odgovorModela = 'Ima posla u Nišu. Za radnika u skladištu. Prijave su do 20. oktobra 2026.';
         $odsecen = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertFalse($odsecen->jeIzSablona());
+        $this->assertNull($odsecen->razlogSablona);
         $this->assertSame('Ima posla u Nišu. Za radnika u skladištu.', $odsecen->tekst);
 
         $this->odgovorModela = 'Prijave su do 20. oktobra 2026. Ima posla u Nišu. Za radnika u skladištu.';
         $izmisljen = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertTrue($izmisljen->jeIzSablona());
+        $this->assertNotNull($izmisljen->razlogSablona);
         $this->assertSame('datum kog nema u zapisima', $izmisljen->razlogSablona);
     }
 

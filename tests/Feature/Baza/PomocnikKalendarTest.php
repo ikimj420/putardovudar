@@ -236,7 +236,7 @@ class PomocnikKalendarTest extends BazaTestCase
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
         $this->assertFalse($odgovor->nemaPodatak);
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         $this->assertSame('Dositeja je prošli put bila otvorena do 26. januara 2026.', $odgovor->tekst);
         $this->assertCount(1, $odgovor->izvori);
 
@@ -288,7 +288,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
-        $this->assertTrue($odgovor->jeIzSablona(), $tekst);
+        $this->assertNotNull($odgovor->razlogSablona, $tekst);
         $this->assertSame('datum kog nema u zapisima', $odgovor->razlogSablona);
         $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV, $odgovor->tekst);
         $this->assertStringContainsString('• Stipendija Dositeja — Prošli put: od 22.12.2025. do 26.01.2026.', $odgovor->tekst);
@@ -321,7 +321,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
-        $this->assertFalse($odgovor->jeIzSablona(), $tekst.' | '.$odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, $tekst.' | '.$odgovor->razlogSablona);
         $this->assertSame($tekst, $odgovor->tekst);
     }
 
@@ -360,7 +360,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
-        $this->assertTrue($odgovor->jeIzSablona(), $tekst);
+        $this->assertNotNull($odgovor->razlogSablona, $tekst);
         $this->assertSame('odgovor predviđa budućnost', $odgovor->razlogSablona);
     }
 
@@ -385,7 +385,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
-        $this->assertTrue($odgovor->jeIzSablona(), $tekst);
+        $this->assertNotNull($odgovor->razlogSablona, $tekst);
     }
 
     // Ogledalo: godina u nazivu stavke nije najava, a mesec i godina roka prilike u odgovoru prolaze; bez njih ista godina ne prolazi.
@@ -399,7 +399,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $stavka->update(['naziv' => 'Dositeja za 2027. godinu']);
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
 
         $stavka->update(['naziv' => 'Stipendija Dositeja']);
         $this->model('Prošli put do 26.01.2026, a sada je rok u januaru 2027.');
@@ -407,7 +407,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         Prilika::factory()->objavljena()->create(['naslov' => 'Dositeja ove godine', 'rok' => '2027-01-15', 'vrsta' => 'stipendija', 'kratak_opis' => 'Stipendija.', 'opis' => 'Stipendija.']);
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
     }
 
     // Datum posle današnjeg dana koji stoji u napomeni stavke se ne prenosi: kalendar ne predviđa ni preko napomene.
@@ -425,7 +425,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
         $this->assertSame(['Dositeja ove godine', 'Stipendija Dositeja'], array_map(fn ($i) => $i->naslov, $odgovor->izvori));
         $this->assertSame([false, true], array_map(fn ($i) => $i->jeKalendar, $odgovor->izvori));
         $this->assertSame(route('prilike.show', $prilika->slug), $odgovor->izvori[0]->adresa);
@@ -439,7 +439,7 @@ class PomocnikKalendarTest extends BazaTestCase
         $this->model('Prijave su trajale do 9. oktobra 2026.');
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
 
         $stavka->update(['napomena' => 'Prijave su trajale do 10. oktobra 2026.']);
         $this->model('Prijave su trajale do 10. oktobra 2026.');
@@ -551,7 +551,7 @@ class PomocnikKalendarTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori(self::PITANJE);
 
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
         $this->assertSame(['Dositeja 2027', 'Stipendija Dositeja'], array_map(fn ($i) => $i->naslov, $odgovor->izvori));
         $this->assertSame([false, true], array_map(fn ($i) => $i->jeKalendar, $odgovor->izvori));
         $this->assertSame(route('prilike.show', $prilika->slug), $odgovor->izvori[0]->adresa);

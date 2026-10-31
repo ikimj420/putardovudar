@@ -257,7 +257,7 @@ class PomocnikGrupeTest extends BazaTestCase
         $this->model();
 
         $this->assertSame(['Javna'], $this->naslovi($this->pitaj('Ja sam student, šta ima za mene?')));
-        $this->assertSame(4, Prilika::query()->zaGrupu(Grupa::Studenti)->count());
+        $this->assertSame(4, Prilika::query()->whereJsonContains('grupe', Grupa::Studenti->value)->count());
     }
 
     // Nema prilike za grupu: „nemam podatak", a model se ne zove drugi put.
@@ -309,6 +309,6 @@ class PomocnikGrupeTest extends BazaTestCase
 
         $this->assertFalse($odgovor->nemaPodatak);
         $this->assertSame(['Stipendija za studente'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
     }
 }

@@ -53,7 +53,7 @@ class PomocnikOpasnaPitanjaTest extends BazaTestCase
         $this->assertSame([], $odgovor->izvori);
         $this->assertTrue($odgovor->odbijeno);
         $this->assertFalse($odgovor->nemaPodatak);
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         Http::assertNothingSent();
     }
 

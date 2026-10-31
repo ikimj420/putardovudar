@@ -18,9 +18,4 @@ final readonly class OdgovorPomocnika
         public bool $odbijeno = false,
         public array $ponude = [],
     ) {}
-
-    public function jeIzSablona(): bool
-    {
-        return $this->razlogSablona !== null;
-    }
 }

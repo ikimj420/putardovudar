@@ -45,7 +45,7 @@ class ObecanjeUPrvomLicuUOdgovoruTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertTrue($odgovor->jeIzSablona());
+        $this->assertNotNull($odgovor->razlogSablona);
         $this->assertSame('obećanje u prvom licu', $odgovor->razlogSablona);
         $this->assertStringNotContainsString('Javiću', $odgovor->tekst);
         $this->assertSame(['Radnik u skladištu'], array_map(fn ($izvor) => $izvor->naslov, $odgovor->izvori));
@@ -59,7 +59,7 @@ class ObecanjeUPrvomLicuUOdgovoruTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertTrue($odgovor->jeIzSablona());
+        $this->assertNotNull($odgovor->razlogSablona);
         $this->assertSame('obećanje u prvom licu', $odgovor->razlogSablona);
         $this->assertStringNotContainsString('Javićemo', $odgovor->tekst);
     }
@@ -72,7 +72,7 @@ class ObecanjeUPrvomLicuUOdgovoruTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         $this->assertSame('Našao sam posao u Nišu. Rok je 15.11.2026.', $odgovor->tekst);
     }
 }

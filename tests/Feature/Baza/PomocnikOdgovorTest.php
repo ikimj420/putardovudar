@@ -80,7 +80,7 @@ class PomocnikOdgovorTest extends BazaTestCase
         $odgovor = $this->pitaj();
 
         $this->assertSame('U Nišu postoji posao radnika u skladištu, prijave su do 15. novembra 2026.', $odgovor->tekst);
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         $this->assertFalse($odgovor->nemaPodatak);
         $this->assertCount(1, $odgovor->izvori);
 
@@ -117,7 +117,7 @@ class PomocnikOdgovorTest extends BazaTestCase
 
         $odgovor = $this->pitaj();
 
-        $this->assertTrue($odgovor->jeIzSablona());
+        $this->assertNotNull($odgovor->razlogSablona);
         $this->assertSame(Pomocnik::SABLON_NASLOV."\n• Radnik u skladištu — Rok: 15.11.2026.", $odgovor->tekst);
         $this->assertCount(1, $odgovor->izvori);
     }
@@ -143,7 +143,7 @@ class PomocnikOdgovorTest extends BazaTestCase
 
         $odgovor = $this->pitaj();
 
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
         $this->assertSame($odgovorModela, $odgovor->tekst);
     }
 
@@ -156,7 +156,7 @@ class PomocnikOdgovorTest extends BazaTestCase
         $odgovor = $this->pitaj();
 
         $this->assertSame('Da tražite pismo, rok je 15. novembra 2026.', $odgovor->tekst);
-        $this->assertFalse($odgovor->jeIzSablona(), (string) $odgovor->razlogSablona);
+        $this->assertNull($odgovor->razlogSablona, (string) $odgovor->razlogSablona);
         $this->assertSame(0, preg_match('/\p{Cyrillic}/u', $odgovor->tekst));
     }
 
@@ -179,7 +179,7 @@ class PomocnikOdgovorTest extends BazaTestCase
         $odgovor = $this->pitaj();
 
         $this->assertSame('Radnik u skladištu. Radnik u skladištu.', $odgovor->tekst);
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
     }
 
     /** @return array<string, array{0: string, 1: string}> */

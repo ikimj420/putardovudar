@@ -12,7 +12,6 @@ use App\Models\User;
 use App\Support\PrikazPrilike;
 use Filament\Forms\Components\Select;
 use Livewire\Livewire;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AdminBazaTestCase;
@@ -69,20 +68,6 @@ class PrilikaGrupeTest extends AdminBazaTestCase
         }
 
         $this->assertNull(Prilika::factory()->create()->fresh()->grupe);
-    }
-
-    #[Test]
-    #[DataProvider('grupe')]
-    public function opseg_vraca_samo_prilike_koje_su_namenjene_toj_grupi(Grupa $grupa): void
-    {
-        $naslov = 'Prilika '.$grupa->value;
-        Prilika::factory()->zaGrupe($grupa)->create(['naslov' => $naslov]);
-        Prilika::factory()->zaGrupe($grupa, ...array_values(array_filter(Grupa::cases(), fn (Grupa $druga) => $druga !== $grupa)))->create(['naslov' => 'Sve grupe '.$grupa->value]);
-        // Ogledala: prilika bez grupa i prilika samo za druge grupe ne ulaze.
-        Prilika::factory()->create(['naslov' => 'Bez grupa']);
-        Prilika::factory()->zaGrupe(...array_values(array_filter(Grupa::cases(), fn (Grupa $druga) => $druga !== $grupa)))->create(['naslov' => 'Samo druge '.$grupa->value]);
-
-        $this->assertEqualsCanonicalizing([$naslov, 'Sve grupe '.$grupa->value], Prilika::zaGrupu($grupa)->pluck('naslov')->all());
     }
 
     #[Test]

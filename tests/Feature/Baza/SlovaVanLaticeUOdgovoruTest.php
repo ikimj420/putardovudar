@@ -47,7 +47,7 @@ class SlovaVanLaticeUOdgovoruTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertTrue($odgovor->jeIzSablona());
+        $this->assertNotNull($odgovor->razlogSablona);
         $this->assertSame('slova koja nisu latinica', $odgovor->razlogSablona);
         $this->assertStringStartsWith(Pomocnik::SABLON_NASLOV, $odgovor->tekst);
         $this->assertStringContainsString('Radnik u skladištu', $odgovor->tekst);
@@ -65,7 +65,7 @@ class SlovaVanLaticeUOdgovoruTest extends BazaTestCase
         $this->odgovorModela = "\u{041D}\u{0430}\u{0448}\u{0430}\u{043E} \u{0441}\u{0430}\u{043C} \u{043F}\u{043E}\u{0441}\u{0430}\u{043E}.";
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         $this->assertSame('Našao sam posao.', $odgovor->tekst);
     }
 
@@ -88,7 +88,7 @@ class SlovaVanLaticeUOdgovoruTest extends BazaTestCase
 
         $odgovor = app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
 
-        $this->assertFalse($odgovor->jeIzSablona());
+        $this->assertNull($odgovor->razlogSablona);
         $this->assertSame('Našao sam posao u Nišu. Rok je u novembru.', $odgovor->tekst);
     }
 

@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -89,12 +88,6 @@ class KalendarStavka extends Model
     public static function prilikaJeJavna(int|string|null $id): bool
     {
         return $id !== null && Prilika::javne()->whereKey($id)->exists();
-    }
-
-    /** @return BelongsTo<Prilika, $this> */
-    public function prilika(): BelongsTo
-    {
-        return $this->belongsTo(Prilika::class);
     }
 
     // Jedino mesto gde se odlučuje šta je „sada otvoreno" uz stavku (paket 89): prvo prilika koju je Ivan izabrao, ako je javna; inače javna prilika sa istim
