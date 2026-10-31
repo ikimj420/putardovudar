@@ -43,6 +43,9 @@ TEXT;
     // Razlog nacrta kad rok ne piše na strani; isti tekst piše i dnevna provera javnih prilika (paket 85), pa ih izbor „Zašto je nacrt" u adminu svrstava zajedno.
     public const RAZLOG_ROK_NE_PISE = 'rok ne piše u tekstu strane';
 
+    // Razlog nacrta kad je rok sa strane dokazan citatom, ali je već prošao; po njemu dnevni posao arhivira stare nacrte (Prilika::zaArhiviranje).
+    public const RAZLOG_ROK_PROSAO = 'rok je prošao';
+
     // Razlozi zbog kojih nacrt nema rok koji piše na strani (ostali razlozi su ispred provere roka); samo tada se za Infostud traži datum isteka oglasa.
     private const RAZLOZI_BEZ_ROKA = ['nema ispravnog roka', self::RAZLOG_ROK_NE_PISE];
 
@@ -370,7 +373,7 @@ TEXT;
             }
         }
 
-        return [$rok->lessThan(today()) ? 'rok je prošao' : null, $rok];
+        return [$rok->lessThan(today()) ? self::RAZLOG_ROK_PROSAO : null, $rok];
     }
 
     // Dan i mesec iz odgovora moraju da pišu u citatu bez godine; godina je ona u kojoj je taj dan prvi put posle datuma objave. Bez datuma

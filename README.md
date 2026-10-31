@@ -34,7 +34,7 @@ Sve se puštaju sa `php artisan`, iz glavnog foldera.
 - `uvoz:dnevno`: dnevni posao. Zove `uvoz:rss`, `uvoz:spiskovi`, `uvoz:jooble`, `uvoz:obradi`, `prilike:provera` i `prilike:arhiviraj-stare`, pa `kalendar:iz-prilika`. U rasporedu se pušta svakog dana u 06:00.
 - `uvoz:obradi --ponovo`: ponovo obrađuje nacrte koje je obradilo starije pravilo.
 - `prilike:provera`: proverava svaku javnu priliku prema strani izvora. Vraća u nacrt onu koja je zatvorena ili čiji rok ne piše na strani. Nov rok upisuje samo kad ga strana sama piše. Ako bi u nacrt otišlo previše prilika odjednom, ne upisuje ništa; granica je u `config/uvoz.php`.
-- `prilike:arhiviraj-stare`: arhivira nacrte kojima je rok prošao pre više od 30 dana.
+- `prilike:arhiviraj-stare`: arhivira nacrte kojima je rok prošao pre više od 30 dana. Rok je u koloni ili, uz razlog „rok je prošao", u predlogu obrade.
 - `kalendar:iz-prilika`: od objavljenih prilika kojima je rok prošao pravi nacrte stavki kalendara.
 - `sesije:ocisti`: briše sesije starije od `SESSION_LIFETIME`. U rasporedu se pušta svakog sata.
 - `sabloni:prazna-polja`: upisuje pravila praznih polja u šablone.

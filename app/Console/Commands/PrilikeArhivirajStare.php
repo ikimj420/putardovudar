@@ -9,7 +9,7 @@ class PrilikeArhivirajStare extends Command
 {
     protected $signature = 'prilike:arhiviraj-stare';
 
-    protected $description = 'Arhivira nacrte kojima je rok prošao pre više od 30 dana; objavljene ne dira';
+    protected $description = 'Arhivira nacrte kojima je rok prošao pre više od 30 dana (rok iz kolone ili, uz razlog „rok je prošao", iz predloga obrade); objavljene ne dira';
 
     // Koji nacrti su stari kaže Prilika::zaArhiviranje, a arhivira samo Prilika::arhiviraj (paket 86, Ivan 30.10.2026.). Bez brisanja; arhivirano se ne vraća u obradu ni na sajt.
     public function handle(): int

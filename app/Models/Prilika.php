@@ -6,6 +6,7 @@ use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
+use App\Services\ObradaNacrta;
 use App\Support\PoredjenjeTeksta;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -240,12 +241,21 @@ class Prilika extends Model
     // Koliko dana posle roka nacrt čeka pre nego što ga dnevni posao arhivira (paket 86/T2b, Ivan 30.10.2026.).
     public const DANA_DO_ARHIVIRANJA = 30;
 
-    // Nacrt kome je rok prošao pre više od DANA_DO_ARHIVIRANJA dana; objavljene i već arhivirane se ne hvataju. Komanda prilike:arhiviraj-stare pita ovde.
+    // Nacrt kome je rok prošao pre više od DANA_DO_ARHIVIRANJA dana: po koloni „rok", a kad je ona prazna, po datumu iz predloga obrade (predlog.rok) uz razlog „rok je prošao" (dokazan citatom
+    // sa strane). Drugi razlozi se ne računaju: tamo je datum samo tvrdnja modela (paket 96, PITANJA-86 3). Objavljene i arhivirane se ne hvataju.
     /** @param  Builder<Prilika>  $upit */
     #[Scope]
     protected function zaArhiviranje(Builder $upit): void
     {
-        $upit->nacrti()->rokProsao()->where('prilike.rok', '<', today()->subDays(self::DANA_DO_ARHIVIRANJA)->toDateString());
+        $granica = today()->subDays(self::DANA_DO_ARHIVIRANJA)->toDateString();
+
+        $upit->nacrti()->where(fn (Builder $uslov) => $uslov
+            ->where(fn (Builder $poKoloni) => $poKoloni->rokProsao()->where('prilike.rok', '<', $granica))
+            ->orWhere(fn (Builder $poPredlogu) => $poPredlogu->nacrtZbog(ObradaNacrta::RAZLOG_ROK_PROSAO)
+                ->whereNull('prilike.rok')
+                ->where('prilike.rok_stalno_otvoren', false)
+                ->whereRaw("json_unquote(json_extract(prilike.predlog, '$.rok')) regexp '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'")
+                ->whereRaw("json_unquote(json_extract(prilike.predlog, '$.rok')) < ?", [$granica])));
     }
 
     // Jedino mesto gde se objavljena prilika vraća u nacrt zbog provere sa stranom izvora (paket 85). Razlog ide u predlog.odbijeno, kao razlozi obrade, pa ga admin vidi u izboru
