@@ -16,7 +16,8 @@ class JavniKalendarController extends Controller
         $stavke = KalendarStavka::javne()->orderBy('otvoreno_do', 'desc')->orderBy('id')->get();
 
         // Ista stvar je sada otvorena kad je javna prilika koju je Ivan izabrao uz stavku, ili kad javna prilika ima isti link izvora (KalendarStavka::sadaOtvorena).
-        $otvorene = Prilika::javne()->orderBy('id')->get();
+        // Od prilike trebaju samo id i link (poređenje) i slug i naslov (veza i natpis), pa se ostale kolone ne učitavaju (paket 97).
+        $otvorene = Prilika::javne()->orderBy('id')->get(['id', 'slug', 'naslov', 'link_izvora']);
 
         $meseci = [];
 
