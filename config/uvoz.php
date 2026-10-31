@@ -42,6 +42,8 @@ return [
     // Strane po izvoru (?paged=2…): izvor koji ne zna „paged" ima svoj „najvise_strana" => 1 uz ime i adresu.
     'najvise_strana' => 5,
     'najvise_stavki' => 50,
+    // Najviše prilika koje dnevna provera sme da vrati u nacrt u jednom prolazu (prilike:provera); više od toga znači da je izvor verovatno promenio izgled, pa se ne upisuje ništa.
+    'provera_najvise_u_nacrt' => 10,
     'vreme_cekanja' => 30,
     // Koliko preusmeravanja se prati pre odbijanja; isto koliko je ranije pratio HTTP klijent sam (Guzzle, 5).
     'najvise_preusmeravanja' => 5,
