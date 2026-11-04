@@ -170,7 +170,7 @@ class NapisiMojTest extends BazaTestCase
     public function tekst_modela_koji_prolazi_proveru_se_prikazuje_i_ide_jedan_poziv(): void
     {
         $sablon = $this->sablon();
-        $this->model("Ana Anić\n\nMolim vas za pomoć. Hvala.\n\n11.10.2026.");
+        $this->model("[IME]\n\nMolim vas za pomoć. Hvala.\n\n11.10.2026.");
 
         $html = $this->napisi($sablon)->assertOk()->getContent();
 
@@ -189,7 +189,8 @@ class NapisiMojTest extends BazaTestCase
                 && ! LazniClaude::jeJson($zahtev)
                 && str_contains(LazniClaude::uputstvo($zahtev), 'Koristi samo ono što je čovek upisao')
                 && str_contains($poruka, "Šablon:\n{ime}\n\nMolim: {tekst}\n\n{datum}")
-                && str_contains($poruka, "Upisano:\n{ime} (Ime i prezime): Ana Anić\n{tekst} (Šta moliš): Molim za pomoć.\nHvala.\n{datum} (Datum): 11.10.2026.");
+                && str_contains($poruka, "Upisano:\n{ime} (Ime i prezime): [IME]\n{tekst} (Šta moliš): Molim za pomoć.\nHvala.\n{datum} (Datum): 11.10.2026.")
+                && ! str_contains($poruka, 'Ana Anić');
         });
     }
 
@@ -214,7 +215,7 @@ class NapisiMojTest extends BazaTestCase
             return ! str_contains($poruka, 'Primer') && ! str_contains($poruka, 'primer')
                 && ! str_contains($uputstvo, 'primer') && ! str_contains($uputstvo, 'Primer')
                 && str_starts_with($poruka, "Šablon:\n{ime}\n\nMolim: {tekst}\n\n{datum}")
-                && str_ends_with($poruka, "Upisano:\n{ime} (Ime i prezime): Ana Anić");
+                && str_ends_with($poruka, "Upisano:\n{ime} (Ime i prezime): [IME]");
         });
     }
 
@@ -373,18 +374,18 @@ class NapisiMojTest extends BazaTestCase
     #[Test]
     public function polje_se_kraci_na_granicu(): void
     {
-        $sablon = $this->sablon(['polja' => [['kljuc' => 'ime', 'oznaka' => 'Ime', 'objasnjenje' => null, 'dugo' => false]], 'tekst' => '{ime}']);
+        $sablon = $this->sablon(['polja' => [['kljuc' => 'tekst', 'oznaka' => 'Tekst', 'objasnjenje' => null, 'dugo' => true]], 'tekst' => '{tekst}']);
         $this->model('x');
         $granica = SklapanjeSablona::NAJVISE_ZNAKOVA_POLJA;
 
         foreach ([$granica + 50, $granica] as $duzina) {
-            $this->napisi($sablon, ['ime' => str_repeat('a', $duzina)])->assertOk();
+            $this->napisi($sablon, ['tekst' => str_repeat('a', $duzina)])->assertOk();
 
-            Http::assertSent(fn (Request $zahtev) => str_ends_with(LazniClaude::poruka($zahtev), "Upisano:\n{ime} (Ime): ".str_repeat('a', $granica)));
+            Http::assertSent(fn (Request $zahtev) => str_ends_with(LazniClaude::poruka($zahtev), "Upisano:\n{tekst} (Tekst): ".str_repeat('a', $granica)));
         }
 
         $this->model(null);
-        $this->assertSame(str_repeat('a', $granica), $this->napisan($this->napisi($sablon, ['ime' => str_repeat('a', $granica + 50)])->getContent()), 'sklopljen tekst je isti');
+        $this->assertSame(str_repeat('a', $granica), $this->napisan($this->napisi($sablon, ['tekst' => str_repeat('a', $granica + 50)])->getContent()), 'sklopljen tekst je isti');
     }
 
     // Isto ograničenje kao za pitanja: broji se zajedno (isti ključ), preko granice stiže poruka sa upisanim, a model se ne zove.

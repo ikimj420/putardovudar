@@ -38,7 +38,7 @@ class NapisiMojRodTest extends BazaTestCase
         parent::setUp();
 
         Http::preventStrayRequests();
-        // Tekst modela ponavlja upisano ime, jer ga provera traži (paket 67); šablon bez polja „ime" dobija tekst bez imena.
+        // Tekst modela ponavlja oznaku [IME] koju je dobio, a aplikacija upisuje ime (paket 100); šablon bez polja „ime" dobija tekst bez imena.
         Http::fake([self::MODEL => function (Request $zahtev) {
             preg_match('/\{ime\} \(Ime i prezime\): (.+)/', (string) LazniClaude::poruka($zahtev), $ime);
 

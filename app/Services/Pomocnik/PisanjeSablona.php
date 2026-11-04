@@ -21,7 +21,11 @@ Napiši tekst po šablonu, na srpskom jeziku latinicom. Vrati samo taj tekst.
 Drži se oblika šablona.
 Koristi samo ono što je čovek upisao. Ne dodaj iskustvo, škole, imena, datume, brojeve, adrese ni linkove kojih nema u upisanom.
 Ono što nije upisano izostavi.
+Oznake u uglastim zagradama ([IME], [ADRESA], [TELEFON], [EPOSTA]) prepiši tačno kako piše; ne menjaj ih i ne dodaj druge.
 TEXT;
+
+    // Ime i prezime, adresa, telefon i e-pošta ne idu Claude-u nego oznake; aplikacija ih upisuje u gotov tekst (paket 100, Ivan, 05.11.2026.). Ključ je ključ polja u šablonu.
+    private const LICNA_POLJA = ['ime' => '[IME]', 'adresa' => '[ADRESA]', 'telefon' => '[TELEFON]', 'email' => '[EPOSTA]', 'eposta' => '[EPOSTA]'];
 
     // Model rod dobija izričito, sa primerima oblika.
     private const ROD = [
@@ -40,9 +44,9 @@ TEXT;
         $slozen = SklapanjeSablona::sklopi($sablon, $unosi, $rod);
 
         try {
-            $tekst = Latinica::izCirilice($this->model->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $rod), (int) config('pomocnik.ukupno_za_pitanje')));
+            $tekst = strtr(Latinica::izCirilice($this->model->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $rod), (int) config('pomocnik.ukupno_za_pitanje'))), $this->licneVrednosti($sablon, $unosi));
             $ime = in_array(RodIzImena::POLJE, $sablon->kljucevi(), true) ? ($unosi[RodIzImena::POLJE] ?? '') : null;
-            $razlog = $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), $ime, $this->komePrazno($sablon, $unosi) ? $ime : null);
+            $razlog = $this->ostalaOznaka($tekst) ? 'model je dodao oznaku kojoj nema vrednosti' : $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), $ime, $this->komePrazno($sablon, $unosi) ? $ime : null);
         } catch (OllamaNedostupna) {
             return new NapisanTekst($slozen, false, 'model ne odgovara');
         } catch (Throwable $izuzetak) {
@@ -53,6 +57,32 @@ TEXT;
         }
 
         return $razlog === null ? new NapisanTekst($tekst, true) : new NapisanTekst($slozen, false, $razlog);
+    }
+
+    // Oznaka => šta je čovek upisao (latinicom), samo za lična polja koja su popunjena. Jedan prolaz (strtr): vrednost koja liči na oznaku se ne zamenjuje drugom vrednošću.
+    /**
+     * @param  array<string, string>  $unosi
+     * @return array<string, string>
+     */
+    private function licneVrednosti(Sablon $sablon, array $unosi): array
+    {
+        $vrednosti = [];
+
+        foreach ($sablon->kljucevi() as $kljuc) {
+            $vrednost = trim($unosi[$kljuc] ?? '');
+
+            if (isset(self::LICNA_POLJA[$kljuc]) && $vrednost !== '') {
+                $vrednosti[self::LICNA_POLJA[$kljuc]] = Latinica::izCirilice($vrednost);
+            }
+        }
+
+        return $vrednosti;
+    }
+
+    // Oznaka koja je ostala posle upisivanja nema vrednost (polje je prazno ili je model izmislio oznaku, ili je napisao drugim slovima): tekst se ne prima, stoji složen šablon.
+    private function ostalaOznaka(string $tekst): bool
+    {
+        return preg_match('/\[(?:ime|adresa|telefon|eposta)\]/iu', $tekst) === 1;
     }
 
     // Šablon ima polje „kome", a čovek ga je ostavio prazno: pozdrav ne sme da bude ime autora (paket 70).
@@ -81,7 +111,7 @@ TEXT;
             $vrednost = is_string($kljuc) ? trim($unosi[$kljuc] ?? '') : '';
 
             if ($vrednost !== '') {
-                $upisano[] = '{'.$kljuc.'} ('.($polje['oznaka'] ?? $kljuc).'): '.$vrednost;
+                $upisano[] = '{'.$kljuc.'} ('.($polje['oznaka'] ?? $kljuc).'): '.(self::LICNA_POLJA[$kljuc] ?? $vrednost);
             }
         }
 
