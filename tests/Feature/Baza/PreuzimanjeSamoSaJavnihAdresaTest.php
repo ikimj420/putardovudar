@@ -373,4 +373,41 @@ class PreuzimanjeSamoSaJavnihAdresaTest extends BazaTestCase
         $this->expectException(AdresaNijeJavna::class);
         $this->preuzmi('https://a.test/druga');
     }
+
+    #[Test]
+    public function uvoz_sa_imenom_koje_se_ne_razresava_javlja_da_strana_ne_odgovara_a_ne_da_adresa_nije_javna(): void
+    {
+        $this->razresivac()->postavi('nepostoji.invalid', []);
+        $this->razresivac()->postavi('interno.invalid', ['10.0.0.5']);
+        Http::fake(['*' => Http::response('x')]);
+
+        $this->assertSame(self::NE_ODGOVARA, $this->app->make(UvozRss::class)->uvezi('Izvor A', 'https://nepostoji.invalid/feed')->greska);
+        $this->assertSame(self::NE_ODGOVARA, $this->app->make(UvozSpiska::class)->uvezi('Spisak', 'https://nepostoji.invalid/spisak')->greska);
+        // Ogledalo: ime koje se razrešava na privatnu mrežu je i dalje odluka.
+        $this->assertSame(self::RAZLOG, $this->app->make(UvozRss::class)->uvezi('Izvor A', 'https://interno.invalid/feed')->greska);
+        $this->assertSame(self::RAZLOG, $this->app->make(UvozSpiska::class)->uvezi('Spisak', 'https://interno.invalid/spisak')->greska);
+        Http::assertNothingSent();
+    }
+
+    // Dnevna provera: ime koje se ne razrešava nije dokaz ni za šta, kao jednom nedostupna strana. Prilika ostaje objavljena, ništa se ne upisuje, ni sutradan.
+    #[Test]
+    public function provera_ne_dira_priliku_ciji_se_link_ne_razresava(): void
+    {
+        $this->razresivac()->postavi('nepostoji.invalid', []);
+        $prilika = Prilika::factory()->objavljena()->create(['rok' => '2026-11-15', 'link_izvora' => 'https://nepostoji.invalid/poziv']);
+        $pre = $prilika->fresh()->getAttributes();
+        Http::fake(['*' => Http::response('x')]);
+
+        $this->artisan('prilike:provera')
+            ->expectsOutputToContain('nije provereno ('.self::NE_ODGOVARA.'): '.$prilika->naslov)
+            ->expectsOutputToContain('Nije provereno (strana nije stigla ili je prvi put nema): 1.')
+            ->assertSuccessful();
+
+        $this->travelTo(now()->addDay());
+        $this->artisan('prilike:provera')->expectsOutputToContain('nije provereno ('.self::NE_ODGOVARA.')')->assertSuccessful();
+
+        Http::assertNothingSent();
+        $this->assertSame($pre, $prilika->fresh()->getAttributes());
+        $this->assertSame(StatusPrilike::Objavljeno, $prilika->fresh()->status);
+    }
 }
