@@ -18,8 +18,15 @@ final class JavnoPreuzimanje
     public function preuzmi(string $adresa): Response
     {
         for ($preusmeravanja = 0; ; $preusmeravanja++) {
-            if (! $this->javna->jeJavna($adresa)) {
+            $ocena = $this->javna->ocena($adresa);
+
+            if ($ocena === OcenaAdrese::Nejavna) {
                 throw new AdresaNijeJavna;
+            }
+
+            // Ime koje se ne razrešava je kao strana koja ne odgovara: bez odluke, pa se pokušava sledeći put (paket 99).
+            if ($ocena === OcenaAdrese::NeRazresava) {
+                throw new StranaNedostupna(StranaNedostupna::NE_ODGOVARA);
             }
 
             $odgovor = Http::timeout(config('uvoz.vreme_cekanja'))->withUserAgent(config('uvoz.korisnicki_agent'))->withoutRedirecting()->get($adresa);

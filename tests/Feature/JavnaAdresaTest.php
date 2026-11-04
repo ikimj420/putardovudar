@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\JavnaAdresa;
+use App\Services\OcenaAdrese;
 use App\Services\RazresivacImena;
 use App\Services\SistemskiRazresivac;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -87,7 +88,7 @@ class JavnaAdresaTest extends TestCase
         $this->assertFalse($this->javna()->jeJavna($adresa));
     }
 
-    // Ime se gleda po tome na šta se razrešava: jedna privatna adresa među javnim je dovoljna da se odbije, a ime koje se ne razrešava nije javno.
+    // Ime se gleda po tome na šta se razrešava: jedna privatna adresa među javnim je dovoljna da se odbije; ime koje se ne razrešava nije javno, ali ni nejavno (vidi ocenu ispod).
     #[Test]
     public function ime_se_odbija_kad_se_razresava_na_privatnu_adresu_makar_i_uz_javnu(): void
     {
@@ -123,5 +124,57 @@ class JavnaAdresaTest extends TestCase
         foreach (['http://localhost/', 'http://localhost:11434/', 'http://2130706433/', 'http://0x7f000001/', 'http://017700000001/', 'http://127.1/'] as $adresa) {
             $this->assertFalse($javna->jeJavna($adresa), $adresa);
         }
+    }
+
+    // Paket 99: tri ishoda umesto dva. „Nejavna" je odluka (petlja, privatna ili link-local mreža, loša šema), „ne razrešava se" nije: DNS ume samo trenutno da ne odgovori.
+    #[Test]
+    #[DataProvider('adrese_koje_nisu_javne')]
+    public function ocena_adrese_koja_je_petlja_ili_privatna_mreza_je_nejavna(string $adresa): void
+    {
+        $this->assertSame(OcenaAdrese::Nejavna, $this->javna()->ocena($adresa));
+    }
+
+    #[Test]
+    #[DataProvider('adrese_bez_veze_koja_se_sme_otvoriti')]
+    public function ocena_adrese_koja_nije_http_ili_https_je_nejavna(string $adresa): void
+    {
+        $this->assertSame(OcenaAdrese::Nejavna, $this->javna()->ocena($adresa));
+    }
+
+    #[Test]
+    #[DataProvider('adrese_koje_su_javne')]
+    public function ocena_javne_adrese_je_javna(string $adresa): void
+    {
+        $this->assertSame(OcenaAdrese::Javna, $this->javna()->ocena($adresa));
+    }
+
+    #[Test]
+    public function ocena_imena_zavisi_od_toga_na_sta_se_razresava(): void
+    {
+        $this->razresivac()->postavi('interno.test', ['10.0.0.5']);
+        $this->razresivac()->postavi('mesovito.test', [LazniRazresivac::JAVNA_ADRESA, '127.0.0.1']);
+        $this->razresivac()->postavi('nema.test', []);
+
+        $this->assertSame(OcenaAdrese::Nejavna, $this->javna()->ocena('https://interno.test/x'));
+        $this->assertSame(OcenaAdrese::Nejavna, $this->javna()->ocena('https://mesovito.test/x'));
+        $this->assertSame(OcenaAdrese::NeRazresava, $this->javna()->ocena('https://nema.test/x'));
+        $this->assertSame(OcenaAdrese::Javna, $this->javna()->ocena('https://obicno.test/x'));
+        // Ogledalo: adresa koja je sama IP nikad nije „ne razrešava se"; i jeJavna je false i za nejavnu i za neproverljivu, a true samo za javnu.
+        $this->assertSame(OcenaAdrese::Nejavna, $this->javna()->ocena('http://127.0.0.1/x'));
+        $this->assertFalse($this->javna()->jeJavna('https://nema.test/x'));
+        $this->assertTrue($this->javna()->jeJavna('https://obicno.test/x'));
+    }
+
+    // Pravi razrešivač (bez mreže za localhost i brojčane oblike): ono što se razreši na petlju je nejavno, a ime iz rezervisanog domena „.invalid" (RFC 2606) se ne razrešava ni na šta.
+    #[Test]
+    public function pravi_razresivac_razlikuje_petlju_od_imena_koje_ne_postoji(): void
+    {
+        $javna = new JavnaAdresa(new SistemskiRazresivac);
+
+        foreach (['http://localhost/', 'http://2130706433/', 'http://0x7f000001/', 'http://127.1/'] as $adresa) {
+            $this->assertSame(OcenaAdrese::Nejavna, $javna->ocena($adresa), $adresa);
+        }
+
+        $this->assertSame(OcenaAdrese::NeRazresava, $javna->ocena('https://nepostoji-123.invalid/poziv'));
     }
 }

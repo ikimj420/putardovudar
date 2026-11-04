@@ -18,7 +18,7 @@ final class TekstStrane
         } catch (StranaNedostupna $izuzetak) {
             throw $izuzetak;
         } catch (Throwable) {
-            throw new StranaNedostupna('strana ne odgovara');
+            throw new StranaNedostupna(StranaNedostupna::NE_ODGOVARA);
         }
 
         if (! $odgovor->successful()) {
