@@ -36,7 +36,7 @@ class ClaudeSeZoveSamoIzJedneKlaseTest extends TestCase
         $this->assertSame([self::JEDNO_MESTO], $nadjeno);
     }
 
-    // Ogledalo: merilo vidi adresu, putanju i ključ iz okruženja, a ne vidi komentar o njima.
+    // Ogledalo: merilo vidi adresu, putanju, zaglavlja i ključ iz okruženja, a ne vidi komentar o njima ni ime firme u tekstu.
     #[Test]
     public function merilo_prepoznaje_poziv_a_ne_komentar(): void
     {
@@ -44,13 +44,16 @@ class ClaudeSeZoveSamoIzJedneKlaseTest extends TestCase
         $this->assertTrue($this->gradiPoziv("<?php \$a = '/v1/messages';"));
         $this->assertTrue($this->gradiPoziv("<?php \$a = 'x-api-key';"));
         $this->assertTrue($this->gradiPoziv("<?php \$a = env('ANTHROPIC_API_KEY');"));
+        $this->assertTrue($this->gradiPoziv("<?php \$a = 'anthropic-version';"));
+        // Ime firme u tekstu za korisnika (paket 100/T4) nije poziv.
+        $this->assertFalse($this->gradiPoziv("<?php \$a = 'Odgovor piše Claude (Anthropic), firmi Anthropic.';"));
         $this->assertFalse($this->gradiPoziv("<?php\n// zove api.anthropic.com, /v1/messages i ANTHROPIC_API_KEY\n/** x-api-key */\n\$a = 1;"));
     }
 
     private function gradiPoziv(string $kod): bool
     {
         foreach (token_get_all($kod) as $token) {
-            if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('#anthropic|/v1/messages|x-api-key|ANTHROPIC_API_KEY#i', $token[1])) {
+            if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('#anthropic\.com|anthropic-version|/v1/messages|x-api-key|ANTHROPIC_API_KEY#i', $token[1])) {
                 return true;
             }
         }

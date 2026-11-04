@@ -170,4 +170,40 @@ class NapisiMojLicniPodaciNeIduClaudeuTest extends BazaTestCase
         $this->assertStringContainsString(PrikazPomocnika::NAPOMENA_SLOZEN, (string) $odgovor->getContent());
         $this->assertStringNotContainsString('[', $this->napisan($odgovor));
     }
+
+    // Paket 100/T4: beleška „Ovi podaci ne idu Claude-u…" stoji jednom, odmah ispod poslednjeg ličnog polja; uz primaoca i tekst, koji idu modelu, je nema.
+    #[Test]
+    public function beleska_o_licnim_podacima_stoji_jednom_ispod_poslednjeg_licnog_polja(): void
+    {
+        $beleska = '<p class="privatnost">'.PrikazPomocnika::LICNI_PODACI.'</p>';
+        $sablon = $this->sablon();
+
+        $forma = $this->get(route('pomocnik.napisi.forma', $sablon->slug))->assertOk()->getContent();
+        $this->assertSame(1, substr_count($forma, $beleska));
+        $this->assertMatchesRegularExpression('#name="polje\[email\]"[^>]*>\s*'.preg_quote($beleska, '#').'\s*</div>\s*<div class="polje">\s*<label for="polje-primalac">#', $forma);
+
+        // I posle slanja, kad se obrazac ispiše uz gotov tekst.
+        $this->model("[IME]\n\nMolim za pomoć oko upisa.\n\nS poštovanjem,\n[IME]");
+        $this->assertSame(1, substr_count((string) $this->napisi()->assertOk()->getContent(), $beleska));
+    }
+
+    #[Test]
+    public function beleska_ide_ispod_jedinog_licnog_polja_a_bez_njih_je_nema(): void
+    {
+        $samoIme = Sablon::factory()->objavljen()->create([
+            'naslov' => 'Kratko', 'objasnjenje' => 'Kratko.',
+            'polja' => [['kljuc' => 'ime', 'oznaka' => 'Ime', 'objasnjenje' => null, 'dugo' => false], ['kljuc' => 'tekst', 'oznaka' => 'Tekst', 'objasnjenje' => null, 'dugo' => true]],
+            'tekst' => "{tekst}\n{ime}",
+        ]);
+        $bezLicnih = Sablon::factory()->objavljen()->create([
+            'naslov' => 'Bez ličnih', 'objasnjenje' => 'Bez ličnih.',
+            'polja' => [['kljuc' => 'primalac', 'oznaka' => 'Kome', 'objasnjenje' => null, 'dugo' => false], ['kljuc' => 'tekst', 'oznaka' => 'Tekst', 'objasnjenje' => null, 'dugo' => true]],
+            'tekst' => "{primalac}\n{tekst}",
+        ]);
+
+        $prva = $this->get(route('pomocnik.napisi.forma', $samoIme->slug))->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('#name="polje\[ime\]"[^>]*>\s*<p class="privatnost">'.preg_quote(PrikazPomocnika::LICNI_PODACI, '#').'</p>\s*</div>\s*<div class="polje">\s*<label for="polje-tekst">#', $prva);
+
+        $this->get(route('pomocnik.napisi.forma', $bezLicnih->slug))->assertOk()->assertDontSee(PrikazPomocnika::LICNI_PODACI);
+    }
 }

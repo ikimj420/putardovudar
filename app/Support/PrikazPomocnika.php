@@ -50,7 +50,15 @@ final class PrikazPomocnika
     public const NAPOMENA_SLOZEN = 'Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.';
 
     // Mali natpis uz polja u koja čovek piše (paket 64, Ivan 11.10.2026.): ispod dugmeta „Napiši tekst" i ispod polja za pitanje.
-    public const NE_CUVAMO = 'Ono što upišeš ne čuvamo i ne koristimo ni za šta drugo.';
+    // Paket 100/T4: natpis kaže i ko piše odgovor; „Privatnost" je veza na stranu. Tekstovi su predlog iz paketa, Ivan ih odobrava (PITANJA-100.md).
+    public const NE_CUVAMO_PRE = 'Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani ';
+
+    public const NE_CUVAMO_VEZA = 'Privatnost';
+
+    public const NE_CUVAMO = self::NE_CUVAMO_PRE.self::NE_CUVAMO_VEZA.'.';
+
+    // Ispod polja za ime, adresu i telefon u „Napiši moj" (paket 100/T2: model dobija oznake, aplikacija upisuje podatke u gotov tekst).
+    public const LICNI_PODACI = 'Ovi podaci ne idu Claude-u; upisujemo ih u tekst na kraju.';
 
     // Rod u „Napiši moj" (paket 64): pitanje i link su Ivanov tekst (11.10.2026.), natpisi dugmadi su predlog (PITANJA-64.md).
     public const ROD_PITANJE = 'Da pišem „radio sam" ili „radila sam"?';

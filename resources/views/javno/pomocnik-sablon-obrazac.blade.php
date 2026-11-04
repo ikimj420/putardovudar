@@ -30,6 +30,8 @@
     @if (($izabranRod ?? null) !== null)
         <input type="hidden" name="izabran_rod" value="{{ $izabranRod->value }}">
     @endif
+    {{-- Beleška o ličnim podacima ide jednom, ispod poslednjeg od njih (ime, adresa, telefon, e-pošta stoje jedno do drugog). --}}
+    @php($poslednjeLicno = collect($sablon->polja)->pluck('kljuc')->filter(fn ($kljuc) => \App\Services\Pomocnik\PisanjeSablona::jeLicnoPolje($kljuc))->last())
     @foreach ($sablon->polja as $polje)
         <div class="polje">
             <label for="polje-{{ $polje['kljuc'] }}">{{ $polje['oznaka'] }}</label>
@@ -41,8 +43,11 @@
             @else
                 <input id="polje-{{ $polje['kljuc'] }}" type="text" name="polje[{{ $polje['kljuc'] }}]" maxlength="255" value="{{ $unosi[$polje['kljuc']] ?? '' }}"@if (filled($polje['objasnjenje'] ?? null)) aria-describedby="objasnjenje-{{ $polje['kljuc'] }}"@endif>
             @endif
+            @if ($polje['kljuc'] === $poslednjeLicno)
+                <p class="privatnost">{{ \App\Support\PrikazPomocnika::LICNI_PODACI }}</p>
+            @endif
         </div>
     @endforeach
     <button type="submit">{{ \App\Support\PrikazPomocnika::NAPISI }}</button>
-    <p class="privatnost">{{ \App\Support\PrikazPomocnika::NE_CUVAMO }}</p>
+    @include('javno.pomocnik-natpis')
 </form>

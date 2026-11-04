@@ -43,7 +43,8 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
 
     private const MODEL = LazniClaude::ADRESA;
 
-    private const NATPIS = 'Ono što upišeš ne čuvamo i ne koristimo ni za šta drugo.';
+    // Paket 100/T4: natpis kaže i ko piše odgovor, sa vezom na stranu „Privatnost"; tekst je predlog iz paketa, Ivan ga odobrava (PITANJA-100.md).
+    private const NATPIS_TEKST = 'Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani Privatnost.';
 
     // Prazno dok setUp ne stigne do njega: bez servera baze test se preskače pre toga, a tearDown ipak radi.
     private string $dnevnik = '';
@@ -319,24 +320,24 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
     #[Test]
     public function natpis_je_ispod_dugmeta_napisi_ispod_polja_za_pitanje_i_u_prozoru(): void
     {
-        $this->assertSame(self::NATPIS, PrikazPomocnika::NE_CUVAMO);
-        $natpis = '<p class="privatnost">'.self::NATPIS.'</p>';
+        $this->assertSame(self::NATPIS_TEKST, PrikazPomocnika::NE_CUVAMO);
+        $natpis = '<p class="privatnost">Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani <a href="'.route('privatnost').'">Privatnost</a>.</p>';
         $sablon = $this->sablon();
 
         // Strana pomoćnika: odmah ispod polja za pitanje; prozora na njoj nema, pa je natpis jedan.
         $strana = $this->get(route('pomocnik.index'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('#</textarea>\s*'.preg_quote($natpis, '#').'#', $strana);
-        $this->assertSame(1, substr_count($strana, self::NATPIS));
+        $this->assertSame(1, substr_count($strana, $natpis));
 
         // „Napiši moj": ispod dugmeta „Napiši tekst", u obrascu; ni na ovoj strani prozora nema.
         $napisi = $this->get(route('pomocnik.napisi.forma', $sablon->slug))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('#<button type="submit">'.preg_quote(PrikazPomocnika::NAPISI, '#').'</button>\s*'.preg_quote($natpis, '#').'\s*</form>#', $napisi);
-        $this->assertSame(1, substr_count($napisi, self::NATPIS));
+        $this->assertSame(1, substr_count($napisi, $natpis));
 
         // Prozor je na svakoj javnoj strani: natpis je ispod njegovog polja i dugmeta.
         $pocetna = $this->get(route('pocetna'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('#<button type="submit">'.preg_quote(PrikazPomocnika::DUGME, '#').'</button>\s*'.preg_quote($natpis, '#').'\s*</form>#', $pocetna);
-        $this->assertSame(1, substr_count($pocetna, self::NATPIS));
+        $this->assertSame(1, substr_count($pocetna, $natpis));
     }
 
     #[Test]

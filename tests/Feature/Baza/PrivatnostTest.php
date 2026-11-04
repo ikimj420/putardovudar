@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Baza;
 
+use App\Support\PrikazPomocnika;
 use App\Support\PrikazPrivatnosti;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Group;
@@ -23,7 +24,9 @@ class PrivatnostTest extends BazaTestCase
             'Ne treba ti nalog.',
             'Ne čuvamo tvoja pitanja pomoćniku ni ono što upišeš u „Napiši moj".',
             'Ne koristimo ih ni za šta drugo.',
-            'Pomoćnik radi na našem računaru i to ne šalje drugim firmama.',
+            'Da bi napisao odgovor, pomoćnik ih šalje Claude-u, firmi Anthropic.',
+            'Anthropic ih ne koristi za učenje modela.',
+            'Obično ih briše u roku od 30 dana.',
             'Kad predložiš priliku, čuvamo samo link i napomenu koje upišeš, da bismo proverili priliku.',
             'Ne upisuj lične podatke u napomenu.',
             'Dok si na sajtu, server privremeno pamti adresu tvog uređaja i vrstu pregledača.',
@@ -53,5 +56,44 @@ class PrivatnostTest extends BazaTestCase
         $this->assertStringContainsString('<title>Privatnost - Putardo Vudar</title>', $html);
         $this->assertStringContainsString('<span>Privatnost</span>', $html);
         $this->assertSame(0, preg_match('#(?:href|src|action)="https?://(?!'.preg_quote(parse_url(url('/'), PHP_URL_HOST), '#').')#', $html));
+    }
+
+    // Paket 100/T4: pomoćnik više ne radi na našem računaru, pa te rečenice na strani nema; tekst koji je zamenjuje kaže kome se pitanje šalje.
+    #[Test]
+    public function recenica_da_pomocnik_radi_na_nasem_racunaru_nije_na_strani_a_nova_kaze_kome_se_salje(): void
+    {
+        $html = $this->get(route('privatnost'))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('na našem računaru', $html);
+        $this->assertStringNotContainsString('ne šalje drugim firmama', $html);
+        $this->assertStringContainsString('pomoćnik ih šalje Claude-u, firmi Anthropic.', $html);
+    }
+
+    // Svaka rečenica novih tekstova ima do 15 reči (paket 100/T4); skup mora biti neprazan, inače bi petlja prošla ni nad čim.
+    #[Test]
+    public function svaka_recenica_novih_tekstova_ima_do_petnaest_reci(): void
+    {
+        $recenice = [];
+
+        foreach ([PrikazPrivatnosti::UPISANO, PrikazPomocnika::NE_CUVAMO, PrikazPomocnika::LICNI_PODACI] as $tekst) {
+            array_push($recenice, ...preg_split('/(?<=[.!?])\s+/u', $tekst));
+        }
+
+        $this->assertCount(8, $recenice);
+
+        foreach ($recenice as $recenica) {
+            $this->assertLessThanOrEqual(15, count(preg_split('/\s+/u', trim($recenica))), $recenica);
+        }
+
+        // Ogledalo: merilo stvarno broji; rečenica od šesnaest reči ne bi prošla.
+        $this->assertGreaterThan(15, count(preg_split('/\s+/u', 'Ovo je jedna rečenica koja ima tačno šesnaest reči, računajući i one najkraće reči u njoj.')));
+    }
+
+    // Natpis ispod polja vodi na stranu „Privatnost", i ta strana postoji.
+    #[Test]
+    public function natpis_uz_polja_vodi_na_stranu_privatnost(): void
+    {
+        $this->get(route('pomocnik.index'))->assertOk()->assertSee('<a href="'.route('privatnost').'">Privatnost</a>', false);
+        $this->get(route('privatnost'))->assertOk();
     }
 }

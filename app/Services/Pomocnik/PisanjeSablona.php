@@ -27,6 +27,12 @@ TEXT;
     // Ime i prezime, adresa, telefon i e-pošta ne idu Claude-u nego oznake; aplikacija ih upisuje u gotov tekst (paket 100, Ivan, 05.11.2026.). Ključ je ključ polja u šablonu.
     private const LICNA_POLJA = ['ime' => '[IME]', 'adresa' => '[ADRESA]', 'telefon' => '[TELEFON]', 'email' => '[EPOSTA]', 'eposta' => '[EPOSTA]'];
 
+    // Prikaz piše „ovi podaci ne idu Claude-u" samo uz polja koja ovde stvarno ne idu; jedan spisak za oba.
+    public static function jeLicnoPolje(string $kljuc): bool
+    {
+        return isset(self::LICNA_POLJA[$kljuc]);
+    }
+
     // Model rod dobija izričito, sa primerima oblika.
     private const ROD = [
         'muski' => 'Rod autora je muški: piši u muškom rodu (radio sam, video sam, zadovoljan sam).',
