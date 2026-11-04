@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 56 T4: kad neko traži da mu se nešto napiše, naziv šablona u pitanju prepoznaje kod (ne model) i nudi objavljen šablon.
 // Kad šablona nema: kratko da ga još nema, uz objavljene vodiče.
@@ -24,7 +25,7 @@ class PomocnikSablonPonudaTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -44,7 +45,7 @@ class PomocnikSablonPonudaTest extends BazaTestCase
     /** Formular je prazan, pa pretraga ne nalazi ništa; svaki poziv modela se broji. */
     private function modelNeNalazi(): void
     {
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => ['zzz']])]])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor(json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => ['zzz']]))]);
     }
 
     /** @return array<string, array{0: string}> */

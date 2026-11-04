@@ -6,14 +6,10 @@ use App\Services\Model\ModelObrade;
 use App\Services\Model\Potrosnja;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 
 // Jedino mesto u aplikaciji koje zove Ollamu. Adresa, model i vreme čekanja dolaze iz config/ollama.php.
-// Sa $samoLokalno (pomoćnik i „Napiši moj", vidi AppServiceProvider) poziv ide samo na petlju ili privatnu mrežu; bez njega (obrada uvoza) adresa je ona iz podešavanja.
 final class Ollama implements ModelObrade
 {
-    public function __construct(private readonly ?LokalnaAdresa $samoLokalno = null) {}
-
     private int $poziva = 0;
 
     private int $ulazni = 0;
@@ -65,13 +61,6 @@ final class Ollama implements ModelObrade
     // Pozivalac sme da skrati vreme čekanja (ostatak ukupnog vremena za pitanje), nikad da ga produži.
     private function pozovi(string $uputstvo, string $tekst, bool $kaoJson, ?int $vremeCekanja): mixed
     {
-        // U dnevnik ide samo da je poziv odbijen, bez adrese i bez teksta pitanja: adresa može da nosi korisnika i lozinku, a pitanje je ono što strana obećava da ne čuvamo.
-        if ($this->samoLokalno !== null && ! $this->samoLokalno->jeLokalna((string) config('ollama.adresa'))) {
-            Log::warning('Ollama: adresa nije lokalna, poziv je odbijen.');
-
-            throw new OllamaNedostupna('Ollama: adresa nije lokalna');
-        }
-
         $granica = (int) config('ollama.vreme_cekanja');
 
         try {

@@ -28,6 +28,7 @@ use RuntimeException;
 use Tests\BazaTestCase;
 use Tests\Concerns\StilJavnihStrana;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 use Throwable;
 use TypeError;
 
@@ -40,7 +41,7 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
 
     private const TRAG = 'TRAG-7f3a';
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const NATPIS = 'Ono što upišeš ne čuvamo i ne koristimo ni za šta drugo.';
 
@@ -91,9 +92,9 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
      */
     private function model(string $ishod): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev) use ($ishod) {
+        Http::fake([self::MODEL => function (Request $zahtev) use ($ishod) {
             return match (true) {
-                $ishod === 'radi' => Http::response(['message' => ['content' => 'Ana Anić: napisano o '.self::TRAG.'.']]),
+                $ishod === 'radi' => LazniClaude::odgovor('Ana Anić: napisano o '.self::TRAG.'.'),
                 $ishod === 'ne radi' => throw new ConnectionException('nema veze'),
                 default => throw new $ishod('Pukao na tekstu '.self::TRAG),
             };
@@ -227,14 +228,14 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
      */
     private function modelPomocnika(string $ishod, string $gde = 'drugi'): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev) use ($ishod, $gde) {
-            $prvi = array_key_exists('format', $zahtev->data());
+        Http::fake([self::MODEL => function (Request $zahtev) use ($ishod, $gde) {
+            $prvi = LazniClaude::jeJson($zahtev);
 
             return match (true) {
                 $ishod === 'ne radi' && ($gde === 'prvi') === $prvi => throw new ConnectionException('nema veze'),
                 $ishod !== 'radi' && $ishod !== 'ne radi' && ($gde === 'prvi') === $prvi => throw new $ishod('Pukao na pitanju '.self::TRAG),
-                $prvi => Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]]),
-                default => Http::response(['message' => ['content' => 'U Nišu postoji posao radnika u skladištu, rok je 15. novembra 2026. '.self::TRAG]]),
+                $prvi => LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])),
+                default => LazniClaude::odgovor('U Nišu postoji posao radnika u skladištu, rok je 15. novembra 2026. '.self::TRAG),
             };
         }]);
     }

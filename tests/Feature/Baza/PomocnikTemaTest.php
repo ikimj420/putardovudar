@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 30: kad pitanje traži baš vodič ili organizaciju („vodič za konkurse"), reč koja je ponavljala vrstu prilike je tema.
 #[Group('baza')]
@@ -22,7 +23,7 @@ class PomocnikTemaTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -34,7 +35,7 @@ class PomocnikTemaTest extends BazaTestCase
     /** @param  array<string, mixed>  $forma */
     private function pitaj(string $pitanje, array $forma): RezultatPretrage
     {
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor(json_encode($forma + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], JSON_UNESCAPED_UNICODE))]);
 
         return app(Pomocnik::class)->pretrazi($pitanje);
     }

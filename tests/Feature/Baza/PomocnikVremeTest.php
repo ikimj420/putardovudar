@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 22: oba poziva modela zajedno staju u ukupno vreme za pitanje, da strana uvek vrati odgovor pre prekida veze.
 #[Group('baza')]
@@ -22,7 +23,7 @@ class PomocnikVremeTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     /** @var list<array{0: string, 1: int}> vrsta poziva i vreme čekanja koje je dobio */
     private array $pozivi = [];
@@ -33,7 +34,7 @@ class PomocnikVremeTest extends BazaTestCase
 
         Http::preventStrayRequests();
         $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
-        config()->set('ollama.vreme_cekanja', 120);
+        config()->set('claude.vreme_cekanja', 120);
         config()->set('pomocnik.ukupno_za_pitanje', 50);
         config()->set('pomocnik.najmanje_za_odgovor', 5);
 
@@ -46,8 +47,8 @@ class PomocnikVremeTest extends BazaTestCase
     /** Model beleži vreme čekanja svakog poziva i „troši" zadati broj sekundi (test premotava sat). */
     private function model(int $formularTraje = 0, int $odgovorTraje = 0, bool $odgovorPada = false, string $grad = 'Niš'): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev, array $opcije) use ($formularTraje, $odgovorTraje, $odgovorPada, $grad) {
-            $jeFormular = array_key_exists('format', $zahtev->data());
+        Http::fake([self::MODEL => function (Request $zahtev, array $opcije) use ($formularTraje, $odgovorTraje, $odgovorPada, $grad) {
+            $jeFormular = LazniClaude::jeJson($zahtev);
             $this->pozivi[] = [$jeFormular ? 'formular' : 'odgovor', $opcije['timeout']];
             $this->travel($jeFormular ? $formularTraje : $odgovorTraje)->seconds();
 
@@ -55,9 +56,9 @@ class PomocnikVremeTest extends BazaTestCase
                 throw new ConnectionException('cURL error 28: Operation timed out');
             }
 
-            return Http::response(['message' => ['content' => $jeFormular
+            return LazniClaude::odgovor($jeFormular
                 ? json_encode(['vrsta' => 'posao', 'grad' => $grad, 'kome' => null, 'kljucne_reci' => []])
-                : 'U Nišu ima posla za radnika u skladištu.']]);
+                : 'U Nišu ima posla za radnika u skladištu.');
         }]);
     }
 
@@ -115,7 +116,7 @@ class PomocnikVremeTest extends BazaTestCase
     #[Test]
     public function vreme_cekanja_iz_podesavanja_je_gornja_granica_a_ne_samo_ukupno(): void
     {
-        config()->set('ollama.vreme_cekanja', 7);
+        config()->set('claude.vreme_cekanja', 7);
         $this->model();
 
         app(Pomocnik::class)->odgovori('Ima li posla u Nišu?');
@@ -167,7 +168,7 @@ class PomocnikVremeTest extends BazaTestCase
     #[Test]
     public function strana_kaze_da_pomocnik_ne_radi_kad_ne_stigne_prvi_poziv(): void
     {
-        Http::fake([self::OLLAMA => fn () => throw new ConnectionException('cURL error 28: Operation timed out')]);
+        Http::fake([self::MODEL => fn () => throw new ConnectionException('cURL error 28: Operation timed out')]);
 
         $tekst = $this->vidljivTekst($this->post(route('pomocnik.pitaj'), ['pitanje' => 'Ima li posla u Nišu?'])->assertOk()->getContent());
 

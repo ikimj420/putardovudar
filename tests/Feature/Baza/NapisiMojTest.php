@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 56 T3: „Napiši moj". Pitanja šablona, tekst koji piše model samo iz upisanog, provera koda i sklopljen šablon kad provera ne prođe.
 // Ništa što čovek upiše se ne čuva.
@@ -27,7 +28,7 @@ class NapisiMojTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const UNOSI = ['ime' => 'Ana Anić', 'tekst' => "Molim za pomoć.\nHvala.", 'datum' => '11.10.2026.'];
 
@@ -67,13 +68,13 @@ class NapisiMojTest extends BazaTestCase
         }
 
         $this->lazniModel = true;
-        Http::fake([self::OLLAMA => function () {
+        Http::fake([self::MODEL => function () {
             $tekst = $this->odgovorModela;
 
             return match (true) {
                 $tekst === null => throw new ConnectionException('nema veze'),
                 is_callable($tekst) => $tekst(),
-                default => Http::response(['message' => ['content' => $tekst]]),
+                default => LazniClaude::odgovor($tekst),
             };
         }]);
     }
@@ -182,13 +183,13 @@ class NapisiMojTest extends BazaTestCase
 
         Http::assertSentCount(1);
         Http::assertSent(function (Request $zahtev) {
-            $poruke = $zahtev->data()['messages'];
+            $poruka = LazniClaude::poruka($zahtev);
 
-            return $zahtev->data()['options']['temperature'] === 0
-                && ! array_key_exists('format', $zahtev->data())
-                && str_contains($poruke[0]['content'], 'Koristi samo ono što je čovek upisao')
-                && str_contains($poruke[1]['content'], "Šablon:\n{ime}\n\nMolim: {tekst}\n\n{datum}")
-                && str_contains($poruke[1]['content'], "Upisano:\n{ime} (Ime i prezime): Ana Anić\n{tekst} (Šta moliš): Molim za pomoć.\nHvala.\n{datum} (Datum): 11.10.2026.");
+            return ! array_key_exists('temperature', $zahtev->data())
+                && ! LazniClaude::jeJson($zahtev)
+                && str_contains(LazniClaude::uputstvo($zahtev), 'Koristi samo ono što je čovek upisao')
+                && str_contains($poruka, "Šablon:\n{ime}\n\nMolim: {tekst}\n\n{datum}")
+                && str_contains($poruka, "Upisano:\n{ime} (Ime i prezime): Ana Anić\n{tekst} (Šta moliš): Molim za pomoć.\nHvala.\n{datum} (Datum): 11.10.2026.");
         });
     }
 
@@ -207,7 +208,8 @@ class NapisiMojTest extends BazaTestCase
 
         Http::assertSentCount(1);
         Http::assertSent(function (Request $zahtev) {
-            [$uputstvo, $poruka] = array_column($zahtev->data()['messages'], 'content');
+            $uputstvo = LazniClaude::uputstvo($zahtev);
+            $poruka = LazniClaude::poruka($zahtev);
 
             return ! str_contains($poruka, 'Primer') && ! str_contains($poruka, 'primer')
                 && ! str_contains($uputstvo, 'primer') && ! str_contains($uputstvo, 'Primer')
@@ -378,7 +380,7 @@ class NapisiMojTest extends BazaTestCase
         foreach ([$granica + 50, $granica] as $duzina) {
             $this->napisi($sablon, ['ime' => str_repeat('a', $duzina)])->assertOk();
 
-            Http::assertSent(fn (Request $zahtev) => str_ends_with($zahtev->data()['messages'][1]['content'], "Upisano:\n{ime} (Ime): ".str_repeat('a', $granica)));
+            Http::assertSent(fn (Request $zahtev) => str_ends_with(LazniClaude::poruka($zahtev), "Upisano:\n{ime} (Ime): ".str_repeat('a', $granica)));
         }
 
         $this->model(null);

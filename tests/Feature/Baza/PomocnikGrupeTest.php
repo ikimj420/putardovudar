@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 43: pomoćnik zna grupe. Grupa iz pitanja se poredi sa grupama prilike (paket 39), ne kao ključna reč.
 #[Group('baza')]
@@ -25,7 +26,7 @@ class PomocnikGrupeTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -47,7 +48,7 @@ class PomocnikGrupeTest extends BazaTestCase
     /** @param  array<string, mixed>  $forma */
     private function model(array $forma = []): void
     {
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode([...['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], ...$forma], JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor(json_encode([...['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], ...$forma], JSON_UNESCAPED_UNICODE))]);
     }
 
     private function pitaj(string $pitanje): RezultatPretrage
@@ -272,7 +273,7 @@ class PomocnikGrupeTest extends BazaTestCase
 
         $this->assertSame([Grupa::Romi], $rezultat->formular->grupe);
         $this->assertTrue($rezultat->nemaPodatak());
-        $this->assertSame(1, Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count());
+        $this->assertSame(1, Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL)->count());
     }
 
     #[Test]
@@ -299,10 +300,10 @@ class PomocnikGrupeTest extends BazaTestCase
     {
         $this->prilika('Stipendija za studente', ['grupe' => ['studenti']]);
         $this->prilika('Stipendija za srednjoškolce', ['grupe' => ['srednjoskolci']]);
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode(['vrsta' => null, 'grad' => null, 'kome' => 'student', 'kljucne_reci' => []])]])
-                : Http::response(['message' => ['content' => 'Za studente postoji Stipendija za studente.']]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode(['vrsta' => null, 'grad' => null, 'kome' => 'student', 'kljucne_reci' => []]))
+                : LazniClaude::odgovor('Za studente postoji Stipendija za studente.');
         }]);
 
         $odgovor = app(Pomocnik::class)->odgovori('Ja sam student, šta ima za mene?');

@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 23, T3: opasno pitanje dobija jednu rečenicu, bez modela i bez pretrage.
 #[Group('baza')]
@@ -21,7 +22,7 @@ class PomocnikOpasnaPitanjaTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -36,10 +37,10 @@ class PomocnikOpasnaPitanjaTest extends BazaTestCase
         ]);
         Vodic::factory()->objavljen()->create(['naslov' => 'Šta ako ti fali dokument?', 'kratak_opis' => 'Kako da dođeš do kopije.']);
 
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => ['dokument']])]])
-                : Http::response(['message' => ['content' => 'U Nišu postoji posao radnika u skladištu.']]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => ['dokument']]))
+                : LazniClaude::odgovor('U Nišu postoji posao radnika u skladištu.');
         }]);
     }
 

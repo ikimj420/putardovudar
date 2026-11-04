@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 67/T2: odgovor modela sa slovom koje nije latinica ne stiže do čoveka: pomoćnik daje gotov tekst sa karticama, „Napiši moj" sklopljen šablon.
 #[Group('baza')]
@@ -21,7 +22,7 @@ class SlovaVanLaticeUOdgovoruTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private string $odgovorModela = '';
 
@@ -33,10 +34,10 @@ class SlovaVanLaticeUOdgovoruTest extends BazaTestCase
         $this->travelTo(Carbon::create(2026, 10, 11, 12, 0, 0, 'Europe/Belgrade'));
         Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'vrsta' => VrstaPrilike::Posao, 'mesto' => 'Niš', 'rok' => '2026-11-15']);
         // Http::fake ostaje na prvom postavljenom odgovoru, pa se postavlja jednom, a odgovor se menja kroz svojstvo.
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]])
-                : Http::response(['message' => ['content' => $this->odgovorModela]]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []]))
+                : LazniClaude::odgovor($this->odgovorModela);
         }]);
     }
 

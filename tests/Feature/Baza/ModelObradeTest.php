@@ -14,6 +14,7 @@ use App\Services\Pomocnik\PisanjeOdgovora;
 use App\Services\Pomocnik\PisanjeSablona;
 use App\Services\Pomocnik\PitanjeUFormular;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -22,6 +23,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 71/T2: MODEL_OBRADE bira model samo za obradu nacrta; pomoćnik i „Napiši moj" uvek idu na lokalnu Ollamu. Nijedan test ne zove pravi API.
 #[Group('baza')]
@@ -178,30 +180,35 @@ class ModelObradeTest extends BazaTestCase
         Sleep::assertSleptTimes(2);
     }
 
-    // Pomoćnik i „Napiši moj" ne zovu Anthropic ni kad je obrada na Claude-u: uvek lokalna Ollama.
+    // Pomoćnik i „Napiši moj" zovu Claude (Ivan, 05.11.2026.: „sve treba preko Claude-a"), šta god da je MODEL_OBRADE; nijedan zahtev ne ide ka Ollami.
     #[Test]
-    public function pomocnik_i_napisi_moj_ostaju_na_ollami_i_kad_je_obrada_na_claude(): void
+    public function pomocnik_i_napisi_moj_zovu_claude_bez_obzira_na_model_obrade(): void
     {
-        config()->set('claude.model_obrade', 'claude');
         Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'vrsta' => VrstaPrilike::Posao, 'mesto' => 'Niš', 'rok' => '2026-11-15', 'kratak_opis' => 'Puno radno vreme.', 'naziv_izvora' => 'Probni izvor', 'link_izvora' => 'https://primer.rs/skladiste-nis']);
         $sablon = Sablon::factory()->objavljen()->create([
             'naslov' => 'Pismo', 'objasnjenje' => 'Za pismo.',
             'polja' => [['kljuc' => 'ime', 'oznaka' => 'Ime', 'objasnjenje' => null, 'dugo' => false], ['kljuc' => 'tekst', 'oznaka' => 'Tekst', 'objasnjenje' => null, 'dugo' => true]],
             'tekst' => "Poštovani,\n\n{tekst}\n\nS poštovanjem,\n{ime}",
         ]);
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]])
-                : Http::response(['message' => ['content' => "Poštovani,\n\nPraksa.\n\nS poštovanjem,\nAna Anić"]]);
-        }]);
 
-        $odgovor = $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Ima li posla u Nišu?'])->assertOk()->getContent();
-        $pismo = $this->post(route('pomocnik.napisi', $sablon->slug), ['polje' => ['ime' => 'Ana Anić', 'tekst' => 'Praksa.'], 'rod' => 'zenski'])->assertOk()->getContent();
+        foreach (['ollama', 'claude'] as $obrada) {
+            config()->set('claude.model_obrade', $obrada);
+            Http::swap(new HttpFactory);
+            Http::preventStrayRequests();
+            Http::fake([self::ANTHROPIC => function (Request $zahtev) {
+                return LazniClaude::jeJson($zahtev)
+                    ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []]))
+                    : LazniClaude::odgovor("Poštovani,\n\nPraksa.\n\nS poštovanjem,\n[IME]");
+            }]);
 
-        $this->assertStringContainsString('Radnik u skladištu', (string) $odgovor);
-        $this->assertStringContainsString('Praksa.', (string) $pismo);
-        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA);
-        Http::assertNotSent(fn (Request $zahtev) => str_contains($zahtev->url(), 'anthropic'));
+            $odgovor = $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Ima li posla u Nišu?'])->assertOk()->getContent();
+            $pismo = $this->post(route('pomocnik.napisi', $sablon->slug), ['polje' => ['ime' => 'Ana Anić', 'tekst' => 'Praksa.'], 'rod' => 'zenski'])->assertOk()->getContent();
+
+            $this->assertStringContainsString('Radnik u skladištu', (string) $odgovor, $obrada);
+            $this->assertStringContainsString('Praksa.', (string) $pismo, $obrada);
+            Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::ANTHROPIC);
+            Http::assertNotSent(fn (Request $zahtev) => str_contains($zahtev->url(), '11434') || str_contains($zahtev->url(), 'ollama'));
+        }
     }
 
     // Izbor modela je jedno mesto: ModelObrade je Ollama samo uz tačno „ollama", a Claude samo uz tačno „claude"; sve drugo je greška, ne tiho Ollama (paket 95, PITANJA-92 14).
@@ -255,7 +262,7 @@ class ModelObradeTest extends BazaTestCase
     }
 
     #[Test]
-    public function model_obrade_se_bira_po_podesavanju_a_pomocnik_trazi_ollamu(): void
+    public function model_obrade_se_bira_po_podesavanju_a_pomocnik_trazi_claude(): void
     {
         $this->assertInstanceOf(Ollama::class, app(ModelObrade::class));
 
@@ -269,7 +276,7 @@ class ModelObradeTest extends BazaTestCase
             $konstruktor = (new \ReflectionClass($klasa))->getConstructor();
             $tipovi = array_map(fn (\ReflectionParameter $parametar) => (string) $parametar->getType(), $konstruktor?->getParameters() ?? []);
 
-            $this->assertContains(Ollama::class, $tipovi, $klasa);
+            $this->assertContains(Claude::class, $tipovi, $klasa);
             $this->assertNotContains(ModelObrade::class, $tipovi, $klasa);
         }
     }

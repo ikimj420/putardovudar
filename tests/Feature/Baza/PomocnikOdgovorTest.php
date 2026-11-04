@@ -19,13 +19,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 #[Group('baza')]
 class PomocnikOdgovorTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private Prilika $prilika;
 
@@ -51,20 +52,20 @@ class PomocnikOdgovorTest extends BazaTestCase
      */
     private function model(mixed $tekst, bool $formularRadi = true): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev) use ($tekst, $formularRadi) {
-            if (array_key_exists('format', $zahtev->data())) {
+        Http::fake([self::MODEL => function (Request $zahtev) use ($tekst, $formularRadi) {
+            if (LazniClaude::jeJson($zahtev)) {
                 return $formularRadi
-                    ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]])
+                    ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []]))
                     : throw new ConnectionException('nema veze');
             }
 
-            return is_callable($tekst) ? $tekst() : Http::response(['message' => ['content' => $tekst]]);
+            return is_callable($tekst) ? $tekst() : LazniClaude::odgovor($tekst);
         }]);
     }
 
     private function pozivaModela(bool $zaOdgovor): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA && array_key_exists('format', $zahtev->data()) !== $zaOdgovor)->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL && LazniClaude::jeJson($zahtev) !== $zaOdgovor)->count();
     }
 
     private function pitaj(): OdgovorPomocnika
@@ -427,15 +428,15 @@ class PomocnikOdgovorTest extends BazaTestCase
         Http::assertSent(function (Request $zahtev) {
             $telo = $zahtev->data();
 
-            if ($zahtev->url() !== self::OLLAMA || array_key_exists('format', $telo)) {
+            if ($zahtev->url() !== self::MODEL || LazniClaude::jeJson($zahtev)) {
                 return false;
             }
 
-            return $telo['options']['temperature'] === 0
-                && str_contains($telo['messages'][0]['content'], 'samo iz priloženih prilika')
-                && str_contains($telo['messages'][0]['content'], 'Ne navodi linkove')
-                && str_contains($telo['messages'][1]['content'], 'Naslov: Radnik u skladištu; Vrsta: Posao; Mesto: Niš; Rok: Rok: 15.11.2026.; Kratak opis: Puno radno vreme.')
-                && ! str_contains($telo['messages'][1]['content'], 'primer.rs');
+            return ! array_key_exists('temperature', $telo)
+                && str_contains($telo['system'], 'samo iz priloženih prilika')
+                && str_contains($telo['system'], 'Ne navodi linkove')
+                && str_contains($telo['messages'][0]['content'], 'Naslov: Radnik u skladištu; Vrsta: Posao; Mesto: Niš; Rok: Rok: 15.11.2026.; Kratak opis: Puno radno vreme.')
+                && ! str_contains($telo['messages'][0]['content'], 'primer.rs');
         });
     }
 }

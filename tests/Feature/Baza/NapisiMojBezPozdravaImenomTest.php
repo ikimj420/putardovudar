@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 70/T9: kad je „kome" prazno, tekst modela koji počinje imenom autora („Ana Marković,") nije pozdrav i ne prolazi proveru; ide sklopljen šablon.
 #[Group('baza')]
@@ -20,7 +21,7 @@ class NapisiMojBezPozdravaImenomTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private string $odgovorModela = '';
 
@@ -29,7 +30,7 @@ class NapisiMojBezPozdravaImenomTest extends BazaTestCase
         parent::setUp();
 
         Http::preventStrayRequests();
-        Http::fake([self::OLLAMA => fn () => Http::response(['message' => ['content' => $this->odgovorModela]])]);
+        Http::fake([self::MODEL => fn () => LazniClaude::odgovor($this->odgovorModela)]);
     }
 
     private function sablon(bool $saKome = true): Sablon

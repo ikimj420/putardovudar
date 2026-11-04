@@ -18,13 +18,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 #[Group('baza')]
 class PomocnikPretragaTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -47,12 +48,12 @@ class PomocnikPretragaTest extends BazaTestCase
     /** @param  array<string, mixed>  $forma */
     private function model(array $forma): void
     {
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor(json_encode($forma, JSON_UNESCAPED_UNICODE))]);
     }
 
     private function pozivaModela(): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL)->count();
     }
 
     private function pitaj(string $pitanje): RezultatPretrage
@@ -303,7 +304,7 @@ class PomocnikPretragaTest extends BazaTestCase
     public function odgovor_modela_koji_nije_json_je_prazan_formular_a_ne_greska(): void
     {
         $this->prilika();
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => 'Evo šta mislim: ima posla.']])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor('Evo šta mislim: ima posla.')]);
 
         $this->assertTrue($this->pitaj('Ima li posla?')->nemaPodatak());
     }
@@ -311,7 +312,7 @@ class PomocnikPretragaTest extends BazaTestCase
     #[Test]
     public function kad_ollama_ne_radi_izuzetak_ide_pozivaocu(): void
     {
-        Http::fake([self::OLLAMA => fn () => throw new ConnectionException('nema veze')]);
+        Http::fake([self::MODEL => fn () => throw new ConnectionException('nema veze')]);
 
         $this->expectException(OllamaNedostupna::class);
 
@@ -338,9 +339,9 @@ class PomocnikPretragaTest extends BazaTestCase
         $this->model(['vrsta' => 'posao', 'grad' => 'Ниш', 'kome' => null, 'kljucne_reci' => []]);
         $this->pitaj('Има ли посла у Нишу?');
 
-        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA
-            && str_contains($zahtev->data()['messages'][1]['content'], 'Ima li posla u Nišu?')
-            && preg_match('/\p{Cyrillic}/u', $zahtev->data()['messages'][1]['content']) === 0);
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::MODEL
+            && str_contains(LazniClaude::poruka($zahtev), 'Ima li posla u Nišu?')
+            && preg_match('/\p{Cyrillic}/u', LazniClaude::poruka($zahtev)) === 0);
     }
 
     #[Test]
@@ -361,8 +362,8 @@ class PomocnikPretragaTest extends BazaTestCase
 
         $this->pitaj(str_repeat('a', 1000));
 
-        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA
-            && mb_strlen($zahtev->data()['messages'][1]['content']) === Pomocnik::NAJVISE_ZNAKOVA_PITANJA);
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::MODEL
+            && mb_strlen(LazniClaude::poruka($zahtev)) === Pomocnik::NAJVISE_ZNAKOVA_PITANJA);
     }
 
     #[Test]
@@ -372,9 +373,9 @@ class PomocnikPretragaTest extends BazaTestCase
 
         $this->pitaj('Ima li posla?');
 
-        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA
-            && $zahtev->data()['options']['temperature'] === 0
-            && str_contains($zahtev->data()['messages'][0]['content'], 'Ne odgovaraš na pitanje.')
-            && str_contains($zahtev->data()['messages'][0]['content'], 'kljucne_reci'));
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::MODEL
+            && ! array_key_exists('temperature', $zahtev->data())
+            && str_contains(LazniClaude::uputstvo($zahtev), 'Ne odgovaraš na pitanje.')
+            && str_contains(LazniClaude::uputstvo($zahtev), 'kljucne_reci'));
     }
 }

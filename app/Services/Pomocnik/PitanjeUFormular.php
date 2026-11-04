@@ -5,8 +5,8 @@ namespace App\Services\Pomocnik;
 use App\Enums\Grupa;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Services\Claude\Claude;
 use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\Ollama;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\PoredjenjeTeksta;
 
@@ -28,13 +28,13 @@ TEXT;
 
     private const NAJVISE_ZNAKOVA_VREDNOSTI = 40;
 
-    public function __construct(private readonly Ollama $ollama) {}
+    public function __construct(private readonly Claude $model) {}
 
     /** @throws OllamaNedostupna */
     public function izPitanja(string $pitanje, ?int $vremeCekanja = null): Formular
     {
         try {
-            $forma = $this->ollama->odgovoriJsonom(self::UPUTSTVO, $pitanje, $vremeCekanja);
+            $forma = $this->model->odgovoriJsonom(self::UPUTSTVO, $pitanje, $vremeCekanja);
         } catch (OdgovorNijeJson) {
             return new Formular;
         }

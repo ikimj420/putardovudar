@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 67/T18: red „Zvanični izvor" (kalendar, odgovor pomoćnika) nosi klasu običnog teksta, a redovi bez veze (rok, „Sada otvoreno") ostaju kakvi su.
 #[Group('baza')]
@@ -19,7 +20,7 @@ class RedIzvoraObicanTekstTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -50,10 +51,10 @@ class RedIzvoraObicanTekstTest extends BazaTestCase
             'naslov' => 'Radnik u skladištu', 'vrsta' => VrstaPrilike::Posao, 'mesto' => 'Niš', 'rok' => '2026-11-15',
             'kratak_opis' => 'Puno radno vreme.', 'naziv_izvora' => 'Probni izvor', 'link_izvora' => 'https://primer.rs/skladiste-nis',
         ]);
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]])
-                : Http::response(['message' => ['content' => 'Našao sam posao radnika u skladištu u Nišu.']]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []]))
+                : LazniClaude::odgovor('Našao sam posao radnika u skladištu u Nišu.');
         }]);
 
         $html = (string) $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Ima li posla u Nišu?'])->assertOk()->getContent();

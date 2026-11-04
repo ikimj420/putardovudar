@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 97/T3 (Ivan, 31.10.2026.; nalaz 9 iz PITANJA-92): doslovni tekstovi strane „Predloži priliku" i napomena pomoćnika, upisani ovde slovo po slovo, a ne iz konstanti.
 // Ostali testovi porede sa konstantama, pa bi izmenjen tekst ostao zelen; ovaj je jedini koji pocrveni kad se odobreni tekst promeni. Zato sve što stoji ovde menja samo Ivan.
@@ -22,7 +23,7 @@ class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const LINK = 'https://primer.rs/konkurs-za-stipendije';
 
@@ -112,7 +113,7 @@ class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
         $unosi = ['polje' => ['ime' => 'Ana Anić', 'tekst' => 'Molim za pomoć.']];
 
         // Model napiše tekst: stoji prva napomena, i samo ona.
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => "Ana Anić\n\nMolim: Molim za pomoć."]])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor("Ana Anić\n\nMolim: Molim za pomoć.")]);
         $napisan = $this->post(route('pomocnik.napisi', $sablon->slug), $unosi)->assertOk()->getContent();
         $this->assertStringContainsString('Tekst je napisan iz tvojih odgovora. Proveri ga pre nego što ga pošalješ.', $napisan);
         $this->assertStringNotContainsString('Složen je šablon sa tvojim odgovorima.', $napisan);
@@ -120,7 +121,7 @@ class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
         // Model ne radi: stoji složen šablon, i samo druga napomena.
         Http::swap(new Factory);
         Http::preventStrayRequests();
-        Http::fake([self::OLLAMA => fn () => throw new ConnectionException('nema veze')]);
+        Http::fake([self::MODEL => fn () => throw new ConnectionException('nema veze')]);
         $slozen = $this->post(route('pomocnik.napisi', $sablon->slug), $unosi)->assertOk()->getContent();
         $this->assertStringContainsString('Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.', $slozen);
         $this->assertStringNotContainsString('Tekst je napisan iz tvojih odgovora.', $slozen);

@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 30: vrsta koju je model samo pogodio („radionica" kao „obuka") ne sme da sakrije priliku; izrečena vrsta je tvrda.
 #[Group('baza')]
@@ -23,7 +24,7 @@ class PomocnikVrstaTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -50,7 +51,7 @@ class PomocnikVrstaTest extends BazaTestCase
     {
         // Jedan lažni model za ceo test (drugi Http::fake za isti URL se ne računa), pa se menja samo ono što on vraća.
         $this->forma = $forma;
-        Http::fake([self::OLLAMA => fn () => Http::response(['message' => ['content' => json_encode($this->forma + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::MODEL => fn () => LazniClaude::odgovor(json_encode($this->forma + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], JSON_UNESCAPED_UNICODE))]);
 
         return app(Pomocnik::class)->pretrazi($pitanje);
     }

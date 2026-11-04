@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\StilJavnihStrana;
+use Tests\Podrska\LazniClaude;
 
 // Paket 54: klik bilo gde na kartici vodi na stranu. Veza ostaje jedna (naslov) i razvlači se preko kartice (CSS), pa čitač ekrana ne čuje isti link dvaput;
 // ostale veze u kartici (npr. „Pozovi", zvanični izvor) stoje iznad nje. Ponašanje klikom je izmereno u pregledaču (izveštaj), ovde se čuva sklop.
@@ -22,7 +23,7 @@ class CelaKarticaJeVezaTest extends BazaTestCase
 {
     use RefreshDatabase, StilJavnihStrana;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -128,9 +129,9 @@ class CelaKarticaJeVezaTest extends BazaTestCase
     {
         Http::preventStrayRequests();
         $prilika = Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'kratak_opis' => 'Rad u skladištu.', 'rok' => '2026-12-15', 'naziv_izvora' => 'Fond', 'link_izvora' => 'https://fond.rs/skladiste']);
-        Http::fake([self::OLLAMA => fn (Request $zahtev) => array_key_exists('format', $zahtev->data())
-            ? Http::response(['message' => ['content' => json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => ['skladištu']])]])
-            : Http::response(['message' => ['content' => 'Ima posla u skladištu.']])]);
+        Http::fake([self::MODEL => fn (Request $zahtev) => LazniClaude::jeJson($zahtev)
+            ? LazniClaude::odgovor(json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => ['skladištu']]))
+            : LazniClaude::odgovor('Ima posla u skladištu.')]);
 
         $html = $this->post(route('pomocnik.pitaj'), ['pitanje' => 'Ima li posla u skladištu?'])->assertOk()->getContent();
         $kartice = $this->kartice($html);

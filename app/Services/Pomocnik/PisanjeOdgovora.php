@@ -6,7 +6,7 @@ use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
-use App\Services\Ollama\Ollama;
+use App\Services\Claude\Claude;
 use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Latinica;
 use App\Support\PrikazKalendara;
@@ -36,7 +36,7 @@ Kalendar kaže samo šta je bilo prošli put: ne predviđaj kada će se nešto o
 Pitanje „kada se otvara" znači „kada je bilo otvoreno prošli put": ako kalendar ima tu stavku, odgovori samo od kog do kog datuma je bila otvorena prošli put, i ništa o budućnosti.
 TEXT;
 
-    public function __construct(private readonly Ollama $ollama) {}
+    public function __construct(private readonly Claude $model) {}
 
     /**
      * @param  Collection<int, Prilika>  $zapisi
@@ -81,7 +81,7 @@ TEXT;
         }
 
         // Model ume da pređe na ćirilicu ili da je pomeša sa latinicom; sajt piše samo latinicom. Dužinu odgovora kod ograničava, jer model uputstvo ne drži.
-        return KratakOdgovor::skrati(Latinica::izCirilice($this->ollama->odgovoriTekstom($this->uputstvo($kalendar->isNotEmpty()), $tekst, $vremeCekanja)));
+        return KratakOdgovor::skrati(Latinica::izCirilice($this->model->odgovoriTekstom($this->uputstvo($kalendar->isNotEmpty()), $tekst, $vremeCekanja)));
     }
 
     private function uputstvo(bool $imaKalendar): string

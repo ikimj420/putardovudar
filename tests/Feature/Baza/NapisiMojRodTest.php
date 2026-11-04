@@ -15,6 +15,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\StilJavnihStrana;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 64/T6: „Napiši moj" zna rod iz imena; kad ne zna, pita jedno pitanje; ispod teksta je link za promenu roda; šablon kad model ne radi poštuje rod.
 #[Group('baza')]
@@ -22,7 +23,7 @@ class NapisiMojRodTest extends BazaTestCase
 {
     use RefreshDatabase, StilJavnihStrana, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const PITANJE = 'Da pišem „radio sam" ili „radila sam"?';
 
@@ -38,10 +39,10 @@ class NapisiMojRodTest extends BazaTestCase
 
         Http::preventStrayRequests();
         // Tekst modela ponavlja upisano ime, jer ga provera traži (paket 67); šablon bez polja „ime" dobija tekst bez imena.
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            preg_match('/\{ime\} \(Ime i prezime\): (.+)/', (string) $zahtev->data()['messages'][1]['content'], $ime);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            preg_match('/\{ime\} \(Ime i prezime\): (.+)/', (string) LazniClaude::poruka($zahtev), $ime);
 
-            return $this->modelRadi ? Http::response(['message' => ['content' => rtrim('Napisan tekst. '.($ime[1] ?? ''))]]) : throw new ConnectionException('nema veze');
+            return $this->modelRadi ? LazniClaude::odgovor(rtrim('Napisan tekst. '.($ime[1] ?? ''))) : throw new ConnectionException('nema veze');
         }]);
     }
 
@@ -85,7 +86,7 @@ class NapisiMojRodTest extends BazaTestCase
     // Uputstvo o rodu koje je stiglo modelu (poslednji poziv).
     private function rodUPoruci(): ?string
     {
-        $poruka = Http::recorded()->last()[0]->data()['messages'][1]['content'] ?? '';
+        $poruka = Http::recorded()->last()[0]->data()['messages'][0]['content'] ?? '';
 
         return match (true) {
             str_contains($poruka, self::ZENSKI_RED) => 'zenski',
@@ -330,7 +331,7 @@ class NapisiMojRodTest extends BazaTestCase
         $this->napisi($sablon, ['ime' => 'Ana Anić', 'iskustvo' => '{video/videla} je upisano'])->assertOk();
 
         Http::assertSent(function (Request $zahtev) {
-            $poruka = $zahtev->data()['messages'][1]['content'];
+            $poruka = LazniClaude::poruka($zahtev);
 
             return str_contains($poruka, 'Oglas sam videla na sajtu. Tamo sam radila kao konobar.')
                 && ! str_contains($poruka, "Šablon:\nPoštovani,\n\nOglas sam {video")

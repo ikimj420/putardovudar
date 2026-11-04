@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 67/T11: u „Napiši moj" tekst modela prolazi samo ako upisano ime stoji u njemu isto; inače ide sklopljen šablon (primer iz probe: „Marka Marković").
 #[Group('baza')]
@@ -16,7 +17,7 @@ class ImeKaoUpisanoUNapisiMojTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private string $odgovorModela = '';
 
@@ -25,7 +26,7 @@ class ImeKaoUpisanoUNapisiMojTest extends BazaTestCase
         parent::setUp();
 
         Http::preventStrayRequests();
-        Http::fake([self::OLLAMA => fn () => Http::response(['message' => ['content' => $this->odgovorModela]])]);
+        Http::fake([self::MODEL => fn () => LazniClaude::odgovor($this->odgovorModela)]);
     }
 
     private function sablon(bool $saImenom = true): Sablon

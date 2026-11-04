@@ -20,6 +20,7 @@ use PHPUnit\Framework\Attributes\Test;
 use ReflectionMethod;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 65/T3 (ZA-KASNIJE-POMOCNIK.md, tačka 2): pitanje samo sa vrstom („stipendije"), a otvorenih prilika te vrste nema, ne daje „nemam podatak" nego
 // „Trenutno nema otvorenih stipendija. Dok čekaš, ovo ti može pomoći da se pripremiš:", pa vodiče čiji naslov ima tu reč i stavke kalendara sa tom rečju.
@@ -28,7 +29,7 @@ class PomocnikSamoVrstaTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     /** @var array<string, mixed> */
     private array $formular = ['vrsta' => 'stipendija', 'grad' => null, 'kome' => null, 'kljucne_reci' => []];
@@ -40,10 +41,10 @@ class PomocnikSamoVrstaTest extends BazaTestCase
         Http::preventStrayRequests();
         $this->travelTo(Carbon::create(2026, 10, 11, 12, 0, 0, 'Europe/Belgrade'));
         // Http::fake ostaje na prvom postavljenom odgovoru, pa se postavlja jednom, a formular se menja kroz svojstvo.
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode($this->formular)]])
-                : Http::response(['message' => ['content' => 'Našao sam jednu stipendiju.']]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode($this->formular))
+                : LazniClaude::odgovor('Našao sam jednu stipendiju.');
         }]);
     }
 
@@ -54,7 +55,7 @@ class PomocnikSamoVrstaTest extends BazaTestCase
 
     private function pozivaModela(): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL)->count();
     }
 
     /** @return list<string> */

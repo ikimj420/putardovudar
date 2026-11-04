@@ -22,6 +22,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 24: pomoćnik traži i organizacije (naziv i usluge), samo objavljene, najviše tri; grad se ne koristi.
 #[Group('baza')]
@@ -29,7 +30,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     /** @var array<string, mixed> */
     private array $formular = [];
@@ -45,10 +46,10 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         app('url')->forceRootUrl('https://nas-sajt.rs');
 
         // Jedan lažni model za ceo test; model() samo menja šta on vraća (drugi Http::fake za isti URL se ne računa).
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode($this->formular + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []])]])
-                : Http::response(['message' => ['content' => $this->odgovorModela]]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode($this->formular + ['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []]))
+                : LazniClaude::odgovor($this->odgovorModela);
         }]);
     }
 
@@ -82,7 +83,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
 
     private function pozivaZaOdgovor(): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA && ! array_key_exists('format', $zahtev->data()))->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL && ! LazniClaude::jeJson($zahtev))->count();
     }
 
     private function pitaj(string $pitanje = 'Gde mogu da nađem pomoć oko zapošljavanja?'): OdgovorPomocnika
@@ -423,11 +424,11 @@ class PomocnikOrganizacijeTest extends BazaTestCase
         Http::assertSent(function (Request $zahtev) {
             $telo = $zahtev->data();
 
-            if (array_key_exists('format', $telo)) {
+            if (LazniClaude::jeJson($zahtev)) {
                 return false;
             }
 
-            $poruka = $telo['messages'][1]['content'];
+            $poruka = $telo['messages'][0]['content'];
 
             return str_contains($poruka, "Organizacije:\nNaziv: Nacionalna služba za zapošljavanje; Vrsta: Javna institucija; Kratak opis: Javna služba koja pomaže nezaposlenima; rok za probu je 20. oktobra 2026.; Usluge: Podrška za zapošljavanje, CV podrška, Savetovanje")
                 && ! str_contains($poruka, 'Dugačak opis')
@@ -437,7 +438,7 @@ class PomocnikOrganizacijeTest extends BazaTestCase
                 && ! str_contains($poruka, 'Tajna beleška')
                 && ! str_contains($poruka, 'Prilike:')
                 && ! str_contains($poruka, 'Vodiči:')
-                && str_contains($telo['messages'][0]['content'], 'samo iz priloženih prilika, vodiča i organizacija');
+                && str_contains($telo['system'], 'samo iz priloženih prilika, vodiča i organizacija');
         });
     }
 

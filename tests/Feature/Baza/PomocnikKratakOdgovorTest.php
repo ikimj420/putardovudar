@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 65/T2 (Ivan, 10.10.2026.: „odgovori su i predugi i previše mašinski"): model dobija uputstvo da odgovori u jednoj ili dve kratke rečenice, toplo, na „ti",
 // a detalje ostavi karticama izvora. Ostala pravila uputstva ostaju kakva su bila.
@@ -21,7 +22,7 @@ class PomocnikKratakOdgovorTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     /** @var array<string, mixed> */
     private array $formular = ['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []];
@@ -36,20 +37,20 @@ class PomocnikKratakOdgovorTest extends BazaTestCase
         $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
         Prilika::factory()->objavljena()->create(['naslov' => 'Radnik u skladištu', 'vrsta' => VrstaPrilike::Posao, 'mesto' => 'Niš', 'rok' => '2026-11-15', 'kratak_opis' => 'Puno radno vreme.', 'opis' => 'Rad u skladištu.']);
         // Http::fake ostaje na prvom postavljenom odgovoru, pa se postavlja jednom, a odgovori se menjaju kroz svojstva.
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode($this->formular)]])
-                : Http::response(['message' => ['content' => $this->odgovorModela]]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode($this->formular))
+                : LazniClaude::odgovor($this->odgovorModela);
         }]);
     }
 
     private function uputstvoZaOdgovor(): string
     {
-        $zahtev = Http::recorded(fn (Request $zahtev) => ! array_key_exists('format', $zahtev->data()))->first();
+        $zahtev = Http::recorded(fn (Request $zahtev) => ! LazniClaude::jeJson($zahtev))->first();
 
         $this->assertNotNull($zahtev, 'model je pozvan za odgovor');
 
-        return $zahtev[0]->data()['messages'][0]['content'];
+        return LazniClaude::uputstvo($zahtev[0]);
     }
 
     #[Test]

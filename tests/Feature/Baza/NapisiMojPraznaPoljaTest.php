@@ -15,12 +15,13 @@ use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AdminBazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 70/T10 (i T9): prazna polja u „Napiši moj" i u adminu: podrazumevana reč i izostavljen red uz polje, i kad piše model, i kad ide sklopljen šablon.
 #[Group('baza')]
 class NapisiMojPraznaPoljaTest extends AdminBazaTestCase
 {
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private string $odgovorModela = '';
 
@@ -30,7 +31,7 @@ class NapisiMojPraznaPoljaTest extends AdminBazaTestCase
 
         $this->actingAs(User::factory()->create());
         Http::preventStrayRequests();
-        Http::fake([self::OLLAMA => fn () => Http::response(['message' => ['content' => $this->odgovorModela]])]);
+        Http::fake([self::MODEL => fn () => LazniClaude::odgovor($this->odgovorModela)]);
     }
 
     private function sablon(): Sablon
@@ -62,7 +63,7 @@ class NapisiMojPraznaPoljaTest extends AdminBazaTestCase
 
     private function porukaModelu(): string
     {
-        return (string) Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->first()[0]->data()['messages'][1]['content'];
+        return (string) Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL)->first()[0]->data()['messages'][0]['content'];
     }
 
     // Model dobija šablon bez reda sa praznom školom i podrazumevanu reč kao upisano; ono što napiše prolazi.
@@ -83,7 +84,7 @@ class NapisiMojPraznaPoljaTest extends AdminBazaTestCase
         // Ogledalo: upisana škola ostaje u šablonu i među upisanim.
         $this->odgovorModela = 'Poštovani, ...';
         $this->napisi($this->sablon(), ['ime' => 'Ana Marković', 'kome' => '', 'skola' => 'Ekonomski fakultet u Nišu', 'tekst' => 'Tekst.']);
-        $this->assertStringContainsString('Moja škola: {skola}', (string) Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->last()[0]->data()['messages'][1]['content']);
+        $this->assertStringContainsString('Moja škola: {skola}', (string) Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::MODEL)->last()[0]->data()['messages'][0]['content']);
     }
 
     // Podrazumevana reč je među onim što model sme da ponovi (broj ili e-pošta u njoj nisu „kojih nema u odgovorima").

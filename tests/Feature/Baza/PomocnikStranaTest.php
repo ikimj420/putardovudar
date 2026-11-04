@@ -16,13 +16,14 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 #[Group('baza')]
 class PomocnikStranaTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -43,14 +44,14 @@ class PomocnikStranaTest extends BazaTestCase
     /** Formular (format json) uvek radi; drugi poziv vraća tekst odgovora ili baca grešku. */
     private function model(string|callable $odgovor, bool $formularRadi = true): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev) use ($odgovor, $formularRadi) {
-            if (array_key_exists('format', $zahtev->data())) {
+        Http::fake([self::MODEL => function (Request $zahtev) use ($odgovor, $formularRadi) {
+            if (LazniClaude::jeJson($zahtev)) {
                 return $formularRadi
-                    ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]])
+                    ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []]))
                     : throw new ConnectionException('nema veze');
             }
 
-            return is_callable($odgovor) ? $odgovor() : Http::response(['message' => ['content' => $odgovor]]);
+            return is_callable($odgovor) ? $odgovor() : LazniClaude::odgovor($odgovor);
         }]);
     }
 

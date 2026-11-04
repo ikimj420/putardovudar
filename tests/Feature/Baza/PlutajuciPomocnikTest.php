@@ -20,6 +20,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\StilJavnihStrana;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 55: pomoćnik pluta dole desno na svakoj javnoj strani i otvara se kao prozor na istoj strani. Isti pomoćnik kao /pomocnik: ista pravila, ista
 // provera i isto ograničenje pitanja; ponašanje u pregledaču (Esc, fokus, telefon) je izmereno u pregledaču, a ovde se čuva sklop.
@@ -28,7 +29,7 @@ class PlutajuciPomocnikTest extends BazaTestCase
 {
     use RefreshDatabase, StilJavnihStrana, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const FRAGMENT = ['X-Requested-With' => 'XMLHttpRequest'];
 
@@ -56,14 +57,14 @@ class PlutajuciPomocnikTest extends BazaTestCase
     // Jedan lažni model za ceo test (ponovljen Http::fake se ne menja); ono što vraća se menja svojstvima.
     private function postaviModel(): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
+        Http::fake([self::MODEL => function (Request $zahtev) {
             if (! $this->modelRadi) {
                 throw new ConnectionException('nema veze');
             }
 
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []])]])
-                : Http::response(['message' => ['content' => $this->odgovorModela]]);
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode(['vrsta' => 'posao', 'grad' => 'Niš', 'kome' => null, 'kljucne_reci' => []]))
+                : LazniClaude::odgovor($this->odgovorModela);
         }]);
     }
 

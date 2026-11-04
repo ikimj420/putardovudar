@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 22: broj pitanja po adresi. Preko granice posetilac vidi našu stranu sa porukom (429), a model se ne zove.
 #[Group('baza')]
@@ -19,7 +20,7 @@ class PomocnikOgranicenjeTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -27,7 +28,7 @@ class PomocnikOgranicenjeTest extends BazaTestCase
 
         $this->travelTo(Carbon::create(2026, 10, 10, 12, 0, 0, 'Europe/Belgrade'));
         // Nema objavljenih prilika, pa je svako pitanje tačno jedan poziv modela (formular), a odgovor je „nemam podatak" (Pomocnik::NEMAM_PODATAK).
-        Http::fake([self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []])]])]);
+        Http::fake([self::MODEL => LazniClaude::odgovor(json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []]))]);
     }
 
     private function pitaj(string $pitanje = 'Ima li posla?'): TestResponse

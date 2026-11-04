@@ -16,6 +16,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 67/T13 (Ivan, 11.10.2026.): kad provera odbije odgovor modela i nađe se više vrsta, „Evo šta sam našao za tebe:" stoji jednom na vrhu, a ispod su sve stavke redom
 // (prilike, vodiči, organizacije, kalendar); ranije se red ponavljao iznad svakog bloka.
@@ -24,7 +25,7 @@ class PomocnikJedanNaslovTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const PITANJE = 'Šta ima o Dositeju?';
 
@@ -35,9 +36,9 @@ class PomocnikJedanNaslovTest extends BazaTestCase
         Http::preventStrayRequests();
         $this->travelTo(Carbon::create(2026, 10, 11, 12, 0, 0, 'Europe/Belgrade'));
         // Odgovor modela sa izmišljenim datumom ne prolazi proveru, pa ide gotov tekst sa svim vrstama.
-        Http::fake([self::OLLAMA => fn (Request $zahtev) => array_key_exists('format', $zahtev->data())
-            ? Http::response(['message' => ['content' => json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => ['Dositeja']])]])
-            : Http::response(['message' => ['content' => 'Prijave su do 3. januara 2031.']])]);
+        Http::fake([self::MODEL => fn (Request $zahtev) => LazniClaude::jeJson($zahtev)
+            ? LazniClaude::odgovor(json_encode(['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => ['Dositeja']]))
+            : LazniClaude::odgovor('Prijave su do 3. januara 2031.')]);
     }
 
     private function sveVrste(): void

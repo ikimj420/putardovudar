@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\VidljivTekst;
+use Tests\Podrska\LazniClaude;
 
 // Paket 45: pomoćnik zna kalendar. „Kada se otvara Dositeja?" vraća stavku kalendara kao izvor (kartica „Kalendar"); ista pravila provere
 // odgovora, a model ne sme da napiše budući datum ni da predvidi šta će biti otvoreno.
@@ -26,7 +27,7 @@ class PomocnikKalendarTest extends BazaTestCase
 {
     use RefreshDatabase, VidljivTekst;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const MODEL = LazniClaude::ADRESA;
 
     private const PITANJE = 'Kada se otvara Dositeja?';
 
@@ -58,10 +59,10 @@ class PomocnikKalendarTest extends BazaTestCase
     // Formular (format json) i tekst odgovora se čitaju pri svakom pozivu: ponovljen Http::fake se ne menja, pa test ne sme da ga ponavlja.
     private function postaviModel(): void
     {
-        Http::fake([self::OLLAMA => function (Request $zahtev) {
-            return array_key_exists('format', $zahtev->data())
-                ? Http::response(['message' => ['content' => json_encode([...['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], ...$this->forma], JSON_UNESCAPED_UNICODE)]])
-                : Http::response(['message' => ['content' => $this->odgovorModela]]);
+        Http::fake([self::MODEL => function (Request $zahtev) {
+            return LazniClaude::jeJson($zahtev)
+                ? LazniClaude::odgovor(json_encode([...['vrsta' => null, 'grad' => null, 'kome' => null, 'kljucne_reci' => []], ...$this->forma], JSON_UNESCAPED_UNICODE))
+                : LazniClaude::odgovor($this->odgovorModela);
         }]);
     }
 
@@ -483,16 +484,16 @@ class PomocnikKalendarTest extends BazaTestCase
         app(Pomocnik::class)->odgovori(self::PITANJE);
 
         Http::assertSent(function (Request $zahtev) {
-            if ($zahtev->url() !== self::OLLAMA || array_key_exists('format', $zahtev->data())) {
+            if ($zahtev->url() !== self::MODEL || LazniClaude::jeJson($zahtev)) {
                 return false;
             }
 
-            $poruke = $zahtev->data()['messages'];
+            $uputstvo = LazniClaude::uputstvo($zahtev);
 
-            return str_contains($poruke[0]['content'], 'samo iz priloženih prilika, vodiča i organizacija')
-                && str_contains($poruke[0]['content'], 'Kalendar kaže samo šta je bilo prošli put: ne predviđaj kada će se nešto otvoriti')
-                && str_contains($poruke[0]['content'], 'Pitanje „kada se otvara" znači „kada je bilo otvoreno prošli put"')
-                && str_contains($poruke[1]['content'], "Kalendar:\nNaziv: Stipendija Dositeja; Ko daje: Fond za mlade talente; Kome je namenjeno: Studenti; Prošli put: od 22.12.2025. do 26.01.2026.; Napomena: Prijave su išle preko eUprave.");
+            return str_contains($uputstvo, 'samo iz priloženih prilika, vodiča i organizacija')
+                && str_contains($uputstvo, 'Kalendar kaže samo šta je bilo prošli put: ne predviđaj kada će se nešto otvoriti')
+                && str_contains($uputstvo, 'Pitanje „kada se otvara" znači „kada je bilo otvoreno prošli put"')
+                && str_contains(LazniClaude::poruka($zahtev), "Kalendar:\nNaziv: Stipendija Dositeja; Ko daje: Fond za mlade talente; Kome je namenjeno: Studenti; Prošli put: od 22.12.2025. do 26.01.2026.; Napomena: Prijave su išle preko eUprave.");
         });
     }
 
@@ -506,11 +507,11 @@ class PomocnikKalendarTest extends BazaTestCase
 
         app(Pomocnik::class)->odgovori('Ima li posla?');
 
-        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA
-            && ! array_key_exists('format', $zahtev->data())
-            && str_contains($zahtev->data()['messages'][0]['content'], 'samo iz priloženih prilika, vodiča i organizacija')
-            && ! str_contains($zahtev->data()['messages'][0]['content'], 'Kalendar')
-            && ! str_contains($zahtev->data()['messages'][1]['content'], 'Kalendar:'));
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::MODEL
+            && ! LazniClaude::jeJson($zahtev)
+            && str_contains(LazniClaude::uputstvo($zahtev), 'samo iz priloženih prilika, vodiča i organizacija')
+            && ! str_contains(LazniClaude::uputstvo($zahtev), 'Kalendar')
+            && ! str_contains(LazniClaude::poruka($zahtev), 'Kalendar:'));
     }
 
     // Ceo put kroz stranu: kartica „Kalendar" sa „Prošli put", vezom na kalendar i zvaničnim izvorom.

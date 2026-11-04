@@ -4,11 +4,20 @@ namespace Tests;
 
 use App\Services\RazresivacImena;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Tests\Podrska\LazniClaude;
 use Tests\Podrska\LazniRazresivac;
 
 abstract class TestCase extends BaseTestCase
 {
     private LazniRazresivac $razresivac;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Pomoćnik i „Napiši moj" zovu Claude, pa svaki test ima lažan ključ; test koji meri „ključ nije podešen" ga sam skida.
+        config()->set('claude.kljuc', LazniClaude::KLJUC);
+    }
 
     // Proverava se i posle svakog osvežavanja aplikacije, i pre osobina koje pišu u bazu.
     protected function refreshApplication()
