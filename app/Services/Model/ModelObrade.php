@@ -2,10 +2,7 @@
 
 namespace App\Services\Model;
 
-use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\OllamaNedostupna;
-
-// Model koji obrađuje nacrte prilika: lokalna Ollama ili Claude API (MODEL_OBRADE). Isto uputstvo ide oba, pa je proba poštena.
+// Model koji obrađuje nacrte prilika i piše za pomoćnika: Claude API (paket 100; Ollama je izbačena).
 interface ModelObrade
 {
     public function model(): string;
@@ -18,12 +15,12 @@ interface ModelObrade
      *
      * @return array<string, mixed>
      *
-     * @throws OllamaNedostupna
+     * @throws ModelNedostupan
      * @throws OdgovorNijeJson
      */
     public function odgovoriJsonom(string $uputstvo, string $tekst, ?int $vremeCekanja = null): array;
 
-    /** @throws OllamaNedostupna */
+    /** @throws ModelNedostupan */
     public function odgovoriTekstom(string $uputstvo, string $tekst, ?int $vremeCekanja = null): string;
 
     // Zbir svih poziva ovog objekta do sada.

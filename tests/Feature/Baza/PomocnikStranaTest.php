@@ -162,7 +162,7 @@ class PomocnikStranaTest extends BazaTestCase
     }
 
     #[Test]
-    public function kad_ollama_ne_radi_strana_radi_i_kaze_da_pomocnik_ne_radi(): void
+    public function kad_model_ne_radi_strana_radi_i_kaze_da_pomocnik_ne_radi(): void
     {
         $this->prilika();
         $this->model('x', formularRadi: false);
@@ -174,9 +174,9 @@ class PomocnikStranaTest extends BazaTestCase
         $this->assertStringNotContainsString(PrikazPomocnika::NASLOV_IZVORA, $tekst);
     }
 
-    // Ogledalo: ostale strane rade kad Ollama ne radi, a bez greške pomoćnik ne pominje da ne radi.
+    // Ogledalo: ostale strane rade kad model ne radi, a bez greške pomoćnik ne pominje da ne radi.
     #[Test]
-    public function ostale_strane_rade_i_kad_ollama_ne_radi(): void
+    public function ostale_strane_rade_i_kad_model_ne_radi(): void
     {
         $prilika = $this->prilika();
         $this->model('x', formularRadi: false);

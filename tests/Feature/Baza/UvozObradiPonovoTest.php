@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 40: uvoz:obradi --ponovo obrađuje nacrte iz uvoza koje je obradilo staro pravilo; objavljene i ručno menjane ne dira.
 #[Group('baza')]
@@ -20,7 +21,7 @@ class UvozObradiPonovoTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const STRANA = 'https://a.test/oglas-1';
 
@@ -49,24 +50,24 @@ class UvozObradiPonovoTest extends BazaTestCase
     }
 
     /** @param  array<string, mixed>  $dopuna */
-    private function ollama(array $dopuna = []): mixed
+    private function claude(array $dopuna = []): mixed
     {
-        return Http::response(['message' => ['content' => json_encode([...[
+        return LazniClaude::odgovor(json_encode([...[
             'vazi_pravilo' => true, 'razlog' => 'Konkurs za studente.', 'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine',
             'grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je za sve studente']],
-        ], ...$dopuna], JSON_UNESCAPED_UNICODE)]]);
+        ], ...$dopuna], JSON_UNESCAPED_UNICODE));
     }
 
-    private function pozivaOllame(): int
+    private function pozivaClaudea(): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE)->count();
     }
 
     #[Test]
     public function ponovo_obradjuje_nacrt_obradjen_po_starom_pravilu_i_objavljuje_ga_po_novom(): void
     {
         $nacrt = $this->starNacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutputToContain('objavljen (Konkurs za studente.): Stari nacrt')->assertExitCode(0);
 
@@ -75,7 +76,7 @@ class UvozObradiPonovoTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
         $this->assertSame(['studenti'], $prilika->grupe);
         $this->assertSame(ObradaNacrta::PRAVILO, $prilika->predlog['pravilo']);
-        $this->assertSame(1, $this->pozivaOllame());
+        $this->assertSame(1, $this->pozivaClaudea());
     }
 
     // Paket 59/T5, 63/T3 i 97/T1: verzija pravila je 6 (paket 84/T1: rok bez godine daleko od objave menja ishod); nacrt obrađen bilo kojom manjom verzijom (ili bez verzije) se ponovo obrađuje, a obrađen tekućom ne.
@@ -89,11 +90,11 @@ class UvozObradiPonovoTest extends BazaTestCase
         $prethodna = $this->starNacrt(['naslov' => 'Prethodna verzija', 'link_izvora' => 'https://a.test/prethodna', 'predlog' => $odbijen(ObradaNacrta::PRAVILO - 1)]);
         $tekuca = $this->starNacrt(['naslov' => 'Tekuća verzija', 'link_izvora' => 'https://a.test/tekuca', 'predlog' => $odbijen(ObradaNacrta::PRAVILO)]);
         $bez = $this->starNacrt(['naslov' => 'Bez verzije', 'link_izvora' => 'https://a.test/bez']);
-        Http::fake(['https://a.test/starija' => $this->strana(), 'https://a.test/prethodna' => $this->strana(), 'https://a.test/bez' => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake(['https://a.test/starija' => $this->strana(), 'https://a.test/prethodna' => $this->strana(), 'https://a.test/bez' => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->assertExitCode(0);
 
-        $this->assertSame(3, $this->pozivaOllame());
+        $this->assertSame(3, $this->pozivaClaudea());
         foreach ([$starija, $prethodna, $bez] as $nacrt) {
             $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status, $nacrt->naslov);
             $this->assertSame(ObradaNacrta::PRAVILO, $nacrt->fresh()->predlog['pravilo'], $nacrt->naslov);
@@ -121,14 +122,14 @@ class UvozObradiPonovoTest extends BazaTestCase
     public function nacrt_obradjen_po_novom_pravilu_se_ne_obradjuje_ponovo(): void
     {
         $nacrt = $this->starNacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'grupe' => []])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'grupe' => []])]);
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutputToContain('ostaje nacrt (pravilo za objavu ne važi): Stari nacrt');
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutput('Nema nacrta iz uvoza za obradu.');
 
         $this->assertSame(ObradaNacrta::PRAVILO, $nacrt->fresh()->predlog['pravilo']);
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
-        $this->assertSame(1, $this->pozivaOllame());
+        $this->assertSame(1, $this->pozivaClaudea());
     }
 
     // Objavljene, ručno menjane, sa drugog izvora i obrađene po novom pravilu ostaju kakve jesu.
@@ -181,7 +182,7 @@ class UvozObradiPonovoTest extends BazaTestCase
         $menjan = $this->starNacrt(['naslov' => 'Menjan', 'link_izvora' => 'https://a.test/menjan']);
         $this->travelTo(now()->addHours(3));
         $menjan->update(['opis' => 'Ivan je dopisao opis.']);
-        Http::fake(['https://a.test/nedirnut' => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake(['https://a.test/nedirnut' => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutputToContain('Obrađeno nacrta: 1. Objavljeno: 1.');
 
@@ -203,7 +204,7 @@ class UvozObradiPonovoTest extends BazaTestCase
         $unutra->update(['opis' => 'Izmena posle 30 sekundi.']);
         $this->travelTo($pocetak->copy()->addSeconds(61));
         $van->update(['opis' => 'Izmena posle 61 sekunde.']);
-        Http::fake(['https://a.test/unutra' => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake(['https://a.test/unutra' => $this->strana(), self::CLAUDE => $this->claude()]);
 
         // Tačan ispis: nacrt van granice nije ni pokušan (ne bi bio „nije obrađeno").
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutputToContain('Obrađeno nacrta: 1. Objavljeno: 1. Ostalo nacrt: 0. Nije obrađeno: 0.');

@@ -9,6 +9,6 @@ final class NepoznatModelObrade extends RuntimeException
 {
     public function __construct()
     {
-        parent::__construct('Nepoznata vrednost MODEL_OBRADE: dozvoljeno je „ollama" ili „claude", tačno tako, malim slovima.');
+        parent::__construct('Nepoznata vrednost MODEL_OBRADE: dozvoljeno je samo „claude", tačno tako, malim slovima.');
     }
 }

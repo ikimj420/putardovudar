@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 74/T3 (Ivan, 13.10.2026.): „organizacije koje…" dokazuje grupu „Organizacije" samo uz rad sa ljudima („koje rade sa mladima", „koje se bave zaštitom…"), ne i „organizacijama koje žele
 // da istraže…". Strane su isečci pravih strana (tests/Fixtures/stranice/): GOTOTWIN poziv (preduzeća, startapi, istraživačke ustanove) i Erasmus+ mentorski program (omladinske organizacije).
@@ -20,7 +21,7 @@ class UvozObradiOrganizacijeTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const GOTOTWIN = 'https://eumogucnosti.rs/gototwin-poziv-testiranje-digitalnih-resenja-za-obnovljive-izvore-energije/';
 
@@ -41,7 +42,7 @@ class UvozObradiOrganizacijeTest extends BazaTestCase
         $nacrt = Prilika::factory()->create(['naslov' => $naslov, 'vrsta' => VrstaPrilike::Drugo, 'rok' => null, 'naziv_izvora' => 'Izvor A', 'link_izvora' => $adresa]);
         Http::fake([
             $adresa => Http::response((string) file_get_contents(base_path('tests/Fixtures/stranice/'.$snimak)), 200, ['Content-Type' => 'text/html; charset=UTF-8']),
-            self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]]),
+            self::CLAUDE => LazniClaude::odgovor(json_encode($forma, JSON_UNESCAPED_UNICODE)),
         ]);
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);

@@ -24,7 +24,7 @@ class JavnaAdresaTest extends TestCase
     {
         return [
             'petlja' => ['http://127.0.0.1/poziv'],
-            'petlja sa portom (Ollama)' => ['http://127.0.0.1:11434/api/chat'],
+            'petlja sa portom' => ['http://127.0.0.1:11434/api/chat'],
             'cela petlja 127/8' => ['http://127.9.9.9/'],
             'privatna 10/8' => ['http://10.1.2.3/x'],
             'privatna 172.16/12' => ['http://172.16.0.5/'],

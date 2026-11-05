@@ -2,17 +2,17 @@
 
 namespace App\Services\Claude;
 
+use App\Services\Model\ModelNedostupan;
 use App\Services\Model\ModelObrade;
+use App\Services\Model\OdgovorNijeJson;
 use App\Services\Model\Potrosnja;
-use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\OllamaNedostupna;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Sleep;
 
 // Jedino mesto u aplikaciji koje zove Claude API (Messages). Ključ, model i cene dolaze iz config/claude.php; ključ se nikad ne piše u poruku greške ni u log.
-// Greške su iste kao kod Ollame (OllamaNedostupna, OdgovorNijeJson), pa uvoz:obradi ne zna koji model radi.
+// Greške su ModelNedostupan (veza, ključ, odbijen zahtev) i OdgovorNijeJson (odgovor nije JSON objekat); uvoz:obradi i pomoćnik znaju samo za njih.
 final class Claude implements ModelObrade
 {
     private int $poziva = 0;
@@ -80,7 +80,7 @@ final class Claude implements ModelObrade
         $kljuc = config('claude.kljuc');
 
         if (! is_string($kljuc) || trim($kljuc) === '') {
-            throw new OllamaNedostupna('Claude API: ključ nije podešen (ANTHROPIC_API_KEY)');
+            throw new ModelNedostupan('Claude API: ključ nije podešen (ANTHROPIC_API_KEY)');
         }
 
         $granica = (int) config('claude.vreme_cekanja');
@@ -100,7 +100,7 @@ final class Claude implements ModelObrade
                         'messages' => [['role' => 'user', 'content' => $tekst]],
                     ]);
             } catch (ConnectionException) {
-                throw new OllamaNedostupna('Claude API ne odgovara');
+                throw new ModelNedostupan('Claude API ne odgovara');
             }
 
             if (in_array($odgovor->status(), [429, 529], true) && $pokusaj < count($cekanje)) {
@@ -110,7 +110,7 @@ final class Claude implements ModelObrade
             }
 
             if (! $odgovor->successful()) {
-                throw new OllamaNedostupna(in_array($odgovor->status(), [401, 403], true) ? 'Claude API je odbio ključ (HTTP '.$odgovor->status().')' : 'Claude API je odgovorio sa HTTP '.$odgovor->status());
+                throw new ModelNedostupan(in_array($odgovor->status(), [401, 403], true) ? 'Claude API je odbio ključ (HTTP '.$odgovor->status().')' : 'Claude API je odgovorio sa HTTP '.$odgovor->status());
             }
 
             return $this->izvuci($odgovor);

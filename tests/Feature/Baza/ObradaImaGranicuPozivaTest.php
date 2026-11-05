@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Concerns\BezLokalnogOkruzenja;
+use Tests\Podrska\LazniClaude;
 
 // Paket 95/T5 (PITANJA-92 5): uvoz:obradi pravi najviše onoliko poziva modela koliko piše u podešavanju (claude.najvise_poziva_po_prolazu); posle toga staje, a ostatak čeka sledeći prolaz.
 #[Group('baza')]
@@ -21,9 +22,7 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
 {
     use BezLokalnogOkruzenja, RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
-
-    private const ANTHROPIC = 'https://api.anthropic.com/v1/messages';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -53,8 +52,7 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
         ], JSON_UNESCAPED_UNICODE);
 
         $fake = [
-            self::OLLAMA => Http::response(['message' => ['content' => $forma]]),
-            self::ANTHROPIC => Http::response(['content' => [['type' => 'text', 'text' => $forma]], 'usage' => ['input_tokens' => 10, 'output_tokens' => 5]]),
+            self::CLAUDE => LazniClaude::odgovor($forma),
         ];
 
         foreach (range(1, $koliko) as $broj) {
@@ -90,7 +88,7 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
         $this->assertSame(1, substr_count($izlaz, 'Granica od'));
         $this->assertStringContainsString('Obrađeno nacrta: 2. Objavljeno: 2.', $izlaz);
 
-        $this->assertSame(2, $this->poziva(self::OLLAMA));
+        $this->assertSame(2, $this->poziva(self::CLAUDE));
         $this->assertSame(3, $this->neobradjenih());
 
         // Sledeći prolaz nastavlja gde je stalo, pa treći završava poslednji nacrt bez poruke o granici.
@@ -99,7 +97,7 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
 
         $this->artisan('uvoz:obradi')->doesntExpectOutputToContain('Granica od')->expectsOutputToContain('Obrađeno nacrta: 1. Objavljeno: 1.')->assertSuccessful();
         $this->assertSame(0, $this->neobradjenih());
-        $this->assertSame(5, $this->poziva(self::OLLAMA));
+        $this->assertSame(5, $this->poziva(self::CLAUDE));
     }
 
     // Ogledalo: granica koja nije dostignuta ne staje ništa i ne piše ništa; tačno onoliko nacrta koliko je granica prolazi do kraja.
@@ -113,7 +111,7 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
         $this->artisan('uvoz:obradi')->doesntExpectOutputToContain('Granica od')->expectsOutputToContain('Obrađeno nacrta: 5. Objavljeno: 5.')->assertSuccessful();
 
         $this->assertSame(0, $this->neobradjenih());
-        $this->assertSame(5, $this->poziva(self::OLLAMA));
+        $this->assertSame(5, $this->poziva(self::CLAUDE));
     }
 
     // Broje se pozivi modela, ne nacrti: strana koja ne stiže ne troši poziv.
@@ -129,21 +127,19 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
             ->expectsOutputToContain('Obrađeno nacrta: 1. Objavljeno: 1. Ostalo nacrt: 0. Nije obrađeno: 3.')
             ->assertSuccessful();
 
-        $this->assertSame(1, $this->poziva(self::OLLAMA));
+        $this->assertSame(1, $this->poziva(self::CLAUDE));
     }
 
     #[Test]
-    public function granica_vazi_i_za_claude(): void
+    public function granica_od_jednog_poziva_ostavlja_ostale_nacrte_neobradjene(): void
     {
-        config()->set('claude.model_obrade', 'claude');
         config()->set('claude.najvise_poziva_po_prolazu', 1);
         $this->nacrti(3);
         $this->mreza(3);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('Granica od 1 poziva modela po prolazu je dostignuta; obrada staje. Čeka sledeći prolaz: 2.')->assertSuccessful();
 
-        $this->assertSame(1, $this->poziva(self::ANTHROPIC));
-        $this->assertSame(0, $this->poziva(self::OLLAMA));
+        $this->assertSame(1, $this->poziva(self::CLAUDE));
         $this->assertSame(2, $this->neobradjenih());
     }
 
@@ -157,6 +153,6 @@ class ObradaImaGranicuPozivaTest extends BazaTestCase
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('Granica od 1 poziva modela po prolazu je dostignuta; obrada staje. Čeka sledeći prolaz: 1.')->assertSuccessful();
 
-        $this->assertSame(1, $this->poziva(self::OLLAMA));
+        $this->assertSame(1, $this->poziva(self::CLAUDE));
     }
 }

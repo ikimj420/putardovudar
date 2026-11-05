@@ -46,7 +46,7 @@ class AdminSpisakSuKarticeTest extends AdminBazaTestCase
     public function kartica_ima_naslov_oznake_redove_i_dugme_tim_redom(): void
     {
         $prilika = $this->prilika();
-        $prilika->objavi(KoJeObjavio::Ollama);
+        $prilika->objavi(KoJeObjavio::Model);
 
         $this->spisak()->assertSeeInOrder([
             'Konkurs za stipendije', 'Objavljeno', 'Konkurs', 'Rok', '01.12.2026.', 'Izvor', 'Fond za mlade talente', 'Objavio', 'Model', 'Uredi',
@@ -97,7 +97,7 @@ class AdminSpisakSuKarticeTest extends AdminBazaTestCase
     #[Test]
     public function popunjena_vrednost_crta_red(): void
     {
-        $this->prilika()->objavi(KoJeObjavio::Ollama);
+        $this->prilika()->objavi(KoJeObjavio::Model);
 
         $this->spisak()->assertSeeHtml('>Izvor<')->assertSeeHtml('>Objavio<');
     }

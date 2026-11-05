@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 #[Group('baza')]
 class UvozDnevnoTest extends BazaTestCase
@@ -18,7 +19,7 @@ class UvozDnevnoTest extends BazaTestCase
 
     private const FEED = 'https://izvor-a.test/feed/';
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -37,13 +38,13 @@ class UvozDnevnoTest extends BazaTestCase
         Http::fake(function (Request $zahtev) use ($statusFeeda) {
             return match (true) {
                 $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml')), $statusFeeda),
-                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'osnov' => null, 'citat_pravila' => ''])]]),
+                $zahtev->url() === self::CLAUDE => LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'osnov' => null, 'citat_pravila' => ''])),
                 default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
             };
         });
     }
 
-    // Paket 95/T6: pogrešan MODEL_OBRADE obara samo obradu (izlaz 1, poruka), a uvoz i ostali koraci idu; ni Ollama ni Claude ne dobijaju nijedan zahtev.
+    // Paket 95/T6: pogrešan MODEL_OBRADE obara samo obradu (izlaz 1, poruka), a uvoz i ostali koraci idu; Claude ne dobija nijedan zahtev.
     #[Test]
     public function pogresan_model_obrade_zaustavlja_samo_obradu(): void
     {
@@ -59,7 +60,7 @@ class UvozDnevnoTest extends BazaTestCase
 
         $this->assertSame(3, Prilika::query()->count());
         $this->assertSame(3, Prilika::query()->whereNull('obradeno_at')->count());
-        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA || str_contains($zahtev->url(), 'anthropic'));
+        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE || str_contains($zahtev->url(), 'anthropic'));
         Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::FEED);
     }
 
@@ -98,12 +99,12 @@ class UvozDnevnoTest extends BazaTestCase
         $this->artisan('uvoz:dnevno')->run();
 
         $adrese = Http::recorded()->map(fn (array $par) => $par[0]->url())->values()->all();
-        $prvaOllama = array_search(self::OLLAMA, $adrese, true);
+        $prvaObrada = array_search(self::CLAUDE, $adrese, true);
         $feed = array_search(self::FEED, $adrese, true);
 
         $this->assertNotFalse($feed);
-        $this->assertNotFalse($prvaOllama);
-        $this->assertLessThan($prvaOllama, $feed);
+        $this->assertNotFalse($prvaObrada);
+        $this->assertLessThan($prvaObrada, $feed);
     }
 
     // Paket 17: Jooble ide između RSS-a i obrade, a bez ključa se preskače bez zahteva.
@@ -115,7 +116,7 @@ class UvozDnevnoTest extends BazaTestCase
             return match (true) {
                 $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml'))),
                 $zahtev->url() === 'https://jooble.org/api/PROBNI-KLJUC-123' => Http::response(['jobs' => [['title' => 'Posao sa Jooble-a', 'snippet' => 'Opis', 'link' => 'https://rs.jooble.org/desc/9']]]),
-                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'osnov' => null, 'citat_pravila' => ''])]]),
+                $zahtev->url() === self::CLAUDE => LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'osnov' => null, 'citat_pravila' => ''])),
                 default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
             };
         });
@@ -125,7 +126,7 @@ class UvozDnevnoTest extends BazaTestCase
         $adrese = Http::recorded()->map(fn (array $par) => $par[0]->url())->values()->all();
 
         $this->assertLessThan((int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true), (int) array_search(self::FEED, $adrese, true));
-        $this->assertLessThan((int) array_search(self::OLLAMA, $adrese, true), (int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true));
+        $this->assertLessThan((int) array_search(self::CLAUDE, $adrese, true), (int) array_search('https://jooble.org/api/PROBNI-KLJUC-123', $adrese, true));
         $this->assertSame(4, Prilika::query()->count());
         $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
     }
@@ -140,7 +141,7 @@ class UvozDnevnoTest extends BazaTestCase
             return match (true) {
                 $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml'))),
                 $zahtev->url() === $spisak => Http::response((string) file_get_contents(base_path('tests/Fixtures/spiskovi/nsz-konkursi.html'))),
-                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'grupe' => []])]]),
+                $zahtev->url() === self::CLAUDE => LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'grupe' => []])),
                 default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
             };
         });
@@ -153,7 +154,7 @@ class UvozDnevnoTest extends BazaTestCase
         $adrese = Http::recorded()->map(fn (array $par) => $par[0]->url())->values()->all();
 
         $this->assertLessThan((int) array_search($spisak, $adrese, true), (int) array_search(self::FEED, $adrese, true));
-        $this->assertLessThan((int) array_search(self::OLLAMA, $adrese, true), (int) array_search($spisak, $adrese, true));
+        $this->assertLessThan((int) array_search(self::CLAUDE, $adrese, true), (int) array_search($spisak, $adrese, true));
         $this->assertSame(9, Prilika::query()->count());
         $this->assertSame(6, Prilika::query()->where('naziv_izvora', 'Spisak NSZ')->whereNotNull('obradeno_at')->count());
         $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
@@ -168,7 +169,7 @@ class UvozDnevnoTest extends BazaTestCase
             return match (true) {
                 $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml'))),
                 $zahtev->url() === 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10' => Http::response('<html><body>Nov izgled</body></html>'),
-                $zahtev->url() === self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'grupe' => []])]]),
+                $zahtev->url() === self::CLAUDE => LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'grupe' => []])),
                 default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
             };
         });

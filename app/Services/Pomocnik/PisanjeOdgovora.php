@@ -7,7 +7,7 @@ use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
 use App\Services\Claude\Claude;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
 use App\Support\Latinica;
 use App\Support\PrikazKalendara;
 use App\Support\PrikazPrilike;
@@ -44,7 +44,7 @@ TEXT;
      * @param  Collection<int, Organizacija>  $organizacije
      * @param  Collection<int, KalendarStavka>  $kalendar
      *
-     * @throws OllamaNedostupna
+     * @throws ModelNedostupan
      */
     public function napisi(string $pitanje, Collection $zapisi, Collection $vodici, Collection $organizacije, Collection $kalendar, ?int $vremeCekanja = null): string
     {

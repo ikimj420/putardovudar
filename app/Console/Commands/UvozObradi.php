@@ -6,10 +6,10 @@ use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Services\IshodObrade;
+use App\Services\Model\ModelNedostupan;
 use App\Services\Model\ModelObrade;
 use App\Services\Model\NepoznatModelObrade;
 use App\Services\ObradaNacrta;
-use App\Services\Ollama\OllamaNedostupna;
 use App\Support\Prikaz;
 use Illuminate\Console\Command;
 use Throwable;
@@ -18,7 +18,7 @@ class UvozObradi extends Command
 {
     protected $signature = 'uvoz:obradi {--ponovo : ponovo obradi nacrte iz uvoza obrađene po starom pravilu}';
 
-    protected $description = 'Model (Ollama ili Claude, MODEL_OBRADE) predlaže, a kod proverava: nacrti iz uvoza koji ispune pravilo za objavu postaju objavljeni, ostali ostaju nacrti';
+    protected $description = 'Model (Claude) predlaže, a kod proverava: nacrti iz uvoza koji ispune pravilo za objavu postaju objavljeni, ostali ostaju nacrti';
 
     public function handle(): int
     {
@@ -70,7 +70,7 @@ class UvozObradi extends Command
 
             try {
                 $ishod = $obrada->obradi($nacrt);
-            } catch (OllamaNedostupna $izuzetak) {
+            } catch (ModelNedostupan $izuzetak) {
                 $this->line(sprintf('%s; ništa nije promenjeno posle ovog nacrta (obrađeno do sada: %d).', $izuzetak->getMessage(), $objavljeno + array_sum($razlozi)));
                 $this->potrosnja($model);
 

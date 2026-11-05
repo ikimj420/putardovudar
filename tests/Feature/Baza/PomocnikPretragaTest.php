@@ -6,7 +6,7 @@ use App\Enums\Grupa;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
 use App\Services\Pomocnik\Pomocnik;
 use App\Services\Pomocnik\RezultatPretrage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -310,11 +310,11 @@ class PomocnikPretragaTest extends BazaTestCase
     }
 
     #[Test]
-    public function kad_ollama_ne_radi_izuzetak_ide_pozivaocu(): void
+    public function kad_model_ne_radi_izuzetak_ide_pozivaocu(): void
     {
         Http::fake([self::MODEL => fn () => throw new ConnectionException('nema veze')]);
 
-        $this->expectException(OllamaNedostupna::class);
+        $this->expectException(ModelNedostupan::class);
 
         $this->pitaj('Ima li posla?');
     }

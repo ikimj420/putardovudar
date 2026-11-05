@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 63/T4: oglas sa poslovi.infostud.com nema reč „rok"; kad model ne nađe rok, kod uzima expirationDate iz strane, ali samo ako isti datum piše i u tekstu strane.
 #[Group('baza')]
@@ -20,7 +21,7 @@ class UvozObradiInfostudTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const OGLAS = 'https://poslovi.infostud.com/posao/magacioner/probna-firma-doo/760840';
 
@@ -48,11 +49,11 @@ class UvozObradiInfostudTest extends BazaTestCase
     }
 
     /** @param  array<string, mixed>  $dopuna */
-    private function ollama(array $dopuna = []): mixed
+    private function claude(array $dopuna = []): mixed
     {
         $forma = [...['vazi_pravilo' => true, 'razlog' => 'Oglas za posao.', 'vrsta' => 'posao', 'rok' => null, 'citat' => null, 'grupe' => []], ...$dopuna];
 
-        return Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]]);
+        return LazniClaude::odgovor(json_encode($forma, JSON_UNESCAPED_UNICODE));
     }
 
     private function nacrt(string $adresa = self::OGLAS): Prilika
@@ -63,7 +64,7 @@ class UvozObradiInfostudTest extends BazaTestCase
     /** @param  array<string, mixed>  $model */
     private function obradi(Prilika $nacrt, string $html, array $model = []): Prilika
     {
-        Http::fake([(string) $nacrt->link_izvora => Http::response($html), self::OLLAMA => $this->ollama($model)]);
+        Http::fake([(string) $nacrt->link_izvora => Http::response($html), self::CLAUDE => $this->claude($model)]);
 
         $this->artisan('uvoz:obradi');
 

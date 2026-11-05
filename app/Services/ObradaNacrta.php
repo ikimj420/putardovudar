@@ -6,9 +6,9 @@ use App\Enums\Grupa;
 use App\Enums\KoJeObjavio;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Services\Model\ModelNedostupan;
 use App\Services\Model\ModelObrade;
-use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\OdgovorNijeJson;
 use App\Support\DatumiUTekstu;
 use App\Support\DatumUTekstu;
 use App\Support\Latinica;
@@ -16,7 +16,7 @@ use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Validation\ValidationException;
 
-// Model (Ollama ili Claude, MODEL_OBRADE) predlaže, kod odlučuje: objava samo ako je sve što model tvrdi proverljivo u tekstu strane. Model kaže samo da li je tekst prilika; grupu dokazuje
+// Model (Claude) predlaže, kod odlučuje: objava samo ako je sve što model tvrdi proverljivo u tekstu strane. Model kaže samo da li je tekst prilika; grupu dokazuje
 // kod (citat sa rečju grupe koji piše na strani), a oglas za posao važi i bez grupe.
 final class ObradaNacrta
 {
@@ -52,7 +52,7 @@ TEXT;
 
     public function __construct(private readonly ModelObrade $model, private readonly TekstStrane $strana, private readonly CitatGrupe $citatGrupe, private readonly RokSaInfostuda $rokInfostuda) {}
 
-    /** @throws OllamaNedostupna */
+    /** @throws ModelNedostupan */
     public function obradi(Prilika $prilika): IshodObrade
     {
         try {
@@ -141,7 +141,7 @@ TEXT;
             $prilika->razlog_objave = $prilika->vrsta === VrstaPrilike::Posao ? self::RAZLOG_POSAO : $forma['razlog'];
 
             try {
-                $prilika->objavi(KoJeObjavio::Ollama);
+                $prilika->objavi(KoJeObjavio::Model);
 
                 return new IshodObrade(IshodObrade::OBJAVA, $prilika->razlog_objave);
             } catch (ValidationException) {

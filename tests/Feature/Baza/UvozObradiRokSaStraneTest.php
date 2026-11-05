@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 68/T6: kad citat roka koji je vratio model nije doslovan na strani, kod traži rečenicu sa istim datumom i rečju roka; datum samo uz događaj ne prolazi.
 #[Group('baza')]
@@ -19,7 +20,7 @@ class UvozObradiRokSaStraneTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const STRANA = 'https://a.test/oglas-1';
 
@@ -47,7 +48,7 @@ class UvozObradiRokSaStraneTest extends BazaTestCase
             'vazi_pravilo' => true, 'razlog' => 'Poziv za studente.', 'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine',
             'grupe' => [['grupa' => 'studenti', 'citat' => self::GRUPA]],
         ], ...$forma];
-        Http::fake([self::STRANA => Http::response('<html><body>'.$telo.'<p>'.self::GRUPA.'.</p></body></html>'), self::OLLAMA => Http::response(['message' => ['content' => json_encode($odgovor, JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::STRANA => Http::response('<html><body>'.$telo.'<p>'.self::GRUPA.'.</p></body></html>'), self::CLAUDE => LazniClaude::odgovor(json_encode($odgovor, JSON_UNESCAPED_UNICODE))]);
 
         $this->artisan('uvoz:obradi');
 
@@ -151,10 +152,10 @@ class UvozObradiRokSaStraneTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $nacrt->forceFill(['izvor_objavljen' => '2026-09-28'])->save();
-        Http::fake([self::STRANA => Http::response('<html><body><p>Poziv studentima. Prijave su otvorene od 28. septembra do 12. oktobra na sajtu programa.</p><p>'.self::GRUPA.'.</p></body></html>'), self::OLLAMA => Http::response(['message' => ['content' => json_encode([
+        Http::fake([self::STRANA => Http::response('<html><body><p>Poziv studentima. Prijave su otvorene od 28. septembra do 12. oktobra na sajtu programa.</p><p>'.self::GRUPA.'.</p></body></html>'), self::CLAUDE => LazniClaude::odgovor(json_encode([
             'vazi_pravilo' => true, 'razlog' => 'Poziv.', 'vrsta' => 'konkurs', 'rok' => '2026-10-12', 'citat' => 'Prijave su otvorene od 28. septembra do 12. oktobra na sajtu s2s.fonis.rs',
             'grupe' => [['grupa' => 'studenti', 'citat' => self::GRUPA]],
-        ], JSON_UNESCAPED_UNICODE)]])]);
+        ], JSON_UNESCAPED_UNICODE))]);
 
         $this->artisan('uvoz:obradi');
 

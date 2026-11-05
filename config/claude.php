@@ -2,9 +2,9 @@
 
 return [
 
-    // Obrada prilika (uvoz:obradi) može da ide preko Claude API-ja umesto lokalne Ollame; pomoćnik i „Napiši moj" uvek ostaju na Ollami (paket 71).
+    // Obrada prilika (uvoz:obradi), pomoćnik i „Napiši moj" idu preko Claude API-ja (Ivan, 05.11.2026.: „sve treba preko Claude-a"); Ollama je izbačena (paket 100).
     // Ključ je samo u okruženju (.env), nikad u kodu, testu, logu ni izveštaju.
-    'model_obrade' => env('MODEL_OBRADE', 'ollama'),
+    'model_obrade' => env('MODEL_OBRADE', 'claude'),
 
     'kljuc' => env('ANTHROPIC_API_KEY'),
     'model' => env('CLAUDE_MODEL', 'claude-haiku-5-5'),

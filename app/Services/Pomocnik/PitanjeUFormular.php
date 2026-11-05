@@ -6,8 +6,8 @@ use App\Enums\Grupa;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Services\Claude\Claude;
-use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
+use App\Services\Model\OdgovorNijeJson;
 use App\Support\PoredjenjeTeksta;
 
 // Prvi posao pomoćnika: model samo popunjava formular, a svaku vrednost iz njega proverava kod.
@@ -30,7 +30,7 @@ TEXT;
 
     public function __construct(private readonly Claude $model) {}
 
-    /** @throws OllamaNedostupna */
+    /** @throws ModelNedostupan */
     public function izPitanja(string $pitanje, ?int $vremeCekanja = null): Formular
     {
         try {

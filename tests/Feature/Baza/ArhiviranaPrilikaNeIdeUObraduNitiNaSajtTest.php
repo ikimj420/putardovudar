@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 86/T3: izmereno postojeće ponašanje za status „arhivirano": ne vraća se u obradu (ni obična ni „--ponovo"), ne pravi se iz uvoza ponovo, ne ulazi u kalendar i nema ga na sajtu.
 // Pravilo objave nije menjano; svaka tvrdnja ima ogledalo sa istim zapisom u drugom statusu.
@@ -20,7 +21,7 @@ class ArhiviranaPrilikaNeIdeUObraduNitiNaSajtTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const STRANA = 'https://a.test/oglas-1';
 
@@ -44,16 +45,16 @@ class ArhiviranaPrilikaNeIdeUObraduNitiNaSajtTest extends BazaTestCase
         ], ...$dopuna]);
     }
 
-    private function pozivaOllame(): int
+    private function pozivaClaudea(): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE)->count();
     }
 
     private function lazniIzvorIModel(): void
     {
         Http::fake([
             self::STRANA => Http::response('<html><body><p>Strana poziva.</p></body></html>'),
-            self::OLLAMA => Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'grupe' => [], 'vrsta' => null, 'rok' => null, 'citat' => ''])]]),
+            self::CLAUDE => LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'grupe' => [], 'vrsta' => null, 'rok' => null, 'citat' => ''])),
         ]);
     }
 
@@ -65,7 +66,7 @@ class ArhiviranaPrilikaNeIdeUObraduNitiNaSajtTest extends BazaTestCase
 
         $this->artisan('uvoz:obradi')->expectsOutput('Nema nacrta iz uvoza za obradu.')->assertExitCode(0);
 
-        $this->assertSame(0, $this->pozivaOllame());
+        $this->assertSame(0, $this->pozivaClaudea());
         $this->assertNull($arhivirana->fresh()->obradeno_at);
 
         // Ogledalo: isti zapis kao nacrt ide u obradu.
@@ -73,7 +74,7 @@ class ArhiviranaPrilikaNeIdeUObraduNitiNaSajtTest extends BazaTestCase
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);
 
-        $this->assertSame(1, $this->pozivaOllame());
+        $this->assertSame(1, $this->pozivaClaudea());
         $this->assertNotNull($arhivirana->fresh()->obradeno_at);
     }
 
@@ -87,14 +88,14 @@ class ArhiviranaPrilikaNeIdeUObraduNitiNaSajtTest extends BazaTestCase
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->expectsOutput('Nema nacrta iz uvoza za obradu.')->assertExitCode(0);
 
-        $this->assertSame(0, $this->pozivaOllame());
+        $this->assertSame(0, $this->pozivaClaudea());
 
         $arhivirana->forceFill(['status' => StatusPrilike::Nacrt])->save();
         $arhivirana->forceFill(['updated_at' => $arhivirana->obradeno_at])->saveQuietly();
 
         $this->artisan('uvoz:obradi', ['--ponovo' => true])->assertExitCode(0);
 
-        $this->assertSame(1, $this->pozivaOllame());
+        $this->assertSame(1, $this->pozivaClaudea());
     }
 
     #[Test]

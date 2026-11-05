@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 70/T4: uvoz dopunjava datum objave nacrtima koji ga nemaju (uvezeni pre kolone), ništa drugo ne menja i ne dira ono što je neko menjao.
 #[Group('baza')]
@@ -24,7 +25,7 @@ class UvozDopunaDatumaObjaveTest extends BazaTestCase
 
     private const SPISAK = 'https://www.nsz.gov.rs/sadrzaji/nzs-konkursi/10';
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     protected function setUp(): void
     {
@@ -125,10 +126,10 @@ class UvozDopunaDatumaObjaveTest extends BazaTestCase
 
         Http::fake([
             'https://a.test/1' => Http::response('<p>Poziv studentima. Prijave su otvorene od 28. septembra do 12. oktobra na sajtu programa.</p><p>Konkurs je otvoren za sve studente.</p>'),
-            self::OLLAMA => Http::response(['message' => ['content' => json_encode([
+            self::CLAUDE => LazniClaude::odgovor(json_encode([
                 'vazi_pravilo' => true, 'razlog' => 'Poziv.', 'vrsta' => 'konkurs', 'rok' => '2026-10-12', 'citat' => 'Prijave su otvorene od 28. septembra do 12. oktobra na sajtu programa',
                 'grupe' => [['grupa' => 'studenti', 'citat' => 'Konkurs je otvoren za sve studente']],
-            ], JSON_UNESCAPED_UNICODE)]]),
+            ], JSON_UNESCAPED_UNICODE)),
         ]);
 
         $this->travelTo(Carbon::create(2026, 10, 6, 12, 0, 0, 'Europe/Belgrade'));
@@ -165,6 +166,6 @@ class UvozDopunaDatumaObjaveTest extends BazaTestCase
         $this->artisan('uvoz:rss')->expectsOutput('Izvor A: novih 0, preskočeno 1, greška: nema')->assertExitCode(0);
 
         $this->assertNull($nacrt->fresh()->izvor_objavljen);
-        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA);
+        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE);
     }
 }

@@ -107,11 +107,11 @@ class PrilikaForm
                     ->columnSpanFull(),
                 self::predlog('citat_pravila', 'Citat pravila', dug: true)
                     ->helperText('Isečak iz teksta strane koji pokazuje zašto prilika ispunjava pravilo.')
-                    ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'citat_pravila')))
+                    ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Model && filled(data_get($record->predlog, 'citat_pravila')))
                     ->columnSpanFull(),
-                self::predlog('grupe', 'Citati za grupe', fn (mixed $state, ?Prilika $record): string => self::grupePredloga($state, $record?->objavio === KoJeObjavio::Ollama ? self::prihvaceneGrupe($record) : null), dug: true)
+                self::predlog('grupe', 'Citati za grupe', fn (mixed $state, ?Prilika $record): string => self::grupePredloga($state, $record?->objavio === KoJeObjavio::Model ? self::prihvaceneGrupe($record) : null), dug: true)
                     ->helperText('Isečci iz teksta strane koji pokazuju kome je prilika namenjena.')
-                    ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Ollama && filled(data_get($record->predlog, 'grupe')))
+                    ->visible(fn (?Prilika $record): bool => $record?->objavio === KoJeObjavio::Model && filled(data_get($record->predlog, 'grupe')))
                     ->columnSpanFull(),
                 Section::make(fn (?Prilika $record): string => self::naslovPredloga($record))
                     ->description('Model je predložio, ali kod nije prihvatio.')

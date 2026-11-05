@@ -5,7 +5,7 @@ namespace Tests\Feature\Baza;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
 use App\Models\Vodic;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
 use App\Services\Pomocnik\OdgovorPomocnika;
 use App\Services\Pomocnik\Pomocnik;
 use App\Services\Pomocnik\ProveraOdgovora;
@@ -413,7 +413,7 @@ class PomocnikOdgovorTest extends BazaTestCase
     {
         $this->model('x', formularRadi: false);
 
-        $this->expectException(OllamaNedostupna::class);
+        $this->expectException(ModelNedostupan::class);
 
         $this->pitaj();
     }

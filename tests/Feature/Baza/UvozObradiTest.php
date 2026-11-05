@@ -19,13 +19,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 #[Group('baza')]
 class UvozObradiTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const STRANA = 'https://a.test/oglas-1';
 
@@ -57,7 +58,7 @@ class UvozObradiTest extends BazaTestCase
     }
 
     /** @param  array<string, mixed>  $dopuna */
-    private function ollama(array $dopuna = []): mixed
+    private function claude(array $dopuna = []): mixed
     {
         $forma = [...[
             'vazi_pravilo' => true, 'razlog' => 'Konkurs za stipendije otvoren za studente.', 'vrsta' => 'konkurs',
@@ -65,7 +66,7 @@ class UvozObradiTest extends BazaTestCase
             'grupe' => [['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]],
         ], ...$dopuna];
 
-        return Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]]);
+        return LazniClaude::odgovor(json_encode($forma, JSON_UNESCAPED_UNICODE));
     }
 
     // Niz različitih reči, svaka sa brojem: isti niz od četiri reči dvaput bi duga „rečenica" u ovim probama postala blok veza (paket 63).
@@ -74,16 +75,16 @@ class UvozObradiTest extends BazaTestCase
         return implode(' ', array_map(fn (int $i) => $osnova.$i, range($od, $do)));
     }
 
-    private function pozivaOllame(): int
+    private function pozivaClaudea(): int
     {
-        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA)->count();
+        return Http::recorded(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE)->count();
     }
 
     #[Test]
     public function ispravan_slucaj_se_objavi_sa_vrstom_rokom_i_razlogom(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi')
             ->expectsOutputToContain('objavljen (Konkurs za stipendije otvoren za studente.): Konkurs za stipendije')
@@ -95,11 +96,11 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
         $this->assertSame(VrstaPrilike::Konkurs, $prilika->vrsta);
         $this->assertSame('2026-10-20', $prilika->rok->toDateString());
-        $this->assertSame(KoJeObjavio::Ollama, $prilika->objavio);
+        $this->assertSame(KoJeObjavio::Model, $prilika->objavio);
         $this->assertSame('Konkurs za stipendije otvoren za studente.', $prilika->razlog_objave);
         $this->assertSame(['studenti'], $prilika->grupe);
         $this->assertSame('2026-10-05 12:00:00', $prilika->obradeno_at->toDateTimeString());
-        $this->assertSame('qwen2.5:7b', $prilika->predlog['model']);
+        $this->assertSame('claude-haiku-5-5', $prilika->predlog['model']);
         $this->assertSame(ObradaNacrta::PRAVILO, $prilika->predlog['pravilo']);
         $this->assertNull($prilika->predlog['odbijeno']);
         $this->assertTrue(Prilika::javne()->whereKey($prilika->id)->exists());
@@ -129,7 +130,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $telo = '<p>Rok za prijavu je 20. oktobra 2026. godine.</p> <p>Rok za prijavu je 4. oktobra 2026. godine.</p>';
-        Http::fake([self::STRANA => $this->strana($telo), self::OLLAMA => $this->ollama($forma)]);
+        Http::fake([self::STRANA => $this->strana($telo), self::CLAUDE => $this->claude($forma)]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.'): Konkurs za stipendije')->assertExitCode(0);
 
@@ -165,7 +166,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt();
         Http::fake([
             self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p>'.$recenica.'<p>Konkurs za stipendije.</p>', false),
-            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'romi', 'citat' => 'Roma']]]),
+            self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'romi', 'citat' => 'Roma']]]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -197,7 +198,7 @@ class UvozObradiTest extends BazaTestCase
     public function rok_bez_godine_se_izvodi_iz_datuma_objave_a_bez_njega_se_ne_prima(?string $objavljeno, string $rokModela, string $citat, string $recenica, ?string $ocekivano): void
     {
         $nacrt = $this->nacrt(['izvor_objavljen' => $objavljeno]);
-        Http::fake([self::STRANA => Http::response('<p>Konkurs.</p><p>'.$recenica.'</p><p>'.self::PRAVILO_NA_STRANI.'.</p>'), self::OLLAMA => $this->ollama(['rok' => $rokModela, 'citat' => $citat])]);
+        Http::fake([self::STRANA => Http::response('<p>Konkurs.</p><p>'.$recenica.'</p><p>'.self::PRAVILO_NA_STRANI.'.</p>'), self::CLAUDE => $this->claude(['rok' => $rokModela, 'citat' => $citat])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -223,7 +224,7 @@ class UvozObradiTest extends BazaTestCase
     public function rok_danas_nije_prosao(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 5. oktobra 2026. godine.</p>'), self::OLLAMA => $this->ollama(['rok' => '2026-10-05', 'citat' => 'Rok za prijavu je 5. oktobra 2026. godine'])]);
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 5. oktobra 2026. godine.</p>'), self::CLAUDE => $this->claude(['rok' => '2026-10-05', 'citat' => 'Rok za prijavu je 5. oktobra 2026. godine'])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -235,7 +236,7 @@ class UvozObradiTest extends BazaTestCase
     public function vrsta_drugo_ostaje_nacrt_jer_se_ne_moze_dokazati(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Otvoreno je za sve studente.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['vrsta' => 'drugo', 'grupe' => [['grupa' => 'studenti', 'citat' => 'Otvoreno je za sve studente']]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Otvoreno je za sve studente.</p>', saPravilom: false), self::CLAUDE => $this->claude(['vrsta' => 'drugo', 'grupe' => [['grupa' => 'studenti', 'citat' => 'Otvoreno je za sve studente']]])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (vrsta nije potkrepljena)');
 
@@ -267,7 +268,7 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([
             'https://a.test/sa' => Http::response('<p>'.$saRecju.'</p>'.$rok),
             'https://a.test/bez' => Http::response('<p>'.$bezReci.'</p>'.$rok),
-            self::OLLAMA => $this->ollama(['vrsta' => $vrsta, 'grupe' => [['grupa' => 'studenti', 'citat' => 'Otvoreno je za sve studente']]]),
+            self::CLAUDE => $this->claude(['vrsta' => $vrsta, 'grupe' => [['grupa' => 'studenti', 'citat' => 'Otvoreno je za sve studente']]]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -284,7 +285,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $jooble = $this->nacrt(['naslov' => 'Posao sa Jooble-a', 'naziv_izvora' => 'Jooble', 'link_izvora' => 'https://rs.jooble.org/desc/1']);
         $nepoznat = $this->nacrt(['naslov' => 'Nepoznat izvor', 'naziv_izvora' => 'Neki drugi izvor', 'link_izvora' => 'https://rs.jooble.org/desc/2']);
-        Http::fake(['https://rs.jooble.org/desc/1' => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake(['https://rs.jooble.org/desc/1' => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('Posao sa Jooble-a');
 
@@ -297,7 +298,7 @@ class UvozObradiTest extends BazaTestCase
     public function objavljena_prilika_cuva_grupe_i_citate_koji_pisu_na_strani(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi');
 
@@ -333,7 +334,7 @@ class UvozObradiTest extends BazaTestCase
     public function citat_sa_recju_grupe_koji_pise_na_strani_objavljuje_priliku_za_tu_grupu(string $grupa, string $citat): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => $citat]]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::CLAUDE => $this->claude(['grupe' => [['grupa' => $grupa, 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -366,9 +367,9 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([
             'https://a.test/los' => $this->strana(),
             'https://a.test/dobar' => $this->strana(),
-            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Loš rok')
-                ? $this->ollama(['rok' => $rok])
-                : $this->ollama(),
+            self::CLAUDE => fn (Request $zahtev) => str_contains(LazniClaude::poruka($zahtev), 'Naslov: Loš rok')
+                ? $this->claude(['rok' => $rok])
+                : $this->claude(),
         ]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (nema ispravnog roka): Loš rok')->assertExitCode(0);
@@ -386,7 +387,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $grupa = "\u{041A}\u{043E}\u{043D}\u{043A}\u{0443}\u{0440}\u{0441} \u{0458}\u{0435} \u{043E}\u{0442}\u{0432}\u{043E}\u{0440}\u{0435}\u{043D} \u{0437}\u{0430} \u{0441}\u{0432}\u{0435} \u{0441}\u{0442}\u{0443}\u{0434}\u{0435}\u{043D}\u{0442}\u{0435}";
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama([
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude([
             'vrsta' => "k\u{043E}nkurs",
             'razlog' => "Poziv za subven\u{0446}\u{0438}je studentima.",
             'citat' => "\u{0420}\u{043E}\u{043A} \u{0437}\u{0430} \u{043F}\u{0440}\u{0438}\u{0458}\u{0430}\u{0432}\u{0443} \u{0458}\u{0435} 20. oktobra 2026. godine",
@@ -411,7 +412,7 @@ class UvozObradiTest extends BazaTestCase
     public function slovo_koje_nije_srpsko_ostaje_i_vrsta_nije_sa_spiska(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vrsta' => "konkurs\u{044B}"])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude(['vrsta' => "konkurs\u{044B}"])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -425,7 +426,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt(['naslov' => 'Javni radovi']);
         $citat = 'Javni radovi za nezaposlene';
-        Http::fake([self::STRANA => $this->strana('<p>Poziv za javne radove. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['vrsta' => 'konkurs', 'grupe' => [['grupa' => 'nezaposleni-mladi', 'citat' => $citat]]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Poziv za javne radove. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::CLAUDE => $this->claude(['vrsta' => 'konkurs', 'grupe' => [['grupa' => 'nezaposleni-mladi', 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -440,7 +441,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt(['naslov' => 'Program funkcionalnog osnovnog obrazovanja odraslih']);
         $citat = 'Program je namenjen odraslima bez završene osnovne škole';
-        Http::fake([self::STRANA => $this->strana('<p>Program funkcionalnog osnovnog obrazovanja odraslih je besplatna obuka. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['vrsta' => 'obuka', 'grupe' => [['grupa' => 'odrasli-bez-skole', 'citat' => $citat]]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Program funkcionalnog osnovnog obrazovanja odraslih je besplatna obuka. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::CLAUDE => $this->claude(['vrsta' => 'obuka', 'grupe' => [['grupa' => 'odrasli-bez-skole', 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -455,7 +456,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $citat = 'Mladi iz Srbije koji imaju 18 godina mogu da se prijave za besplatnu kartu';
-        Http::fake([self::STRANA => $this->strana('<p>Poziv. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'mladi', 'citat' => $citat]]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Poziv. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'mladi', 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -480,7 +481,7 @@ class UvozObradiTest extends BazaTestCase
     public function recenica_koja_samo_lici_na_mlade_ne_dokazuje_grupu_mladi(string $citat): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Poziv. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'mladi', 'citat' => $citat]]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Poziv. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'mladi', 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -496,7 +497,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p><p>Konkurs je otvoren za sve građane.</p>';
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => 'Konkurs je otvoren za sve građane']]])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['grupe' => [['grupa' => $grupa, 'citat' => 'Konkurs je otvoren za sve građane']]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -514,7 +515,7 @@ class UvozObradiTest extends BazaTestCase
     public function citat_modela_bez_reci_grupe_a_bez_recenice_grupe_na_strani_ostaje_nacrt(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Konkurs je otvoren za sve građane.</p>'), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Konkurs je otvoren za sve građane']]])]);
+        Http::fake([self::STRANA => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Konkurs je otvoren za sve građane.</p>'), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'studenti', 'citat' => 'Konkurs je otvoren za sve građane']]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -530,7 +531,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p><p>Konkurs je otvoren za sve građane.</p>';
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => $grupa, 'citat' => $citat.' i sve ostale']]])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['grupe' => [['grupa' => $grupa, 'citat' => $citat.' i sve ostale']]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -551,9 +552,9 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([
             'https://a.test/model' => $this->strana(),
             'https://a.test/bez' => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Konkurs je otvoren za sve građane.</p>'),
-            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez rečenice')
-                ? $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno za studente.']]])
-                : $this->ollama(),
+            self::CLAUDE => fn (Request $zahtev) => str_contains(LazniClaude::poruka($zahtev), 'Naslov: Bez rečenice')
+                ? $this->claude(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno za studente.']]])
+                : $this->claude(),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -578,7 +579,7 @@ class UvozObradiTest extends BazaTestCase
             'https://a.test/blok' => Http::response($poziv.'<p>'.self::POVEZANO_NA_DNU.'</p>'),
             'https://a.test/recenica' => Http::response($poziv.'<p>Konkurs je otvoren za master studente iz Srbije.</p><p>'.self::POVEZANO_NA_DNU.'</p>'),
             // Citat modela ne piše na strani (kao kod COST poziva), pa grupu traži kod.
-            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'master-doktorski', 'citat' => 'Poziv je otvoren za master i doktorske studente']]]),
+            self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'master-doktorski', 'citat' => 'Poziv je otvoren za master i doktorske studente']]]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -603,7 +604,7 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([
             'https://a.test/blok-citat' => Http::response($poziv.'<p>'.self::POVEZANO_NA_DNU.'</p>'),
             'https://a.test/telo-citat' => Http::response($poziv.'<p>'.$citat.' su otvorene za sve prijavljene.</p><p>'.self::POVEZANO_NA_DNU.'</p>'),
-            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'master-doktorski', 'citat' => $citat]]]),
+            self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'master-doktorski', 'citat' => $citat]]]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -626,7 +627,7 @@ class UvozObradiTest extends BazaTestCase
         $uvod = 'Prošle godine je bilo mnogo studenata na predavanju.';
         $namena = 'Konkurs je otvoren za sve studente.';
         $dugacka = 'Ovo je jedna veoma dugačka rečenica '.$this->razlicitiRecnik('stvar', 1, 100).' koja pominje studente tek pri kraju '.$this->razlicitiRecnik('nastavak', 1, 80).' .';
-        Http::fake([self::STRANA => Http::response('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p><p>'.$uvod.'</p><p>'.$namena.'</p>'), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
+        Http::fake([self::STRANA => Http::response('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p><p>'.$uvod.'</p><p>'.$namena.'</p>'), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -642,7 +643,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt();
         $dugacka = 'Ovo je jedna veoma dugačka rečenica '.$this->razlicitiRecnik('stvar', 1, 100).' koja pominje studente tek pri kraju '.$this->razlicitiRecnik('nastavak', 1, 80).' do kraja.';
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$dugacka.'</p>';
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljen citat o studentima']]])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -661,7 +662,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $strana = '<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Poziv je za studente i nezaposlene mlade.</p><p>Konkurs je otvoren za sve građane.</p>';
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['grupe' => [
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['grupe' => [
             ['grupa' => 'romi', 'citat' => 'Konkurs je otvoren za sve građane'],
             ['grupa' => 'nezaposleni-mladi', 'citat' => 'Poziv je za studente i nezaposlene mlade'],
             ['grupa' => 'studenti', 'citat' => 'Poziv je za studente i nezaposlene mlade'],
@@ -684,7 +685,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $citat = 'Konkurs je otvoren za firme i preduzeća u Srbiji';
-        Http::fake([self::STRANA => $this->strana('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'organizacije', 'citat' => $citat]]])]);
+        Http::fake([self::STRANA => $this->strana('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.$citat.'.</p>', saPravilom: false), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'organizacije', 'citat' => $citat]]])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
 
@@ -703,7 +704,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt(['naslov' => (string) $stavka->title, 'link_izvora' => (string) $stavka->link]);
         $opis = trim((string) $stavka->description);
         $citat = 'Konkurs je za: organizacije civilnog društva i univerzitetske pravne klinike';
-        Http::fake([(string) $stavka->link => Http::response('<p>'.nl2br($opis).'</p>'), self::OLLAMA => $this->ollama([
+        Http::fake([(string) $stavka->link => Http::response('<p>'.nl2br($opis).'</p>'), self::CLAUDE => $this->claude([
             'grupe' => [['grupa' => 'organizacije', 'citat' => $citat]], 'vrsta' => 'konkurs',
             'rok' => '2026-11-06', 'citat' => 'Rok za prijavu: 6.11.2026. godine do 17:00 časova',
         ])]);
@@ -745,7 +746,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         // Strana ima i rečenicu „Objavljen je roman o životu mladih" da citat o romanu doslovno postoji, a ipak ne prolazi; rečenice sa rečju grupe na strani nema.
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p><p>Konkurs je otvoren za sve građane Srbije.</p>', saPravilom: false), self::OLLAMA => $this->ollamaBezKljuceva($dopuna)]);
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Objavljen je roman o životu mladih.</p><p>Konkurs je otvoren za sve građane Srbije.</p>', saPravilom: false), self::CLAUDE => $this->claudeBezKljuceva($dopuna)]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom): Konkurs za stipendije');
 
@@ -765,7 +766,7 @@ class UvozObradiTest extends BazaTestCase
     public function nepotkrepljeno_pravilo_se_prijavljuje_pre_greske_u_roku(): void
     {
         $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno.']], 'rok' => '2026-10-04'])]);
+        Http::fake([self::STRANA => $this->strana(saPravilom: false), self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'studenti', 'citat' => 'Izmišljeno.']], 'rok' => '2026-10-04'])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
     }
@@ -785,7 +786,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $strana = '<p>Oglas za posao, praksu, stipendiju, konkurs i obuku. Rok za prijavu je 20. oktobra 2026. godine.</p>';
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vrsta' => $vrsta, 'grupe' => [], 'razlog' => 'Oglas.'])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['vrsta' => $vrsta, 'grupe' => [], 'razlog' => 'Oglas.'])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -823,7 +824,7 @@ class UvozObradiTest extends BazaTestCase
     public function oglas_za_posao_bez_grupe_i_dalje_trazi_vrstu_i_rok(string $strana, array $dopuna, string $razlog): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.'): Konkurs za stipendije');
 
@@ -851,7 +852,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt(['naslov' => 'Magacioner']);
         Http::fake([
             self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p>'),
-            self::OLLAMA => $this->ollama(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => [], 'razlog' => $razlogModela]),
+            self::CLAUDE => $this->claude(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => [], 'razlog' => $razlogModela]),
         ]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('objavljen ('.ObradaNacrta::RAZLOG_POSAO.'): Magacioner');
@@ -862,7 +863,7 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(VrstaPrilike::Posao, $prilika->vrsta);
         $this->assertSame('2026-10-20', $prilika->rok->toDateString());
         $this->assertNull($prilika->grupe);
-        $this->assertSame(KoJeObjavio::Ollama, $prilika->objavio);
+        $this->assertSame(KoJeObjavio::Model, $prilika->objavio);
         // Razlog objave za posao je uvek kodov (Ivan, 11.10.2026.), i kad je model rekao da je prilika; šta je model rekao ostaje zapisano u predlogu.
         $this->assertSame('Oglas za posao: vrsta i rok pišu na strani, a naslov nije rezultat ni spisak.', $prilika->razlog_objave);
         $this->assertSame(ObradaNacrta::RAZLOG_POSAO, $prilika->razlog_objave);
@@ -884,7 +885,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $strana = '<p>Oglas za posao, praksu, stipendiju, konkurs i obuku. Rok za prijavu je 20. oktobra 2026. godine.</p><p>'.self::PRAVILO_NA_STRANI.'.</p>';
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'vrsta' => $vrsta])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['vazi_pravilo' => false, 'vrsta' => $vrsta])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo za objavu ne važi)');
 
@@ -911,7 +912,7 @@ class UvozObradiTest extends BazaTestCase
     public function oglas_za_posao_bez_dokaza_ostaje_nacrt_i_kad_model_kaze_da_nije_prilika(string $strana, array $dopuna, string $razlog): void
     {
         $nacrt = $this->nacrt(['naslov' => 'Magacioner']);
-        Http::fake([self::STRANA => Http::response($strana), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
+        Http::fake([self::STRANA => Http::response($strana), self::CLAUDE => $this->claude(['vazi_pravilo' => false, 'vrsta' => 'posao', 'grupe' => [], ...$dopuna])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.'): Magacioner');
 
@@ -947,7 +948,7 @@ class UvozObradiTest extends BazaTestCase
     public function naslov_rezultata_ili_spiska_nije_oglas_za_posao(string $naslov, bool $prolazi, bool $vazi): void
     {
         $nacrt = $this->nacrt(['naslov' => $naslov]);
-        Http::fake([self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p>'), self::OLLAMA => $this->ollama(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => []])]);
+        Http::fake([self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p>'), self::CLAUDE => $this->claude(['vazi_pravilo' => $vazi, 'vrsta' => 'posao', 'grupe' => []])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -962,7 +963,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt();
         Http::fake([
             self::STRANA => Http::response('<p>Oglas za posao. Rok za prijavu je 20. oktobra 2026. godine.</p><p>Poziv je namenjen studentima.</p>'),
-            self::OLLAMA => $this->ollama(['vrsta' => 'posao', 'grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je namenjen studentima'], ['grupa' => 'romi', 'citat' => 'Izmišljeno za Rome.']]]),
+            self::CLAUDE => $this->claude(['vrsta' => 'posao', 'grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je namenjen studentima'], ['grupa' => 'romi', 'citat' => 'Izmišljeno za Rome.']]]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -986,9 +987,9 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([
             'https://a.test/bez-vrste' => Http::response('<p>Konkurs i radionica. Rok za prijavu je 20. oktobra 2026. godine.</p>'),
             'https://a.test/bez-grupe' => Http::response($strana),
-            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez vrste')
-                ? $this->ollama(['vrsta' => 'stipendija', 'grupe' => []])
-                : $this->ollama(['vrsta' => 'konkurs', 'grupe' => []]),
+            self::CLAUDE => fn (Request $zahtev) => str_contains(LazniClaude::poruka($zahtev), 'Naslov: Bez vrste')
+                ? $this->claude(['vrsta' => 'stipendija', 'grupe' => []])
+                : $this->claude(['vrsta' => 'konkurs', 'grupe' => []]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -1002,16 +1003,16 @@ class UvozObradiTest extends BazaTestCase
     public function uputstvo_kaze_da_vazi_pravilo_znaci_samo_da_je_tekst_prilika_i_da_posao_vazi_bez_grupe(): void
     {
         $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi');
 
         Http::assertSent(function (Request $zahtev) {
-            if ($zahtev->url() !== self::OLLAMA) {
+            if ($zahtev->url() !== self::CLAUDE) {
                 return false;
             }
 
-            $uputstvo = $zahtev->data()['messages'][0]['content'];
+            $uputstvo = LazniClaude::uputstvo($zahtev);
 
             return str_contains($uputstvo, 'Oglas za posao u Srbiji važi i bez navedene grupe.')
                 && str_contains($uputstvo, 'vazi_pravilo (true ako je tekst prilika na koju se neko prijavljuje (posao, praksa, stipendija, konkurs ili obuka), a ne rezultat, lista ili vest; da li je grupa dokazana ne ocenjuješ ti, to proverava kod; inače false)')
@@ -1025,7 +1026,7 @@ class UvozObradiTest extends BazaTestCase
     public function vazi_pravilo_true_bez_dokazane_grupe_ne_objavljuje_osim_za_posao(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(saPravilom: false), self::OLLAMA => $this->ollama(['grupe' => []])]);
+        Http::fake([self::STRANA => $this->strana(saPravilom: false), self::CLAUDE => $this->claude(['grupe' => []])]);
 
         $this->artisan('uvoz:obradi');
 
@@ -1040,7 +1041,7 @@ class UvozObradiTest extends BazaTestCase
         $nacrt = $this->nacrt();
         Http::fake([
             self::STRANA => Http::response('<p>Konkurs. Rok za prijavu je 20. oktobra 2026. godine .</p><p>Poziv je namenjen svim studentima ( i đacima ) .</p>'),
-            self::OLLAMA => $this->ollama(['grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je namenjen svim studentima (i đacima).']]]),
+            self::CLAUDE => $this->claude(['grupe' => [['grupa' => 'studenti', 'citat' => 'Poziv je namenjen svim studentima (i đacima).']]]),
         ]);
 
         $this->artisan('uvoz:obradi');
@@ -1055,13 +1056,13 @@ class UvozObradiTest extends BazaTestCase
     public function potkrepljeno_pravilo_ne_zamenjuje_proveru_roka(): void
     {
         $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 4. oktobra 2026. godine.</p>'), self::OLLAMA => $this->ollama(['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'])]);
+        Http::fake([self::STRANA => $this->strana('<p>Rok za prijavu je 4. oktobra 2026. godine.</p>'), self::CLAUDE => $this->claude(['rok' => '2026-10-04', 'citat' => 'Rok za prijavu je 4. oktobra 2026. godine'])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (rok je prošao)');
     }
 
     /** @param  array<string, mixed>  $dopuna */
-    private function ollamaBezKljuceva(array $dopuna): mixed
+    private function claudeBezKljuceva(array $dopuna): mixed
     {
         $izostavi = array_keys(array_filter($dopuna, fn (mixed $vrednost) => $vrednost === '__izostavi__'));
         $forma = [...[
@@ -1069,7 +1070,7 @@ class UvozObradiTest extends BazaTestCase
             'citat' => 'Rok za prijavu je 20. oktobra 2026. godine', 'grupe' => [['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]],
         ], ...array_diff_key($dopuna, array_flip($izostavi))];
 
-        return Http::response(['message' => ['content' => json_encode(array_diff_key($forma, array_flip($izostavi)), JSON_UNESCAPED_UNICODE)]]);
+        return LazniClaude::odgovor(json_encode(array_diff_key($forma, array_flip($izostavi)), JSON_UNESCAPED_UNICODE));
     }
 
     #[Test]
@@ -1098,26 +1099,26 @@ class UvozObradiTest extends BazaTestCase
     public function drugo_pokretanje_ne_obradjuje_isti_nacrt_ponovo(): void
     {
         $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.'])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.'])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('Ostalo nacrt: 1');
-        $posleProvog = $this->pozivaOllame();
+        $posleProvog = $this->pozivaClaudea();
 
         $this->artisan('uvoz:obradi')->expectsOutput('Nema nacrta iz uvoza za obradu.');
-        $posleDrugog = $this->pozivaOllame();
+        $posleDrugog = $this->pozivaClaudea();
 
         $this->assertSame([1, 1], [$posleProvog, $posleDrugog]);
     }
 
     #[Test]
-    public function kad_ollama_ne_radi_ne_menja_se_nista_a_komanda_to_kaze(): void
+    public function kad_model_ne_radi_ne_menja_se_nista_a_komanda_to_kaze(): void
     {
         $nacrt = $this->nacrt();
         $pre = $nacrt->fresh()->getAttributes();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => fn () => throw new ConnectionException('nema veze')]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => fn () => throw new ConnectionException('nema veze')]);
 
         $this->artisan('uvoz:obradi')
-            ->expectsOutputToContain('Ollama ne odgovara na http://127.0.0.1:11434; ništa nije promenjeno')
+            ->expectsOutputToContain('Claude API ne odgovara; ništa nije promenjeno')
             ->assertExitCode(1);
 
         $this->assertSame($pre, $nacrt->fresh()->getAttributes());
@@ -1130,7 +1131,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $pokvaren = $this->nacrt(['naslov' => 'Strana ne radi', 'link_izvora' => 'https://a.test/ne-radi']);
         $ispravan = $this->nacrt(['naslov' => 'Ispravan']);
-        Http::fake(['https://a.test/ne-radi' => Http::response('greška', 503), self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake(['https://a.test/ne-radi' => Http::response('greška', 503), self::STRANA => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi')
             ->expectsOutputToContain('nije obrađen (strana je odgovorila sa HTTP 503): Strana ne radi')
@@ -1144,7 +1145,7 @@ class UvozObradiTest extends BazaTestCase
     public function odgovor_modela_koji_nije_ispravan_ne_obelezava_nacrt_kao_obradjen(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => 'Evo mog mišljenja: može.']])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => LazniClaude::odgovor('Evo mog mišljenja: može.')]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor modela nije ispravan JSON)');
 
@@ -1156,7 +1157,7 @@ class UvozObradiTest extends BazaTestCase
     public function odgovor_modela_bez_trazenih_polja_ne_obelezava_nacrt_kao_obradjen(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => '{"vazi_pravilo": "da"}']])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => LazniClaude::odgovor('{"vazi_pravilo": "da"}')]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor modela nema tražena polja)');
 
@@ -1168,7 +1169,7 @@ class UvozObradiTest extends BazaTestCase
     public function pravilo_ne_vazi_a_ostala_polja_su_null_ostaje_nacrt_i_obradjen_je(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => null])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => null])]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo za objavu ne važi): Konkurs za stipendije');
         $this->artisan('uvoz:obradi')->expectsOutput('Nema nacrta iz uvoza za obradu.');
@@ -1179,7 +1180,7 @@ class UvozObradiTest extends BazaTestCase
         $this->assertNotNull($prilika->obradeno_at);
         $this->assertNull($prilika->predlog['vrsta']);
         $this->assertSame('pravilo za objavu ne važi', $prilika->predlog['odbijeno']);
-        $this->assertSame(1, $this->pozivaOllame());
+        $this->assertSame(1, $this->pozivaClaudea());
     }
 
     // Ogledalo: null tamo gde pravilo važi nije izgovor za objavu.
@@ -1191,9 +1192,9 @@ class UvozObradiTest extends BazaTestCase
         Http::fake([
             'https://a.test/bez-vrste' => $this->strana(),
             'https://a.test/bez-citata' => $this->strana(),
-            self::OLLAMA => fn (Request $zahtev) => str_contains($zahtev->data()['messages'][1]['content'], 'Naslov: Bez vrste')
-                ? $this->ollama(['vrsta' => null])
-                : $this->ollama(['citat' => null]),
+            self::CLAUDE => fn (Request $zahtev) => str_contains(LazniClaude::poruka($zahtev), 'Naslov: Bez vrste')
+                ? $this->claude(['vrsta' => null])
+                : $this->claude(['citat' => null]),
         ]);
 
         $this->artisan('uvoz:obradi')
@@ -1223,7 +1224,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $forma = array_diff_key(['vazi_pravilo' => true, 'razlog' => 'Konkurs.', 'vrsta' => 'konkurs', 'rok' => '2026-10-20', 'citat' => 'Rok za prijavu je 20. oktobra 2026. godine', 'grupe' => [['grupa' => 'studenti', 'citat' => self::PRAVILO_NA_STRANI]]], array_flip($izostavi));
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma, JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => LazniClaude::odgovor(json_encode($forma, JSON_UNESCAPED_UNICODE))]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt ('.$razlog.')');
 
@@ -1242,7 +1243,7 @@ class UvozObradiTest extends BazaTestCase
     public function potpun_odgovor_nema_izostavljenih_polja(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi');
 
@@ -1256,7 +1257,7 @@ class UvozObradiTest extends BazaTestCase
     {
         $nacrt = $this->nacrt();
         $odgovor = ['grupe' => [['grupa' => 'mladi', 'citat' => 'Rok je 15. oktobar 2026.', 'vrsta' => 'konkurs', 'rok' => '2026-10-15']], 'vazi_pravilo' => true, 'razlog' => 'Konkurs za mlade.', 'vrsta' => 'konkurs'];
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($odgovor, JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => LazniClaude::odgovor(json_encode($odgovor, JSON_UNESCAPED_UNICODE))]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('ostaje nacrt (pravilo nije potkrepljeno citatom)');
         $this->artisan('uvoz:obradi')->expectsOutput('Nema nacrta iz uvoza za obradu.');
@@ -1264,7 +1265,7 @@ class UvozObradiTest extends BazaTestCase
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
         $this->assertNull($nacrt->fresh()->rok);
         $this->assertSame(['rok', 'citat'], $nacrt->fresh()->predlog['nedostajala_polja']);
-        $this->assertSame(1, $this->pozivaOllame());
+        $this->assertSame(1, $this->pozivaClaudea());
     }
 
     /** @return array<string, array{0: array<string, mixed>}> */
@@ -1284,7 +1285,7 @@ class UvozObradiTest extends BazaTestCase
     public function odgovor_neispravnog_oblika_se_ne_racuna_kao_obrada(array $forma): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana(), self::OLLAMA => Http::response(['message' => ['content' => json_encode($forma)]])]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => LazniClaude::odgovor(json_encode($forma))]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen (odgovor modela nema tražena polja)');
 
@@ -1295,13 +1296,13 @@ class UvozObradiTest extends BazaTestCase
     public function cirilica_sa_strane_ide_modelu_i_proveri_kao_latinica(): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $this->strana('<p>Рок за пријаву је 20. октобра 2026. године.</p><p>Конкурс је отворен за све студенте.</p>', saPravilom: false), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $this->strana('<p>Рок за пријаву је 20. октобра 2026. године.</p><p>Конкурс је отворен за све студенте.</p>', saPravilom: false), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi');
 
-        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::OLLAMA
-            && str_contains($zahtev->data()['messages'][1]['content'], 'Rok za prijavu je 20. oktobra 2026. godine')
-            && preg_match('/\p{Cyrillic}/u', $zahtev->data()['messages'][1]['content']) === 0);
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE
+            && str_contains(LazniClaude::poruka($zahtev), 'Rok za prijavu je 20. oktobra 2026. godine')
+            && preg_match('/\p{Cyrillic}/u', LazniClaude::poruka($zahtev)) === 0);
         $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
     }
 
@@ -1309,28 +1310,29 @@ class UvozObradiTest extends BazaTestCase
     public function model_dobija_pravilo_za_objavu_doslovno_a_tekst_strane_se_ogranicava(): void
     {
         $this->nacrt();
-        config()->set('ollama.najvise_znakova', 50);
-        Http::fake([self::STRANA => $this->strana('<p>'.str_repeat('Dugačak tekst. ', 100).'</p>'), self::OLLAMA => $this->ollama(['vazi_pravilo' => false])]);
+        config()->set('claude.najvise_znakova', 50);
+        Http::fake([self::STRANA => $this->strana('<p>'.str_repeat('Dugačak tekst. ', 100).'</p>'), self::CLAUDE => $this->claude(['vazi_pravilo' => false])]);
 
         $this->artisan('uvoz:obradi');
 
         Http::assertSent(function (Request $zahtev) {
-            if ($zahtev->url() !== self::OLLAMA) {
+            if ($zahtev->url() !== self::CLAUDE) {
                 return false;
             }
 
-            $poruke = $zahtev->data()['messages'];
+            $uputstvo = LazniClaude::uputstvo($zahtev);
+            $tekst = LazniClaude::poruka($zahtev);
 
-            return str_contains($poruke[0]['content'], 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni (bilo kog uzrasta), mladi, povratnici iz inostranstva, organizacije, odrasli bez završene škole — ili ono što je namenjeno Romima.')
-                && str_contains($poruke[0]['content'], 'Organizacije su udruženja i organizacije civilnog društva, ne firme')
-                && str_contains($poruke[0]['content'], 'grupe (lista objekata')
-                && str_contains($poruke[0]['content'], 'nezaposleni-mladi (nezaposleni svih uzrasta, ne samo mladi), mladi (samo kad tekst kaže')
-                && str_contains($poruke[0]['content'], 'romi, odrasli-bez-skole (odrasli bez završene osnovne ili srednje škole, nepismeni, bez kvalifikacija); citat')
-                && str_contains($poruke[0]['content'], 'vazi_pravilo (true')
-                && strpos($poruke[0]['content'], 'grupe (lista objekata') < strpos($poruke[0]['content'], 'vazi_pravilo (true')
-                && ! str_contains($poruke[0]['content'], 'citat_pravila')
-                && str_contains($poruke[1]['content'], "Tekst strane:\n".str_repeat('Dugačak tekst. ', 3).'Du')
-                && ! str_contains($poruke[1]['content'], str_repeat('Dugačak tekst. ', 4));
+            return str_contains($uputstvo, 'Objavljuje se stvarna prilika (posao, praksa, stipendija, konkurs ili obuka) dostupna u Srbiji bar jednoj od ovih grupa: osnovci, srednjoškolci, studenti, master i doktorski studenti, nezaposleni (bilo kog uzrasta), mladi, povratnici iz inostranstva, organizacije, odrasli bez završene škole — ili ono što je namenjeno Romima.')
+                && str_contains($uputstvo, 'Organizacije su udruženja i organizacije civilnog društva, ne firme')
+                && str_contains($uputstvo, 'grupe (lista objekata')
+                && str_contains($uputstvo, 'nezaposleni-mladi (nezaposleni svih uzrasta, ne samo mladi), mladi (samo kad tekst kaže')
+                && str_contains($uputstvo, 'romi, odrasli-bez-skole (odrasli bez završene osnovne ili srednje škole, nepismeni, bez kvalifikacija); citat')
+                && str_contains($uputstvo, 'vazi_pravilo (true')
+                && strpos($uputstvo, 'grupe (lista objekata') < strpos($uputstvo, 'vazi_pravilo (true')
+                && ! str_contains($uputstvo, 'citat_pravila')
+                && str_contains($tekst, "Tekst strane:\n".str_repeat('Dugačak tekst. ', 3).'Du')
+                && ! str_contains($tekst, str_repeat('Dugačak tekst. ', 4));
         });
     }
 
@@ -1350,11 +1352,11 @@ class UvozObradiTest extends BazaTestCase
     public function strana_koja_se_ne_prihvata_ne_zove_ollamu_i_ne_obelezava_nacrt(callable $strana, string $razlog): void
     {
         $nacrt = $this->nacrt();
-        Http::fake([self::STRANA => $strana(), self::OLLAMA => $this->ollama()]);
+        Http::fake([self::STRANA => $strana(), self::CLAUDE => $this->claude()]);
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('nije obrađen ('.$razlog.'): Konkurs za stipendije');
 
-        $this->assertSame(0, $this->pozivaOllame());
+        $this->assertSame(0, $this->pozivaClaudea());
         $this->assertNull($nacrt->fresh()->obradeno_at);
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
     }

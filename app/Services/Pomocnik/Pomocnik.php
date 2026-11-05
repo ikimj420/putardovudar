@@ -7,7 +7,7 @@ use App\Models\KalendarStavka;
 use App\Models\Organizacija;
 use App\Models\Prilika;
 use App\Models\Vodic;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
 use App\Support\Latinica;
 use App\Support\LinkSajta;
 use App\Support\PrikazKalendara;
@@ -55,7 +55,7 @@ final class Pomocnik
         private readonly PrepoznavanjeSablona $sabloni,
     ) {}
 
-    /** @throws OllamaNedostupna */
+    /** @throws ModelNedostupan */
     public function pretrazi(string $pitanje, ?int $vremeCekanja = null): RezultatPretrage
     {
         $pitanje = $this->ocisti($pitanje);
@@ -75,7 +75,7 @@ final class Pomocnik
      * Ako model u odgovoru ne prođe proveru (ili ne radi, ili nema dovoljno vremena), umesto njegovog odgovora stoji šablon iz zapisa.
      * Oba poziva zajedno staju u `pomocnik.ukupno_za_pitanje`: prvi dobija polovinu, drugi ostatak.
      *
-     * @throws OllamaNedostupna samo kad ne radi prvi poziv (formular); tada nema šta da se kaže
+     * @throws ModelNedostupan samo kad ne radi prvi poziv (formular); tada nema šta da se kaže
      */
     public function odgovori(string $pitanje): OdgovorPomocnika
     {
@@ -126,7 +126,7 @@ final class Pomocnik
 
         try {
             $tekst = $this->pisanje->napisi($pitanje, $rezultat->zapisi, $rezultat->vodici, $rezultat->organizacije, $rezultat->kalendar, $ostalo);
-        } catch (OllamaNedostupna) {
+        } catch (ModelNedostupan) {
             return new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, 'model ne odgovara');
         } catch (Throwable $izuzetak) {
             // Kao kad model ne radi, ali sa zapisom samo vrste greške: poruka i trag poziva mogu da nose pitanje i odgovor (paket 64).

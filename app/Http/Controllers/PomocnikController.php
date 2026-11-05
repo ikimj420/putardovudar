@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
 use App\Services\Pomocnik\Pomocnik;
 use App\Support\PrikazPomocnika;
 use App\Support\ZapisGreske;
@@ -38,7 +38,7 @@ class PomocnikController extends Controller
 
         try {
             $odgovor = $pomocnik->odgovori($pitanje);
-        } catch (OllamaNedostupna) {
+        } catch (ModelNedostupan) {
             return view($pogled, ['pitanje' => $pitanje, 'nijeDostupan' => true]);
         } catch (Throwable $izuzetak) {
             // Isto što i kad model ne radi; neočekivana greška ne ide do rukovaoca izuzecima, koji bi u log upisao poruku i trag sa pitanjem (paket 64).

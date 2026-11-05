@@ -124,7 +124,7 @@ final class PrikazPrilike
         $ko = $prilika->objavio;
         $model = self::modelPredloga($prilika);
 
-        return $ko === KoJeObjavio::Ollama && $model !== null ? $ko->getLabel().' · '.$model : $ko?->getLabel();
+        return $ko === KoJeObjavio::Model && $model !== null ? $ko->getLabel().' · '.$model : $ko?->getLabel();
     }
 
     // Rok se prenosi u telefon samo kad postoji i važi; za stalno otvorene prijave i prilike bez roka nema šta da se doda.

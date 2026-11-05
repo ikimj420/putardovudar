@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Http;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 68/T4: izvor bez RSS-a, spisak poziva Nacionalne službe za zapošljavanje (HTML). Snimci prave strane su u tests/Fixtures/spiskovi/, internet se ne koristi.
 #[Group('baza')]
@@ -388,8 +389,8 @@ class UvozSpiskaTest extends BazaTestCase
     public function obrada_uzima_i_nacrte_iz_spiskova(): void
     {
         $nacrt = Prilika::factory()->create(['naslov' => 'Poziv sa spiska', 'naziv_izvora' => self::IME_KONKURSI, 'vrsta' => VrstaPrilike::Drugo, 'rok' => null, 'link_izvora' => 'https://www.nsz.gov.rs/sadrzaj/poziv/1']);
-        Http::fake(fn (Request $zahtev) => $zahtev->url() === 'http://127.0.0.1:11434/api/chat'
-            ? Http::response(['message' => ['content' => json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'grupe' => [], 'vrsta' => null, 'rok' => null, 'citat' => ''])]])
+        Http::fake(fn (Request $zahtev) => $zahtev->url() === LazniClaude::ADRESA
+            ? LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'grupe' => [], 'vrsta' => null, 'rok' => null, 'citat' => '']))
             : Http::response('<html><body><p>Strana poziva.</p></body></html>'));
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);

@@ -17,14 +17,13 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AdminBazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 72/T3 (Ivan, PITANJA-71, 6): uz objavu admin piše „Model · <model>", ne „Ollama", i kad je objavio Claude; vrednost u bazi ostaje „ollama".
 #[Group('baza')]
 class AdminOznakaModelaTest extends AdminBazaTestCase
 {
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
-
-    private const ANTHROPIC = 'https://api.anthropic.com/v1/messages';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const STRANA = 'https://a.test/oglas-1';
 
@@ -56,8 +55,7 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
         $sadrzaj = json_encode($this->forma($saGrupom), JSON_UNESCAPED_UNICODE);
         Http::fake([
             self::STRANA => Http::response('<html><body><h1>Konkurs</h1><p>Rok za prijavu je 20. oktobra 2026. godine.</p><p>Konkurs je otvoren za sve studente.</p></body></html>'),
-            self::OLLAMA => Http::response(['message' => ['content' => $sadrzaj]]),
-            self::ANTHROPIC => Http::response(['content' => [['type' => 'text', 'text' => $sadrzaj]], 'usage' => ['input_tokens' => 1000, 'output_tokens' => 100]]),
+            self::CLAUDE => LazniClaude::odgovor($sadrzaj),
         ]);
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);
@@ -68,7 +66,7 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     /** @return array<string, array{0: string, 1: string}> MODEL_OBRADE, model koji se upisuje u predlog */
     public static function modeli(): array
     {
-        return ['Ollama' => ['ollama', 'qwen2.5:7b'], 'Claude' => ['claude', 'claude-haiku-5-5']];
+        return ['Claude' => ['claude', 'claude-haiku-5-5']];
     }
 
     #[Test]
@@ -99,6 +97,18 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
             ->assertDontSee('Ollam');
     }
 
+    // Zapisi koje je pre paketa 100 objavila Ollama ostaju u bazi sa „ollama" i modelom u predlogu; admin ih i dalje piše kao „Model · <model>", a reč Ollama ne ispisuje.
+    #[Test]
+    public function zapis_koji_je_objavila_ollama_pise_model_a_ne_ollama(): void
+    {
+        $prilika = Prilika::factory()->create(['naslov' => 'Stara prilika', 'status' => StatusPrilike::Nacrt, 'predlog' => ['model' => 'qwen2.5:7b', 'odbijeno' => null]]);
+        $prilika->objavi(KoJeObjavio::Model);
+
+        $this->assertSame('ollama', $prilika->fresh()->getRawOriginal('objavio'));
+        Livewire::test(EditPrilika::class, ['record' => $prilika->getKey()])->assertFormSet(['objavio' => 'Model · qwen2.5:7b'])->assertDontSee('Ollam');
+        Livewire::test(ListPrilike::class)->assertSeeInOrder(['Stara prilika', 'Objavio', 'Model · qwen2.5:7b'])->assertDontSee('Ollam');
+    }
+
     // Ogledalo: kad nacrt obrađen modelom objavi Ivan, piše „Ivan", bez imena modela, iako predlog i dalje nosi model.
     #[Test]
     #[DataProvider('modeli')]
@@ -121,12 +131,12 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     public static function oznake(): array
     {
         return [
-            'model sa imenom' => [KoJeObjavio::Ollama, ['model' => 'claude-haiku-5-5'], 'Model · claude-haiku-5-5'],
-            'lokalni model' => [KoJeObjavio::Ollama, ['model' => 'qwen2.5:7b'], 'Model · qwen2.5:7b'],
-            'predlog bez modela (ranija obrada)' => [KoJeObjavio::Ollama, ['vrsta' => 'konkurs'], 'Model'],
-            'bez predloga' => [KoJeObjavio::Ollama, null, 'Model'],
-            'prazno ime modela' => [KoJeObjavio::Ollama, ['model' => ''], 'Model'],
-            'ime modela nije tekst' => [KoJeObjavio::Ollama, ['model' => ['x']], 'Model'],
+            'model sa imenom' => [KoJeObjavio::Model, ['model' => 'claude-haiku-5-5'], 'Model · claude-haiku-5-5'],
+            'lokalni model' => [KoJeObjavio::Model, ['model' => 'qwen2.5:7b'], 'Model · qwen2.5:7b'],
+            'predlog bez modela (ranija obrada)' => [KoJeObjavio::Model, ['vrsta' => 'konkurs'], 'Model'],
+            'bez predloga' => [KoJeObjavio::Model, null, 'Model'],
+            'prazno ime modela' => [KoJeObjavio::Model, ['model' => ''], 'Model'],
+            'ime modela nije tekst' => [KoJeObjavio::Model, ['model' => ['x']], 'Model'],
             'Ivan, iako predlog ima model' => [KoJeObjavio::Covek, ['model' => 'claude-haiku-5-5'], 'Ivan'],
             'niko nije objavio' => [null, ['model' => 'claude-haiku-5-5'], null],
         ];

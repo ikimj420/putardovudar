@@ -1,7 +1,7 @@
 # Putardo Vudar
 
 Sajt pomaže Romima da nađu informacije: zapošljavanje, pisanje (molbe i prijave) i konkurse.
-Podaci stižu sa interneta. Pomoćnik radi na ovom računaru i odgovara samo iz baze, uz izvor.
+Podaci stižu sa interneta. Pomoćnik odgovara samo iz baze, uz izvor. Odgovor mu piše Claude.
 
 Ovo je vežba. Sajt ne ide na produkciju.
 
@@ -9,7 +9,7 @@ Ovo je vežba. Sajt ne ide na produkciju.
 
 - PHP i Composer.
 - MariaDB. Baza je ista i na računaru i u testovima.
-- Ollama. Preko nje rade pomoćnik i „Napiši moj".
+- Ključ za Claude (Anthropic). Preko njega rade pomoćnik, „Napiši moj" i obrada novih prilika.
 - Node, samo da se izgradi stil sajta.
 
 ## Kako se pokreće
@@ -21,8 +21,8 @@ Ovo je vežba. Sajt ne ide na produkciju.
 U `.env` stoje, između ostalog, ova podešavanja. Vrednosti su tvoje i ne pišu se u dokumente.
 
 - `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`: baza.
-- `OLLAMA_ADRESA`, `OLLAMA_MODEL`, `OLLAMA_VREME_CEKANJA`: Ollama.
-- `MODEL_OBRADE`: ko obrađuje nove prilike, `ollama` ili `claude`. Svaka druga vrednost je greška. Za `claude` treba i `ANTHROPIC_API_KEY`.
+- `ANTHROPIC_API_KEY`: ključ za Claude. Bez njega pomoćnik i obrada ne rade.
+- `MODEL_OBRADE`: ko obrađuje nove prilike. Samo `claude`; svaka druga vrednost je greška.
 - `JOOBLE_KLJUC`: ključ za poslove sa Jooble-a. Bez njega se taj izvor preskače.
 - `ADMIN_PATH`: bez njega administratorski deo ne postoji.
 - `PREDLOZI_SLANJA_U_MINUTI`, `POMOCNIK_UKUPNO_ZA_PITANJE`, `POMOCNIK_PITANJA_U_MINUTI`: ograničenja slanja.

@@ -134,7 +134,7 @@ class ReadmeNavodiSamoKomandeKojePostojeTest extends TestCase
             'izmišljen seeder' => ['`NepostojiSeeder`', ['nema seedera NepostojiSeeder']],
             'pravi seeder' => ['`RomskeOrganizacijeSeeder`', []],
             'izmišljeno podešavanje' => ['`NEPOSTOJI_KLJUC`', ['nema podešavanja NEPOSTOJI_KLJUC u .env.example']],
-            'pravo podešavanje' => ['`OLLAMA_MODEL`', []],
+            'pravo podešavanje' => ['`MODEL_OBRADE`', []],
             'izmišljena skripta' => ['`composer nepostoji`', ['nema skripte composer nepostoji']],
             'prava skripta' => ['`composer test`', []],
         ];
@@ -190,9 +190,10 @@ class ReadmeNavodiSamoKomandeKojePostojeTest extends TestCase
         $readme = $this->readme();
         $vrednosti = $this->vrednostiIzPrimera();
 
-        // Dokaz da je merilo obišlo neprazan skup vrednosti iz primera (adresa Ollame, port baze, model).
+        // Dokaz da je merilo obišlo neprazan skup vrednosti iz primera (adresa sajta, port baze, oblast).
         $this->assertGreaterThanOrEqual(5, count($vrednosti));
-        $this->assertContains('qwen2.5:7b', $vrednosti);
+        $this->assertContains('http://localhost:8000', $vrednosti);
+        $this->assertContains('us-east-1', $vrednosti);
 
         foreach ($vrednosti as $vrednost) {
             $this->assertStringNotContainsString($vrednost, $readme, 'README ima vrednost iz .env: '.$vrednost);
@@ -208,9 +209,9 @@ class ReadmeNavodiSamoKomandeKojePostojeTest extends TestCase
     #[Test]
     public function merilo_vrednosti_prepoznaje_vrednost_iz_primera(): void
     {
-        $this->assertContains('http://127.0.0.1:11434', $this->vrednostiIzPrimera());
-        $this->assertSame(1, preg_match('/\b[A-Z][A-Z0-9_]{2,}=\S/', 'OLLAMA_MODEL=qwen2.5:7b'));
-        $this->assertSame(0, preg_match('/\b[A-Z][A-Z0-9_]{2,}=\S/', '`OLLAMA_MODEL`: Ollama.'));
+        $this->assertContains('http://localhost:8000', $this->vrednostiIzPrimera());
+        $this->assertSame(1, preg_match('/\b[A-Z][A-Z0-9_]{2,}=\S/', 'MODEL_OBRADE=claude'));
+        $this->assertSame(0, preg_match('/\b[A-Z][A-Z0-9_]{2,}=\S/', '`MODEL_OBRADE`: Claude.'));
     }
 
     // README je na srpskom latinicom i jednostavan kao sajt: rečenice do petnaest reči i bez stranih reči sa spiska.

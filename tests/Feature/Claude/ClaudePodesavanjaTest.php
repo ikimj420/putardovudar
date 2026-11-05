@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Claude;
 
+use App\Services\Claude\Claude;
 use PHPUnit\Framework\Attributes\Test;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -14,15 +15,15 @@ class ClaudePodesavanjaTest extends TestCase
     use BezLokalnogOkruzenja;
 
     #[Test]
-    public function bez_env_fajla_podrazumevana_podesavanja_su_ollama_haiku_i_izmerene_cene(): void
+    public function bez_env_fajla_podrazumevana_podesavanja_su_claude_haiku_i_izmerene_cene(): void
     {
-        // phpunit.xml zadaje obradu na Ollami i prazan ključ; da bi se videlo šta stoji u podešavanju, ta tri zadavanja se skidaju.
+        // phpunit.xml zadaje obradu na Claude-u i prazan ključ; da bi se videlo šta stoji u podešavanju, ta zadavanja se skidaju.
         foreach (['MODEL_OBRADE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL', 'CLAUDE_ADRESA', 'CLAUDE_VREME_CEKANJA', 'CLAUDE_RAZMISLJANJE', 'OBRADA_NAJVISE_POZIVA'] as $naziv) {
             $this->postaviOkruzenje($naziv, null);
         }
         $this->refreshApplication();
 
-        $this->assertSame('ollama', config('claude.model_obrade'));
+        $this->assertSame('claude', config('claude.model_obrade'));
         $this->assertNull(config('claude.kljuc'));
         $this->assertSame('claude-haiku-5-5', config('claude.model'));
         $this->assertSame('https://api.anthropic.com', config('claude.adresa'));
@@ -35,21 +36,23 @@ class ClaudePodesavanjaTest extends TestCase
         $this->assertSame(['claude-haiku-5-5' => ['ulaz' => 0.10, 'izlaz' => 0.50], 'claude-sonnet-5-5' => ['ulaz' => 2.00, 'izlaz' => 10.00]], config('claude.cene'));
     }
 
-    // Isti broj znakova teksta strane kao kod Ollame, da je proba poštena.
+    // Koliko znakova teksta strane ide modelu: broj je izmeren u probama sa Ollamom i ostao isti za Claude (paket 71), pa se promena vidi.
     #[Test]
-    public function tekst_strane_je_isti_za_oba_modela(): void
+    public function tekst_strane_je_dvanaest_hiljada_znakova(): void
     {
-        $this->assertSame(config('ollama.najvise_znakova'), config('claude.najvise_znakova'));
+        $this->assertSame(12000, config('claude.najvise_znakova'));
+        $this->assertSame(12000, (new Claude)->najviseZnakova());
     }
 
-    // Ogledalo: nov .env se pravi kopiranjem primera; primer ima prazan ključ i obradu na Ollami.
+    // Ogledalo: nov .env se pravi kopiranjem primera; primer ima prazan ključ i obradu na Claude-u, a nijedno Ollamino podešavanje.
     #[Test]
-    public function env_primer_ima_prazan_kljuc_i_obradu_na_ollami(): void
+    public function env_primer_ima_prazan_kljuc_i_obradu_na_claude_u(): void
     {
         $primer = file_get_contents(base_path('.env.example'));
 
         $this->assertMatchesRegularExpression('#^ANTHROPIC_API_KEY=$#m', $primer);
-        $this->assertMatchesRegularExpression('#^MODEL_OBRADE=ollama$#m', $primer);
+        $this->assertMatchesRegularExpression('#^MODEL_OBRADE=claude$#m', $primer);
+        $this->assertStringNotContainsStringIgnoringCase('ollama', $primer);
     }
 
     #[Test]
@@ -67,14 +70,14 @@ class ClaudePodesavanjaTest extends TestCase
         $this->assertSame(7, config('claude.najvise_poziva_po_prolazu'));
     }
 
-    // Testovi nikad ne vide ključ iz Ivanovog okruženja: phpunit.xml ga prazni, a obradu vraća na Ollamu.
+    // Testovi nikad ne vide ključ iz Ivanovog okruženja: phpunit.xml ga prazni, a obradu zadaje na Claude-u.
     #[Test]
-    public function phpunit_prazni_kljuc_i_vraca_obradu_na_ollamu(): void
+    public function phpunit_prazni_kljuc_i_zadaje_obradu_na_claude_u(): void
     {
         $xml = (string) file_get_contents(base_path('phpunit.xml'));
 
         $this->assertMatchesRegularExpression('#<env name="ANTHROPIC_API_KEY" value=""/>#', $xml);
-        $this->assertMatchesRegularExpression('#<env name="MODEL_OBRADE" value="ollama"/>#', $xml);
+        $this->assertMatchesRegularExpression('#<env name="MODEL_OBRADE" value="claude"/>#', $xml);
     }
 
     // Svako podešavanje Claude-a iz okruženja je zadato u phpunit.xml: inače ga testovi čitaju iz .env ove mašine (tu je posle prelaska radne baze na Claude stajalo isključeno razmišljanje).

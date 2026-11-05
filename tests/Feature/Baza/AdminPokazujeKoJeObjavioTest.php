@@ -49,10 +49,10 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     }
 
     #[Test]
-    public function na_prilici_koju_je_objavila_ollama_pise_ko_je_objavio_i_zasto(): void
+    public function na_prilici_koju_je_objavio_model_pise_ko_je_objavio_i_zasto(): void
     {
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt]);
-        $prilika->forceFill(['razlog_objave' => 'Konkurs za stipendije otvoren za građane Srbije.'])->objavi(KoJeObjavio::Ollama);
+        $prilika->forceFill(['razlog_objave' => 'Konkurs za stipendije otvoren za građane Srbije.'])->objavi(KoJeObjavio::Model);
 
         $this->izmena($prilika)
             ->assertFormFieldIsVisible('objavio')
@@ -61,7 +61,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
             ->assertSee(self::POMOC_RAZLOG);
     }
 
-    // Ogledalo: ručno objavljena prilika kaže „Ivan", a Ollama se ne pominje kao autor.
+    // Ogledalo: ručno objavljena prilika kaže „Ivan", a model se ne pominje kao autor.
     #[Test]
     public function na_prilici_koju_je_objavio_ivan_pise_ivan(): void
     {
@@ -77,7 +77,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     public function polja_o_objavi_se_samo_citaju_i_snimanje_ih_ne_menja(): void
     {
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt]);
-        $prilika->forceFill(['razlog_objave' => 'Stvaran razlog.', 'predlog' => $this->predlog()])->objavi(KoJeObjavio::Ollama);
+        $prilika->forceFill(['razlog_objave' => 'Stvaran razlog.', 'predlog' => $this->predlog()])->objavi(KoJeObjavio::Model);
 
         $this->izmena($prilika)
             ->assertFormFieldIsDisabled('objavio')
@@ -89,7 +89,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $posle = $prilika->fresh();
 
         $this->assertSame('Promenjen naslov', $posle->naslov);
-        $this->assertSame(KoJeObjavio::Ollama, $posle->objavio);
+        $this->assertSame(KoJeObjavio::Model, $posle->objavio);
         $this->assertSame('Stvaran razlog.', $posle->razlog_objave);
         $this->assertSame($this->predlog(), $posle->predlog);
     }
@@ -106,26 +106,26 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $this->izmena($nacrt)->assertFormSet(['objavio' => 'Ivan']);
     }
 
-    // Ogledalo: izmena naslova na prilici koju je objavila Ollama ne pravi od nje Ivanovu.
+    // Ogledalo: izmena naslova na prilici koju je objavio model ne pravi od nje Ivanovu.
     #[Test]
     public function izmena_objavljene_prilike_ne_menja_ko_ju_je_objavio(): void
     {
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt]);
-        $prilika->objavi(KoJeObjavio::Ollama);
+        $prilika->objavi(KoJeObjavio::Model);
 
         $this->izmena($prilika)->fillForm(['naslov' => 'Drugi naslov'])->call('save');
 
-        $this->assertSame(KoJeObjavio::Ollama, $prilika->fresh()->objavio);
+        $this->assertSame(KoJeObjavio::Model, $prilika->fresh()->objavio);
     }
 
     #[Test]
     public function ponovna_objava_posle_vracanja_u_nacrt_je_ivanova(): void
     {
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt]);
-        $prilika->objavi(KoJeObjavio::Ollama);
+        $prilika->objavi(KoJeObjavio::Model);
         $prilika->update(['status' => StatusPrilike::Nacrt]);
 
-        $this->assertSame(KoJeObjavio::Ollama, $prilika->fresh()->objavio);
+        $this->assertSame(KoJeObjavio::Model, $prilika->fresh()->objavio);
 
         $prilika->update(['status' => StatusPrilike::Objavljeno]);
 
@@ -193,7 +193,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
     public function predlog_se_ne_pokazuje_na_objavljenoj_prilici_ni_pri_dodavanju(): void
     {
         $objavljena = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['odbijeno' => null])]);
-        $objavljena->objavi(KoJeObjavio::Ollama);
+        $objavljena->objavi(KoJeObjavio::Model);
 
         $this->izmena($objavljena)->assertDontSee('Predlog modela')->assertDontSee(self::POMOC_PREDLOG);
 
@@ -208,12 +208,12 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         $this->assertNull(Prilika::query()->where('naslov', 'Nova')->sole()->objavio);
     }
 
-    // Paket 12: na prilici koju je objavila Ollama piše citat koji dokazuje pravilo.
+    // Paket 12: na prilici koju je objavio model piše citat koji dokazuje pravilo.
     #[Test]
-    public function na_prilici_koju_je_objavila_ollama_pise_citat_pravila(): void
+    public function na_prilici_koju_je_objavio_model_pise_citat_pravila(): void
     {
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlog(['odbijeno' => null])]);
-        $prilika->objavi(KoJeObjavio::Ollama);
+        $prilika->objavi(KoJeObjavio::Model);
 
         $this->izmena($prilika)
             ->assertFormFieldIsVisible('predlog.citat_pravila')
@@ -301,12 +301,12 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
         ], ...$dopuna]);
     }
 
-    // Paket 40: na prilici koju je objavila Ollama pišu grupe sa citatom koji ih dokazuje, po jedan red za grupu.
+    // Paket 40: na prilici koju je objavio model pišu grupe sa citatom koji ih dokazuje, po jedan red za grupu.
     #[Test]
-    public function na_prilici_koju_je_objavila_ollama_pisu_citati_za_grupe(): void
+    public function na_prilici_koju_je_objavio_model_pisu_citati_za_grupe(): void
     {
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $this->predlogSaGrupama(['odbijeno' => null])]);
-        $prilika->objavi(KoJeObjavio::Ollama);
+        $prilika->objavi(KoJeObjavio::Model);
 
         $this->izmena($prilika)
             ->assertFormFieldIsVisible('predlog.grupe')
@@ -325,7 +325,7 @@ class AdminPokazujeKoJeObjavioTest extends AdminBazaTestCase
             ['grupa' => 'povratnici', 'citat' => 'Nema ga na strani za povratnike'],
         ]]);
         $prilika = Prilika::factory()->create(['status' => StatusPrilike::Nacrt, 'predlog' => $predlog]);
-        $prilika->objavi(KoJeObjavio::Ollama);
+        $prilika->objavi(KoJeObjavio::Model);
 
         $this->izmena($prilika)->assertFormSet(['predlog.grupe' => 'Studenti: „Konkurs je otvoren za sve studente"']);
 

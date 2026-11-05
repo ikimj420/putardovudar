@@ -5,9 +5,9 @@ namespace Tests\Feature\Baza;
 use App\Enums\StatusPrilike;
 use App\Enums\VrstaPrilike;
 use App\Models\Prilika;
+use App\Services\Model\ModelNedostupan;
 use App\Services\Model\ModelObrade;
 use App\Services\Model\Potrosnja;
-use App\Services\Ollama\OllamaNedostupna;
 use App\Services\TekstStrane;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -17,6 +17,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 74 (dopuna, Ivan, 13.10.2026.): obrada ne sme da padne na nevažećem UTF-8. Odgovor modela sa njim je „odgovor modela nije ispravan", stavka ostaje neobrađena,
 // a obrada ide dalje. Pravi uzrok pada u probi bio je trim po bajtovima u TekstStrane::normalizuj (citat „⏰ …" je postajao nevažeći), pa i to ima svoj test.
@@ -25,9 +26,7 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
-
-    private const ANTHROPIC = 'https://api.anthropic.com/v1/messages';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const GRUPA = 'Otvoreno je za sve studente';
 
@@ -63,7 +62,7 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
     /** @return array<string, array{0: string}> MODEL_OBRADE */
     public static function modeli(): array
     {
-        return ['Ollama' => ['ollama'], 'Claude' => ['claude']];
+        return ['Claude' => ['claude']];
     }
 
     private function snimak(): string
@@ -118,8 +117,7 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
         $sadrzaj = json_encode($this->snimljenOdgovor(), JSON_UNESCAPED_UNICODE);
         Http::fake([
             self::SNIMLJENA_STRANA => Http::response($this->snimak(), 200, ['Content-Type' => 'text/html; charset=UTF-8']),
-            self::OLLAMA => Http::response(['message' => ['content' => $sadrzaj]]),
-            self::ANTHROPIC => Http::response(['content' => [['type' => 'text', 'text' => $sadrzaj]], 'usage' => ['input_tokens' => 2901, 'output_tokens' => 215]]),
+            self::CLAUDE => LazniClaude::odgovor($sadrzaj),
         ]);
 
         $this->artisan('uvoz:obradi')
@@ -237,7 +235,7 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
     public function nedostupan_model_i_dalje_zaustavlja_obradu(): void
     {
         [$losa, $dobra] = $this->dveStavke();
-        $this->modelSaLosomStavkom(fn () => throw new OllamaNedostupna('Model ne odgovara'));
+        $this->modelSaLosomStavkom(fn () => throw new ModelNedostupan('Model ne odgovara'));
 
         $this->artisan('uvoz:obradi')->expectsOutputToContain('Model ne odgovara')->assertExitCode(1);
 
@@ -277,7 +275,7 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
         $nacrt = $this->nacrt('Prijava za program', 'https://a.test/prijava');
         $recenica = $pre.' Rok je 20. oktobra 2026. godine '.$posle.'.';
         $sadrzaj = json_encode($this->forma('Prijave traju do 20. oktobra 2026'), JSON_UNESCAPED_UNICODE);
-        Http::fake(['https://a.test/prijava' => $this->strana($recenica), self::OLLAMA => Http::response(['message' => ['content' => $sadrzaj]])]);
+        Http::fake(['https://a.test/prijava' => $this->strana($recenica), self::CLAUDE => LazniClaude::odgovor($sadrzaj)]);
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);
 

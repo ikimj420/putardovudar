@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
-// Paket 71/T1: samo klasa Claude zna za Claude API (adresu, putanju, podešavanja), kao što samo Ollama zna za Ollamu.
+// Paket 71/T1: samo klasa Claude zna za Claude API (adresu, putanju, zaglavlja, ključ).
 class ClaudeSeZoveSamoIzJedneKlaseTest extends TestCase
 {
     private const JEDNO_MESTO = 'app/Services/Claude/Claude.php';

@@ -14,6 +14,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 76 (Ivan, PITANJA-76, izbor A): model i provera citata čitaju samo <article> kad ga strana ima tačno jedan, pa meni sajta nije dokaz grupe; Infostud ostaje sa celom stranom,
 // jer oglasi na engleskom nemaju „posao" u <article> i vrsta im se dokazuje okvirom sajta (izmereno: bez tog izuzetka otpadaju četiri od dvadeset tačnih objava). Snimci su prave strane.
@@ -22,7 +23,7 @@ class ClanakJeTekstPozivaTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const YOUTH = 'https://youth.rs/archives/18211';
 
@@ -62,7 +63,7 @@ class ClanakJeTekstPozivaTest extends BazaTestCase
     {
         config()->set('uvoz.izvori', [['ime' => $izvor, 'adresa' => 'https://a.test/feed']]);
         $nacrt = Prilika::factory()->create(['naslov' => $naslov, 'vrsta' => VrstaPrilike::Drugo, 'rok' => null, 'naziv_izvora' => $izvor, 'link_izvora' => $adresa, 'izvor_objavljen' => $izvorObjavljen]);
-        Http::fake([$adresa => Http::response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']), self::OLLAMA => Http::response(['message' => ['content' => json_encode($odgovor, JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([$adresa => Http::response($html, 200, ['Content-Type' => 'text/html; charset=UTF-8']), self::CLAUDE => LazniClaude::odgovor(json_encode($odgovor, JSON_UNESCAPED_UNICODE))]);
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);
 

@@ -5,7 +5,7 @@ namespace App\Services\Pomocnik;
 use App\Enums\Rod;
 use App\Models\Sablon;
 use App\Services\Claude\Claude;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
 use App\Support\Latinica;
 use App\Support\RodIzImena;
 use App\Support\SklapanjeSablona;
@@ -53,7 +53,7 @@ TEXT;
             $tekst = strtr(Latinica::izCirilice($this->model->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $rod), (int) config('pomocnik.ukupno_za_pitanje'))), $this->licneVrednosti($sablon, $unosi));
             $ime = in_array(RodIzImena::POLJE, $sablon->kljucevi(), true) ? ($unosi[RodIzImena::POLJE] ?? '') : null;
             $razlog = $this->ostalaOznaka($tekst) ? 'model je dodao oznaku kojoj nema vrednosti' : $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), $ime, $this->komePrazno($sablon, $unosi) ? $ime : null);
-        } catch (OllamaNedostupna) {
+        } catch (ModelNedostupan) {
             return new NapisanTekst($slozen, false, 'model ne odgovara');
         } catch (Throwable $izuzetak) {
             // Bilo koja druga greška ne sme do rukovaoca izuzecima, koji u log piše poruku i trag poziva sa onim što je čovek upisao (paket 64).

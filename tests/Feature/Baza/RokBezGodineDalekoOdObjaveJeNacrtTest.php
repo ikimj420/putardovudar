@@ -12,6 +12,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
+use Tests\Podrska\LazniClaude;
 
 // Paket 84/T1 (Ivan, 30.10.2026.): rok bez godine koji pada više od šest meseci posle datuma objave nije siguran, pa ostaje nacrt. Povod je prava strana Youth.rs
 // (snimak 30.10.2026., ime autora zamenjeno): „najkasnije do 5. decembra" u vesti od 8.12.2025. kod je čitao kao 5.12.2026.
@@ -20,7 +21,7 @@ class RokBezGodineDalekoOdObjaveJeNacrtTest extends BazaTestCase
 {
     use RefreshDatabase;
 
-    private const OLLAMA = 'http://127.0.0.1:11434/api/chat';
+    private const CLAUDE = LazniClaude::ADRESA;
 
     private const RECNIK = 'https://youth.rs/archives/18125';
 
@@ -48,7 +49,7 @@ class RokBezGodineDalekoOdObjaveJeNacrtTest extends BazaTestCase
     {
         $this->travelTo(Carbon::parse($danas.' 12:00:00', 'Europe/Belgrade'));
         $nacrt = Prilika::factory()->create(['naslov' => 'Poziv', 'vrsta' => VrstaPrilike::Drugo, 'rok' => null, 'naziv_izvora' => 'Izvor A', 'link_izvora' => $adresa, 'izvor_objavljen' => $objavljeno]);
-        Http::fake([$adresa => Http::response($telo, 200, ['Content-Type' => 'text/html; charset=UTF-8']), self::OLLAMA => Http::response(['message' => ['content' => json_encode($odgovor, JSON_UNESCAPED_UNICODE)]])]);
+        Http::fake([$adresa => Http::response($telo, 200, ['Content-Type' => 'text/html; charset=UTF-8']), self::CLAUDE => LazniClaude::odgovor(json_encode($odgovor, JSON_UNESCAPED_UNICODE))]);
 
         $this->artisan('uvoz:obradi')->assertExitCode(0);
 

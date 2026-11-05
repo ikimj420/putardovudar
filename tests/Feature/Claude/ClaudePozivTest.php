@@ -3,8 +3,8 @@
 namespace Tests\Feature\Claude;
 
 use App\Services\Claude\Claude;
-use App\Services\Ollama\OdgovorNijeJson;
-use App\Services\Ollama\OllamaNedostupna;
+use App\Services\Model\ModelNedostupan;
+use App\Services\Model\OdgovorNijeJson;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -13,7 +13,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
-// Paket 71/T1: Claude klasa ima isti oblik kao Ollama. Nijedan test ne zove pravi API: ključ je izmišljen, a zahtevi su lažirani.
+// Paket 71/T1: Claude klasa je jedino mesto poziva modela (ModelObrade). Nijedan test ne zove pravi API: ključ je izmišljen, a zahtevi su lažirani.
 class ClaudePozivTest extends TestCase
 {
     private const KLJUC = 'probni-kljuc-nije-pravi-123';
@@ -178,7 +178,7 @@ class ClaudePozivTest extends TestCase
         $this->assertSame('', $claude->odgovoriTekstom('U.', 'T.'));
     }
 
-    // Bez ključa nema ni zahteva: isto kao Ollama koja ne radi.
+    // Bez ključa nema ni zahteva: isto kao kad model ne radi.
     #[Test]
     public function bez_kljuca_nema_zahteva_i_baca_nedostupna(): void
     {
@@ -188,7 +188,7 @@ class ClaudePozivTest extends TestCase
             try {
                 (new Claude)->odgovoriJsonom('U.', 'T.');
                 $this->fail('poziv je prošao bez ključa');
-            } catch (OllamaNedostupna $izuzetak) {
+            } catch (ModelNedostupan $izuzetak) {
                 $this->assertSame('Claude API: ključ nije podešen (ANTHROPIC_API_KEY)', $izuzetak->getMessage());
             }
         }
@@ -209,7 +209,7 @@ class ClaudePozivTest extends TestCase
         try {
             (new Claude)->odgovoriTekstom('U.', 'T.');
             $this->fail('poziv je prošao');
-        } catch (OllamaNedostupna $izuzetak) {
+        } catch (ModelNedostupan $izuzetak) {
             $this->assertSame('Claude API ne odgovara', $izuzetak->getMessage());
         }
 
@@ -232,7 +232,7 @@ class ClaudePozivTest extends TestCase
         try {
             (new Claude)->odgovoriTekstom('U.', 'T.');
             $this->fail('poziv je prošao');
-        } catch (OllamaNedostupna $izuzetak) {
+        } catch (ModelNedostupan $izuzetak) {
             $this->assertSame($poruka, $izuzetak->getMessage());
             $this->assertStringNotContainsString(self::KLJUC, $izuzetak->getMessage().$izuzetak->getTraceAsString());
         }
@@ -247,7 +247,7 @@ class ClaudePozivTest extends TestCase
         return ['HTTP 429' => [429], 'HTTP 529' => [529]];
     }
 
-    // 429 i 529: dva ponavljanja sa čekanjem, pa isto kao Ollama koja ne radi.
+    // 429 i 529: dva ponavljanja sa čekanjem, pa isto kao kad model ne radi.
     #[Test]
     #[DataProvider('preopterecenost')]
     public function preopterecenost_se_ponavlja_najvise_dva_puta_pa_je_nedostupna(int $status): void
@@ -257,7 +257,7 @@ class ClaudePozivTest extends TestCase
         try {
             (new Claude)->odgovoriTekstom('U.', 'T.');
             $this->fail('poziv je prošao');
-        } catch (OllamaNedostupna $izuzetak) {
+        } catch (ModelNedostupan $izuzetak) {
             $this->assertSame('Claude API je odgovorio sa HTTP '.$status, $izuzetak->getMessage());
         }
 
@@ -309,7 +309,7 @@ class ClaudePozivTest extends TestCase
         $claude->odgovoriTekstom('U.', 'T.');
         try {
             $claude->odgovoriTekstom('U.', 'T.');
-        } catch (OllamaNedostupna) {
+        } catch (ModelNedostupan) {
         }
         $claude->odgovoriTekstom('U.', 'T.');
         $potrosnja = $claude->potrosnja();
@@ -337,7 +337,7 @@ class ClaudePozivTest extends TestCase
         for ($i = 0; $i < 2; $i++) {
             try {
                 $claude->odgovoriTekstom('U.', 'T.');
-            } catch (OllamaNedostupna $izuzetak) {
+            } catch (ModelNedostupan $izuzetak) {
                 $nalazi[] = $izuzetak->getMessage().$izuzetak->getTraceAsString().$izuzetak;
             }
         }
