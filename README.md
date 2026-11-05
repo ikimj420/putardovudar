@@ -39,13 +39,14 @@ Sve se puštaju sa `php artisan`, iz glavnog foldera.
 - `sesije:ocisti`: briše sesije starije od `SESSION_LIFETIME`. U rasporedu se pušta svakog sata.
 - `sabloni:prazna-polja`: upisuje pravila praznih polja u šablone.
 
-Seederi dodaju sadržaj, a ono što već postoji ne diraju. Izuzetak je `Ispravke20261031Seeder`. Puštaju se ovako: `db:seed --class=` i ime.
+Seederi dodaju sadržaj, a ono što već postoji ne diraju. Izuzeci su `Ispravke20261031Seeder` i `ObjaviSabloneSeeder`. Puštaju se ovako: `db:seed --class=` i ime.
 
 - `OrganizacijeSeeder`: organizacije iz starog projekta, kao nacrt.
 - `RomskeOrganizacijeSeeder`: romske organizacije, objavljene.
 - `KalendarProslaGodinaSeeder`: kalendar „šta je bilo otvoreno prošle godine".
 - `VodiciSeeder`, `VodiciPrimeriSeeder` i `SabloniSeeder`: vodiči, primeri i šabloni, kao nacrt.
 - `Ispravke20261031Seeder`: osam ispravki prilika i dve veze kalendara. Polje menja samo ako je u bazi očekivana vrednost, inače ispiše zašto preskače.
+- `ObjaviSabloneSeeder`: objavljuje šest šablona iz `VodiciPrimeriSeeder`. Objavljuje samo nacrt koji je isti kao u tom seederu, inače ispiše zašto preskače.
 
 Ne puštaj `db:seed` bez imena. Taj poziv pravi probnog korisnika.
 
