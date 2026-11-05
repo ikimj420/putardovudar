@@ -60,6 +60,9 @@ final class PrikazPomocnika
     // Ispod polja za ime, adresu i telefon u „Napiši moj" (paket 100/T2: model dobija oznake, aplikacija upisuje podatke u gotov tekst).
     public const LICNI_PODACI = 'Ovi podaci ne idu Claude-u; upisujemo ih u tekst na kraju.';
 
+    // Ispod polja slobodnog teksta (ključ „tekst"): ono ide Claude-u doslovno, a kod ne prepoznaje ime u slobodnom tekstu (PITANJA-100.md 2). Ivanov tekst (paket 101/T2).
+    public const SLOBODAN_TEKST = 'Ne upisuj ovde ime, adresu ni telefon.';
+
     // Rod u „Napiši moj" (paket 64): pitanje i link su Ivanov tekst (11.10.2026.), natpisi dugmadi su predlog (PITANJA-64.md).
     public const ROD_PITANJE = 'Da pišem „radio sam" ili „radila sam"?';
 

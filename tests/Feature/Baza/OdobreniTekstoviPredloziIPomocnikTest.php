@@ -140,6 +140,13 @@ class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
         $this->assertSame('Ovi podaci ne idu Claude-u; upisujemo ih u tekst na kraju.', PrikazPomocnika::LICNI_PODACI);
     }
 
+    // Paket 101/T2: Ivanov tekst ispod polja slobodnog teksta u „Napiši moj"; kako ga posetilac vidi meri SlobodanTekstUNapisiMojNosiNapomenuTest.
+    #[Test]
+    public function recenica_ispod_slobodnog_teksta_je_doslovno_ivanova(): void
+    {
+        $this->assertSame('Ne upisuj ovde ime, adresu ni telefon.', PrikazPomocnika::SLOBODAN_TEKST);
+    }
+
     // Isti tekstovi kako ih posetilac vidi: pasus na strani „Privatnost", natpis sa vezom ispod polja i beleška jednom, ispod poslednjeg ličnog polja.
     #[Test]
     public function posetilac_vidi_doslovno_odobrene_tekstove_o_claude_u(): void
