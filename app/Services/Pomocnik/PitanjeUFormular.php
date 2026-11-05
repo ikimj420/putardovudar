@@ -28,11 +28,16 @@ TEXT;
 
     private const NAJVISE_ZNAKOVA_VREDNOSTI = 40;
 
-    public function __construct(private readonly Claude $model) {}
+    public function __construct(private readonly Claude $model, private readonly DnevnaGranica $granica) {}
 
     /** @throws ModelNedostupan */
     public function izPitanja(string $pitanje, ?int $vremeCekanja = null): Formular
     {
+        // Preko dnevne granice pitanje dobija isti ishod kao kad model ne radi, a Claude se ne zove.
+        if (! $this->granica->iskoristi()) {
+            throw new ModelNedostupan('Dnevna granica pitanja je dostignuta');
+        }
+
         try {
             $forma = $this->model->odgovoriJsonom(self::UPUTSTVO, $pitanje, $vremeCekanja);
         } catch (OdgovorNijeJson) {

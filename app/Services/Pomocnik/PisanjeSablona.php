@@ -39,7 +39,7 @@ TEXT;
         'zenski' => 'Rod autora je ženski: piši u ženskom rodu (radila sam, videla sam, zadovoljna sam).',
     ];
 
-    public function __construct(private readonly Claude $model, private readonly ProveraNapisanogTeksta $provera) {}
+    public function __construct(private readonly Claude $model, private readonly ProveraNapisanogTeksta $provera, private readonly DnevnaGranica $granica) {}
 
     /**
      * @param  array<string, string>  $unosi  ključ polja → šta je čovek upisao
@@ -50,6 +50,11 @@ TEXT;
         $slozen = SklapanjeSablona::sklopi($sablon, $unosi, $rod);
 
         try {
+            // Isti brojač kao za pitanja: preko granice stiže složen šablon, kao kad model ne radi.
+            if (! $this->granica->iskoristi()) {
+                throw new ModelNedostupan('Dnevna granica pitanja je dostignuta');
+            }
+
             $tekst = strtr(Latinica::izCirilice($this->model->odgovoriTekstom(self::UPUTSTVO, $this->poruka($sablon, $unosi, $rod), (int) config('pomocnik.ukupno_za_pitanje'))), $this->licneVrednosti($sablon, $unosi));
             $ime = in_array(RodIzImena::POLJE, $sablon->kljucevi(), true) ? ($unosi[RodIzImena::POLJE] ?? '') : null;
             $razlog = $this->ostalaOznaka($tekst) ? 'model je dodao oznaku kojoj nema vrednosti' : $this->provera->razlogOdbijanja($tekst, $this->dozvoljeno($sablon, $unosi, $rod), $ime, $this->komePrazno($sablon, $unosi) ? $ime : null);

@@ -12,4 +12,7 @@ return [
     // Koliko pitanja jedna adresa sme da pošalje u minuti.
     'pitanja_u_minuti' => (int) env('POMOCNIK_PITANJA_U_MINUTI', 5),
 
+    // Koliko pitanja i „Napiši moj" zahteva ceo sajt sme da pošalje Claude-u u jednom danu; preko toga pomoćnik odgovara kao kad ne radi. Broj je predlog iz paketa 100 (300), Ivan ga potvrđuje.
+    'pitanja_dnevno' => (int) env('POMOCNIK_PITANJA_DNEVNO', 300),
+
 ];
