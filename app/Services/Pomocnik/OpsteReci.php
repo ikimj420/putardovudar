@@ -4,8 +4,9 @@ namespace App\Services\Pomocnik;
 
 use App\Support\PoredjenjeTeksta;
 
-// Reči „vodič" i „organizacija" (u bilo kom padežu) ponavljaju vrstu strane koja se traži, pa ne sužavaju pretragu.
-// Kad su jedine, pitanje je „šta imate": tada se izlistava sve objavljeno te vrste.
+// Reči „vodič" i „organizacija" (u bilo kom padežu) kažu vrstu strane, a ne temu, pa ne sužavaju ni pretragu vodiča ni pretragu
+// organizacija: „organizacije za dokumenta" traži dokumenta, i u naslovu vodiča (paket 102/T1). Kad su jedine, pitanje je
+// „šta imate": tada se izlistava sve objavljeno te vrste.
 final readonly class OpsteReci
 {
     public const VODIC = 'vodic';
@@ -18,13 +19,13 @@ final readonly class OpsteReci
     /** @param  list<string>  $kljucneReci */
     public function __construct(private array $kljucneReci) {}
 
-    /** Svaki izraz bez reči koje počinju na $koren; izraz koji je bio samo takva reč otpada. @return list<string> */
-    public function izrazi(string $koren): array
+    /** Svaki izraz bez reči „vodič" i „organizacija"; izraz koji je bio samo takve reči otpada. @return list<string> */
+    public function izrazi(): array
     {
         $izrazi = [];
 
         foreach ($this->kljucneReci as $izraz) {
-            $reci = array_filter($this->reci($izraz), fn (string $rec) => ! str_starts_with($rec, $koren));
+            $reci = array_filter($this->reci($izraz), fn (string $rec) => ! $this->jeOpsta($rec));
 
             if ($reci !== []) {
                 $izrazi[] = implode(' ', $reci);
@@ -52,7 +53,12 @@ final readonly class OpsteReci
     {
         $reci = array_merge([], ...array_map(fn (string $izraz) => $this->reci($izraz), $this->kljucneReci));
 
-        return $reci !== [] && array_filter($reci, fn (string $rec) => ! str_starts_with($rec, self::VODIC) && ! str_starts_with($rec, self::ORGANIZACIJA)) === [];
+        return $reci !== [] && array_filter($reci, fn (string $rec) => ! $this->jeOpsta($rec)) === [];
+    }
+
+    private function jeOpsta(string $rec): bool
+    {
+        return str_starts_with($rec, self::VODIC) || str_starts_with($rec, self::ORGANIZACIJA);
     }
 
     /** @return list<string> */

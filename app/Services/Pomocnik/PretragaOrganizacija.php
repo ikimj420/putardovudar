@@ -6,8 +6,8 @@ use App\Models\Organizacija;
 use App\Support\PoredjenjeTeksta;
 use Illuminate\Support\Collection;
 
-// Organizacije se traže samo po prihvaćenim ključnim rečima u nazivu i uslugama, samo kroz Organizacija::javne(). Reč „organizacija"
-// ne sužava pretragu, a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljene organizacije po nazivu.
+// Organizacije se traže samo po prihvaćenim ključnim rečima u nazivu i uslugama, samo kroz Organizacija::javne(). Reči „vodič" i
+// „organizacija" ne sužavaju pretragu, a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljene organizacije po nazivu.
 // Grad sužava: organizacija ulazi kad je online ili kad njeno „mesto" (slobodan tekst) sadrži grad, u bilo kom padežu.
 final class PretragaOrganizacija
 {
@@ -30,7 +30,7 @@ final class PretragaOrganizacija
             return $this->kandidati($formular)->take(self::NAJVISE_U_SPISKU)->values();
         }
 
-        $izrazi = $reci->izrazi(OpsteReci::ORGANIZACIJA);
+        $izrazi = $reci->izrazi();
 
         if ($izrazi === []) {
             return new Collection;

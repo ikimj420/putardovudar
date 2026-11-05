@@ -6,8 +6,8 @@ use App\Models\Vodic;
 use App\Support\PoredjenjeTeksta;
 use Illuminate\Support\Collection;
 
-// Vodiči se traže samo po prihvaćenim ključnim rečima u naslovu i samo kroz Vodic::javni(). Reč „vodič" ne sužava pretragu,
-// a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljeni vodiči po nazivu.
+// Vodiči se traže samo po prihvaćenim ključnim rečima u naslovu i samo kroz Vodic::javni(). Reči „vodič" i „organizacija" ne sužavaju
+// pretragu, a kad su sve reči „vodič" ili „organizacija", izlistavaju se objavljeni vodiči po nazivu.
 final class PretragaVodica
 {
     public const NAJVISE_ZAPISA = 3;
@@ -25,7 +25,7 @@ final class PretragaVodica
             return $reci->sadrzi(OpsteReci::VODIC) ? Vodic::javni()->orderBy('naslov')->limit(self::NAJVISE_U_SPISKU)->get() : new Collection;
         }
 
-        $izrazi = $reci->izrazi(OpsteReci::VODIC);
+        $izrazi = $reci->izrazi();
 
         if ($izrazi === []) {
             return new Collection;
