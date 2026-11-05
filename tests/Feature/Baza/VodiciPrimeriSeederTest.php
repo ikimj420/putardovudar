@@ -181,7 +181,11 @@ class VodiciPrimeriSeederTest extends BazaTestCase
             $odeljak = $this->odeljak($dokument, (int) $zaglavlje[0][1], $zaglavlje[0][0]);
             $this->assertStringContainsString('✅', $zaglavlje[0][0], $sablon['slug'].' nije odobren u dokumentu');
 
-            $this->assertSame($sablon['tekst'], $this->prviBlok((string) substr($odeljak, (int) strpos($odeljak, 'Šablon kad Ollama ne radi'))), $sablon['slug']);
+            // Bez naslova strpos daje false, a (int) false je početak odeljka: test je tada prolazio i bez naslova (paket 101/T0).
+            $naslovSablona = strpos($odeljak, 'Šablon kad pomoćnik ne radi');
+            $this->assertNotFalse($naslovSablona, $sablon['slug'].': u odeljku nema naslova „Šablon kad pomoćnik ne radi"');
+            $this->assertStringNotContainsString('Šablon kad Ollama ne radi', $odeljak, $sablon['slug']);
+            $this->assertSame($sablon['tekst'], $this->prviBlok((string) substr($odeljak, $naslovSablona)), $sablon['slug']);
 
             preg_match_all('/^\d+\. `([a-z0-9_]+)` · (.*?)( \(dugo\))? · ?(.*)$/m', $odeljak, $polja, PREG_SET_ORDER);
             $this->assertSame(
