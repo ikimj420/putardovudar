@@ -13,8 +13,10 @@ use App\Support\PoredjenjeTeksta;
 // Prvi posao pomoćnika: model samo popunjava formular, a svaku vrednost iz njega proverava kod.
 final class PitanjeUFormular
 {
+    // Pretraga od paketa 23 i 24 ide i po vodičima i organizacijama; uputstvo koje kaže samo „prilike" ostavljalo je pitanje kao „pomozi mi oko CV-a"
+    // bez ključne reči u 14 od 31 poziva pravog Claude-a, a sa vodičima i organizacijama u 1 od 10 (paket 101/T5, PROBA-PAKET-101.md).
     private const UPUTSTVO = <<<'TEXT'
-Pretvaraš pitanje o prilikama (posao, praksa, stipendija, konkurs, obuka) u formular za pretragu. Ne odgovaraš na pitanje.
+Pretvaraš pitanje o prilikama (posao, praksa, stipendija, konkurs, obuka), vodičima ili organizacijama u formular za pretragu. Ne odgovaraš na pitanje.
 Popuni formular samo iz teksta pitanja; ako nešto u pitanju ne piše, stavi null.
 Vrati samo JSON objekat sa ključevima:
 vrsta (jedno od: posao, praksa, stipendija, konkurs, obuka, drugo, ili null),
