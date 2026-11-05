@@ -8,7 +8,6 @@ use App\Models\Prilika;
 use App\Services\IshodObrade;
 use App\Services\Model\ModelNedostupan;
 use App\Services\Model\ModelObrade;
-use App\Services\Model\NepoznatModelObrade;
 use App\Services\ObradaNacrta;
 use App\Support\Prikaz;
 use Illuminate\Console\Command;
@@ -22,15 +21,8 @@ class UvozObradi extends Command
 
     public function handle(): int
     {
-        // Model se traži ovde, ne u potpisu: pogrešan MODEL_OBRADE tako postaje poruka i izlaz 1, a dnevni posao nastavlja sa ostalim koracima (paket 95).
-        try {
-            $obrada = app(ObradaNacrta::class);
-            $model = app(ModelObrade::class);
-        } catch (NepoznatModelObrade $izuzetak) {
-            $this->line($izuzetak->getMessage());
-
-            return self::FAILURE;
-        }
+        $obrada = app(ObradaNacrta::class);
+        $model = app(ModelObrade::class);
 
         // Nacrt iz uvoza je onaj koji uvoz ostavlja netaknut: vrsta „Drugo", bez roka, naziv izvora iz config/uvoz.php ili Jooble.
         $upit = Prilika::query()

@@ -22,7 +22,6 @@ U `.env` stoje, između ostalog, ova podešavanja. Vrednosti su tvoje i ne pišu
 
 - `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`: baza.
 - `ANTHROPIC_API_KEY`: ključ za Claude. Bez njega pomoćnik i obrada ne rade.
-- `MODEL_OBRADE`: ko obrađuje nove prilike. Samo `claude`; svaka druga vrednost je greška.
 - `JOOBLE_KLJUC`: ključ za poslove sa Jooble-a. Bez njega se taj izvor preskače.
 - `ADMIN_PATH`: bez njega administratorski deo ne postoji.
 - `PREDLOZI_SLANJA_U_MINUTI`, `POMOCNIK_UKUPNO_ZA_PITANJE`, `POMOCNIK_PITANJA_U_MINUTI`: ograničenja slanja.

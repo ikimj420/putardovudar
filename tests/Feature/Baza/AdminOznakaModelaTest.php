@@ -48,9 +48,8 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     }
 
     // Prava obrada (uvoz:obradi) sa lažnim odgovorima modela; $saGrupom=false ostavlja nacrt, jer grupa nije dokazana.
-    private function obradi(string $model, bool $saGrupom = true): Prilika
+    private function obradi(bool $saGrupom = true): Prilika
     {
-        config()->set('claude.model_obrade', $model);
         $nacrt = Prilika::factory()->create(['naslov' => 'Konkurs za stipendije', 'vrsta' => VrstaPrilike::Drugo, 'rok' => null, 'naziv_izvora' => 'Izvor A', 'link_izvora' => self::STRANA]);
         $sadrzaj = json_encode($this->forma($saGrupom), JSON_UNESCAPED_UNICODE);
         Http::fake([
@@ -63,17 +62,17 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
         return $nacrt->fresh();
     }
 
-    /** @return array<string, array{0: string, 1: string}> MODEL_OBRADE, model koji se upisuje u predlog */
+    /** @return array<string, array{0: string}> model koji se upisuje u predlog (izbora modela nema od paketa 101/T3) */
     public static function modeli(): array
     {
-        return ['Claude' => ['claude', 'claude-haiku-5-5']];
+        return ['Claude' => ['claude-haiku-5-5']];
     }
 
     #[Test]
     #[DataProvider('modeli')]
-    public function na_formi_objavljene_prilike_pise_model_a_ne_ollama(string $obrada, string $model): void
+    public function na_formi_objavljene_prilike_pise_model_a_ne_ollama(string $model): void
     {
-        $prilika = $this->obradi($obrada);
+        $prilika = $this->obradi();
 
         $this->assertSame(StatusPrilike::Objavljeno, $prilika->status);
         $this->assertSame($model, $prilika->predlog['model']);
@@ -88,9 +87,9 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
 
     #[Test]
     #[DataProvider('modeli')]
-    public function na_kartici_u_spisku_pise_model_a_ne_ollama(string $obrada, string $model): void
+    public function na_kartici_u_spisku_pise_model_a_ne_ollama(string $model): void
     {
-        $this->obradi($obrada);
+        $this->obradi();
 
         Livewire::test(ListPrilike::class)
             ->assertSeeInOrder(['Konkurs za stipendije', 'Objavio', 'Model · '.$model])
@@ -112,9 +111,9 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     // Ogledalo: kad nacrt obrađen modelom objavi Ivan, piše „Ivan", bez imena modela, iako predlog i dalje nosi model.
     #[Test]
     #[DataProvider('modeli')]
-    public function kad_nacrt_obradjen_modelom_objavi_ivan_pise_ivan_bez_modela(string $obrada, string $model): void
+    public function kad_nacrt_obradjen_modelom_objavi_ivan_pise_ivan_bez_modela(string $model): void
     {
-        $nacrt = $this->obradi($obrada, saGrupom: false);
+        $nacrt = $this->obradi(saGrupom: false);
 
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->status);
         $this->assertSame($model, $nacrt->predlog['model']);
@@ -153,9 +152,9 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     // Paket 73/T1 (Ivan, PITANJA-72, 1): isto i na nacrtu; odeljak piše „Predlog modela · <model>", a nigde ne piše „Ollama".
     #[Test]
     #[DataProvider('modeli')]
-    public function na_nacrtu_pise_predlog_modela_a_ne_ollame(string $obrada, string $model): void
+    public function na_nacrtu_pise_predlog_modela_a_ne_ollame(string $model): void
     {
-        $nacrt = $this->obradi($obrada, saGrupom: false);
+        $nacrt = $this->obradi(saGrupom: false);
 
         $this->assertSame(StatusPrilike::Nacrt, $nacrt->status);
 
@@ -172,9 +171,9 @@ class AdminOznakaModelaTest extends AdminBazaTestCase
     // Ogledalo: objavljena prilika nema odeljak sa predlogom, pa ni njegov naslov.
     #[Test]
     #[DataProvider('modeli')]
-    public function na_objavljenoj_prilici_nema_predloga_modela(string $obrada, string $model): void
+    public function na_objavljenoj_prilici_nema_predloga_modela(string $model): void
     {
-        $prilika = $this->obradi($obrada);
+        $prilika = $this->obradi();
 
         Livewire::test(EditPrilika::class, ['record' => $prilika->getKey()])->assertDontSee('Predlog modela')->assertDontSee('Model je predložio');
     }

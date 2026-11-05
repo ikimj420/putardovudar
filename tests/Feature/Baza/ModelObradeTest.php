@@ -8,7 +8,6 @@ use App\Models\Prilika;
 use App\Models\Sablon;
 use App\Services\Claude\Claude;
 use App\Services\Model\ModelObrade;
-use App\Services\Model\NepoznatModelObrade;
 use App\Services\Pomocnik\PisanjeOdgovora;
 use App\Services\Pomocnik\PisanjeSablona;
 use App\Services\Pomocnik\PitanjeUFormular;
@@ -23,7 +22,7 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\BazaTestCase;
 use Tests\Podrska\LazniClaude;
 
-// Paket 71/T2, prepisan u paketu 100/T5 (Ivan, 05.11.2026.: „sve treba preko Claude-a"): obrada nacrta, pomoćnik i „Napiši moj" idu na Claude, a MODEL_OBRADE prima samo „claude".
+// Paket 71/T2, prepisan u paketu 100/T5 (Ivan, 05.11.2026.: „sve treba preko Claude-a"): obrada nacrta, pomoćnik i „Napiši moj" idu na Claude; od paketa 101/T3 bez podešavanja MODEL_OBRADE.
 // Nijedan test ne zove pravi API.
 #[Group('baza')]
 class ModelObradeTest extends BazaTestCase
@@ -71,7 +70,7 @@ class ModelObradeTest extends BazaTestCase
         return LazniClaude::odgovor(json_encode($this->forma(), JSON_UNESCAPED_UNICODE), $ulaz, $izlaz);
     }
 
-    // Bez ijednog podešavanja u testu: obrada ide na Claude jer je „claude" podrazumevana vrednost (config/claude.php), a na kraju piše model, pozive, tokene i cenu.
+    // Bez ijednog podešavanja u testu: obrada ide na Claude jer drugog modela nema, a na kraju piše model, pozive, tokene i cenu.
     #[Test]
     public function podrazumevano_obrada_ide_na_claude_a_na_kraju_pise_model_pozive_tokene_i_cenu(): void
     {
@@ -193,53 +192,54 @@ class ModelObradeTest extends BazaTestCase
         Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() !== self::CLAUDE);
     }
 
-    // Izbor modela je jedno mesto: ModelObrade je Claude samo uz tačno „claude"; sve drugo je greška, pa i stara podrazumevana vrednost „ollama" (paket 95, PITANJA-92 14; paket 100).
-    // Greška u kucanju („Claude") ne šalje strane nikome: obrada staje i kaže zašto.
+    // Paket 101/T3 (Ivan „da", 05.11.2026., PITANJA-100 3): izbora modela više nema. ModelObrade je Claude bez ikakvog podešavanja; ranije je MODEL_OBRADE
+    // primao samo „claude", a svaka druga vrednost je bila greška (paket 95, 100). Da okruženje ne stiže do podešavanja meri ClaudePodesavanjaTest.
     #[Test]
-    public function samo_tacno_claude_bira_model(): void
+    public function model_obrade_je_claude_bez_podesavanja(): void
     {
-        config()->set('claude.model_obrade', 'claude');
+        $this->assertArrayNotHasKey('model_obrade', (array) config('claude'));
         $this->app->forgetInstance(ModelObrade::class);
 
         $this->assertInstanceOf(Claude::class, app(ModelObrade::class));
+        $this->assertFalse(class_exists('App\\Services\\Model\\NepoznatModelObrade'));
     }
 
+    // Vrednosti koje su bile greška (i stara „ollama", i nešto što liči na ključ) sada ne menjaju ništa: niko ih ne čita, pa nema ni poruke koja bi ih ispisala.
     #[Test]
-    public function svaka_druga_vrednost_je_greska_a_poruka_ne_ispisuje_vrednost(): void
+    public function nijedna_stara_vrednost_ne_menja_model(): void
     {
         Http::fake(['*' => Http::response('{}')]);
+        $pregledano = 0;
 
         foreach (['', 'Claude', 'CLAUDE', 'claude ', ' claude', 'ollama', 'Ollama', ' ollama', 'neki-drugi', 'tajna-vrednost-123', null] as $vrednost) {
             config()->set('claude.model_obrade', $vrednost);
             $this->app->forgetInstance(ModelObrade::class);
 
-            try {
-                app(ModelObrade::class);
-                $this->fail('Vrednost '.var_export($vrednost, true).' je prošla.');
-            } catch (NepoznatModelObrade $izuzetak) {
-                $this->assertSame('Nepoznata vrednost MODEL_OBRADE: dozvoljeno je samo „claude", tačno tako, malim slovima.', $izuzetak->getMessage());
-            }
+            $this->assertInstanceOf(Claude::class, app(ModelObrade::class), var_export($vrednost, true));
+            $pregledano++;
         }
 
+        $this->assertSame(11, $pregledano);
         Http::assertNothingSent();
     }
 
-    // Komanda kaže poruku i vraća 1, bez poziva ijednom modelu i bez diranja nacrta; dnevni posao zato nastavlja sa ostalim koracima (vidi UvozDnevnoTest).
+    // Obrada sa vrednošću koja je ranije zaustavljala posao (izlaz 1, ništa obrađeno) sada radi na Claude-u do kraja; dnevni posao zato ne staje (vidi UvozDnevnoTest).
     #[Test]
     #[DataProvider('pogresnaVrednost')]
-    public function obrada_sa_nepoznatim_modelom_staje_sa_porukom_i_nista_ne_dira(string $vrednost): void
+    public function obrada_sa_starom_vrednoscu_radi_na_claude_u(string $vrednost): void
     {
         config()->set('claude.model_obrade', $vrednost);
         $nacrt = $this->nacrt();
-        Http::fake(['*' => $this->strana()]);
+        Http::fake([self::STRANA => $this->strana(), self::CLAUDE => $this->claudeOdgovor()]);
 
         $this->artisan('uvoz:obradi')
-            ->expectsOutput('Nepoznata vrednost MODEL_OBRADE: dozvoljeno je samo „claude", tačno tako, malim slovima.')
-            ->assertExitCode(1);
+            ->doesntExpectOutputToContain('Nepoznata vrednost')
+            ->doesntExpectOutputToContain($vrednost)
+            ->assertExitCode(0);
 
-        Http::assertNothingSent();
-        $this->assertNull($nacrt->fresh()->obradeno_at);
-        $this->assertSame(StatusPrilike::Nacrt, $nacrt->fresh()->status);
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE);
+        $this->assertNotNull($nacrt->fresh()->obradeno_at);
+        $this->assertSame(StatusPrilike::Objavljeno, $nacrt->fresh()->status);
     }
 
     /** @return array<string, array{0: string}> */

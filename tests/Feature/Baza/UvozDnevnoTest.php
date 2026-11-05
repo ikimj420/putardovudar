@@ -25,7 +25,7 @@ class UvozDnevnoTest extends BazaTestCase
     {
         parent::setUp();
 
-        // Nijedan zahtev ne ide na pravi internet ni na pravu Ollamu: što nije lažirano, baca izuzetak.
+        // Nijedan zahtev ne ide na pravi internet ni na pravi Claude: što nije lažirano, baca izuzetak.
         Http::preventStrayRequests();
         $this->travelTo(Carbon::create(2026, 10, 5, 12, 0, 0, 'Europe/Belgrade'));
         config()->set('uvoz.izvori', [['ime' => 'Izvor A', 'adresa' => self::FEED]]);
@@ -33,35 +33,53 @@ class UvozDnevnoTest extends BazaTestCase
         config()->set('uvoz.spiskovi', []);
     }
 
-    private function internet(int $statusFeeda = 200): void
+    private function internet(int $statusFeeda = 200, int $statusClaude = 200): void
     {
-        Http::fake(function (Request $zahtev) use ($statusFeeda) {
+        Http::fake(function (Request $zahtev) use ($statusFeeda, $statusClaude) {
             return match (true) {
                 $zahtev->url() === self::FEED => Http::response((string) file_get_contents(base_path('tests/Fixtures/rss/youth-rs.xml')), $statusFeeda),
+                $zahtev->url() === self::CLAUDE && $statusClaude !== 200 => Http::response('{}', $statusClaude),
                 $zahtev->url() === self::CLAUDE => LazniClaude::odgovor(json_encode(['vazi_pravilo' => false, 'razlog' => 'Nije prilika.', 'vrsta' => null, 'rok' => null, 'citat' => '', 'osnov' => null, 'citat_pravila' => ''])),
                 default => Http::response('<html><body><p>Strana izvora.</p></body></html>'),
             };
         });
     }
 
-    // Paket 95/T6: pogrešan MODEL_OBRADE obara samo obradu (izlaz 1, poruka), a uvoz i ostali koraci idu; Claude ne dobija nijedan zahtev.
+    // Paket 95/T6, prepisan u paketu 101/T3: obrada koja padne obara samo obradu (izlaz 1, poruka), a uvoz i ostali koraci idu. Ranije je to merila
+    // pogrešna vrednost MODEL_OBRADE; tog podešavanja više nema, pa obradu obara Claude koji ne radi, a nacrti ostaju neobrađeni.
     #[Test]
-    public function pogresan_model_obrade_zaustavlja_samo_obradu(): void
+    public function obrada_koja_padne_zaustavlja_samo_obradu(): void
     {
-        config()->set('claude.model_obrade', 'Claude');
-        $this->internet();
+        $this->internet(statusClaude: 500);
 
         $this->artisan('uvoz:dnevno')
             ->expectsOutputToContain('→ uvoz:rss')
-            ->expectsOutputToContain('Nepoznata vrednost MODEL_OBRADE')
+            ->expectsOutputToContain('Claude API je odgovorio sa HTTP 500')
             ->expectsOutputToContain('→ prilike:provera')
             ->expectsOutputToContain('→ kalendar:iz-prilika')
             ->assertExitCode(1);
 
         $this->assertSame(3, Prilika::query()->count());
         $this->assertSame(3, Prilika::query()->whereNull('obradeno_at')->count());
-        Http::assertNotSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE || str_contains($zahtev->url(), 'anthropic'));
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE);
         Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::FEED);
+    }
+
+    // Ogledalo: vrednost koja je ranije obarala obradu („Claude", greška u kucanju) sada ne menja ništa: dnevni posao obrađuje na Claude-u i završava bez greške.
+    #[Test]
+    public function stara_vrednost_model_obrade_ne_zaustavlja_obradu(): void
+    {
+        config()->set('claude.model_obrade', 'Claude');
+        $this->internet();
+
+        $this->artisan('uvoz:dnevno')
+            ->expectsOutputToContain('→ uvoz:obradi')
+            ->doesntExpectOutputToContain('Nepoznata vrednost')
+            ->assertExitCode(0);
+
+        $this->assertSame(3, Prilika::query()->count());
+        $this->assertSame(0, Prilika::query()->whereNull('obradeno_at')->count());
+        Http::assertSent(fn (Request $zahtev) => $zahtev->url() === self::CLAUDE);
     }
 
     #[Test]

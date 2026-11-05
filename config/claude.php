@@ -2,10 +2,8 @@
 
 return [
 
-    // Obrada prilika (uvoz:obradi), pomoćnik i „Napiši moj" idu preko Claude API-ja (Ivan, 05.11.2026.: „sve treba preko Claude-a"); Ollama je izbačena (paket 100).
-    // Ključ je samo u okruženju (.env), nikad u kodu, testu, logu ni izveštaju.
-    'model_obrade' => env('MODEL_OBRADE', 'claude'),
-
+    // Obrada prilika (uvoz:obradi), pomoćnik i „Napiši moj" idu preko Claude API-ja (Ivan, 05.11.2026.: „sve treba preko Claude-a"); Ollama je izbačena (paket 100),
+    // a sa njom i izbor modela (MODEL_OBRADE, paket 101/T3). Ključ je samo u okruženju (.env), nikad u kodu, testu, logu ni izveštaju.
     'kljuc' => env('ANTHROPIC_API_KEY'),
     'model' => env('CLAUDE_MODEL', 'claude-haiku-5-5'),
     'adresa' => env('CLAUDE_ADRESA', 'https://api.anthropic.com'),

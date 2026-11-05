@@ -37,7 +37,6 @@
         <env name="JOOBLE_KLJUCNE_RECI" value="posao"/>
         <env name="JOOBLE_LOKACIJA" value="Srbija"/>
         <env name="MAIL_MAILER" value="array"/>
-        <env name="MODEL_OBRADE" value="claude"/>
         <env name="OBRADA_NAJVISE_POZIVA" value="500"/>
         <env name="POMOCNIK_PITANJA_DNEVNO" value="300"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

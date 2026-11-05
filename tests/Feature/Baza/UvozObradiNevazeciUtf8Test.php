@@ -59,12 +59,6 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
         return Http::response('<html><body><h1>Konkurs</h1><p>'.$recenicaSaRokom.'</p><p>'.self::GRUPA.'.</p></body></html>');
     }
 
-    /** @return array<string, array{0: string}> MODEL_OBRADE */
-    public static function modeli(): array
-    {
-        return ['Claude' => ['claude']];
-    }
-
     private function snimak(): string
     {
         return (string) file_get_contents(base_path('tests/Fixtures/stranice/youth-atlas-neizgovorenih-emocija.html'));
@@ -108,10 +102,8 @@ class UvozObradiNevazeciUtf8Test extends BazaTestCase
 
     // (2) Popravka na izvoru: ista stranica i isti odgovor modela, obrada se završava, citat je na strani, a rok je prošao (jul 2026), pa ostaje nacrt sa tim razlogom.
     #[Test]
-    #[DataProvider('modeli')]
-    public function stavka_koja_je_pala_se_sada_obradjuje_do_kraja(string $obrada): void
+    public function stavka_koja_je_pala_se_sada_obradjuje_do_kraja(): void
     {
-        config()->set('claude.model_obrade', $obrada);
         // Strana piše „Prijave do 30. jula" bez godine, pa godinu daje dan objave iz izvora (RSS), kao u probi: 20.7.2026.
         $nacrt = $this->nacrt('JAVNI POZIV: Atlas neizgovorenih emocija', self::SNIMLJENA_STRANA, '2026-07-20');
         $sadrzaj = json_encode($this->snimljenOdgovor(), JSON_UNESCAPED_UNICODE);

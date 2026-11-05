@@ -134,7 +134,8 @@ class ReadmeNavodiSamoKomandeKojePostojeTest extends TestCase
             'izmišljen seeder' => ['`NepostojiSeeder`', ['nema seedera NepostojiSeeder']],
             'pravi seeder' => ['`RomskeOrganizacijeSeeder`', []],
             'izmišljeno podešavanje' => ['`NEPOSTOJI_KLJUC`', ['nema podešavanja NEPOSTOJI_KLJUC u .env.example']],
-            'pravo podešavanje' => ['`MODEL_OBRADE`', []],
+            'pravo podešavanje' => ['`ANTHROPIC_API_KEY`', []],
+            'izbačeno podešavanje' => ['`MODEL_OBRADE`', ['nema podešavanja MODEL_OBRADE u .env.example']],
             'izmišljena skripta' => ['`composer nepostoji`', ['nema skripte composer nepostoji']],
             'prava skripta' => ['`composer test`', []],
         ];

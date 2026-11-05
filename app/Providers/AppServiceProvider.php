@@ -5,7 +5,6 @@ namespace App\Providers;
 use App\Http\Controllers\PomocnikSablonController;
 use App\Services\Claude\Claude;
 use App\Services\Model\ModelObrade;
-use App\Services\Model\NepoznatModelObrade;
 use App\Services\RazresivacImena;
 use App\Services\SistemskiRazresivac;
 use App\Support\PrikazPomocnika;
@@ -24,12 +23,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(RazresivacImena::class, SistemskiRazresivac::class);
 
-        // Model obrade prilika (MODEL_OBRADE): samo „claude", sve drugo je greška (paket 95, 100); pomoćnik i „Napiši moj" zovu Claude izričito.
+        // Obradu prilika radi Claude, bez podešavanja (paket 101/T3); pomoćnik i „Napiši moj" zovu Claude izričito.
         // Jedan objekat za ceo prolaz, da se potrošnja zbraja na jednom mestu.
-        $this->app->singleton(ModelObrade::class, fn () => match (config('claude.model_obrade')) {
-            'claude' => $this->app->make(Claude::class),
-            default => throw new NepoznatModelObrade,
-        });
+        $this->app->singleton(ModelObrade::class, Claude::class);
     }
 
     /**

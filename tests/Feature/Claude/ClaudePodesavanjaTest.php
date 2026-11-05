@@ -17,13 +17,13 @@ class ClaudePodesavanjaTest extends TestCase
     #[Test]
     public function bez_env_fajla_podrazumevana_podesavanja_su_claude_haiku_i_izmerene_cene(): void
     {
-        // phpunit.xml zadaje obradu na Claude-u i prazan ključ; da bi se videlo šta stoji u podešavanju, ta zadavanja se skidaju.
+        // phpunit.xml zadaje prazan ključ i ostala podešavanja; da bi se videlo šta stoji u podešavanju, ta zadavanja se skidaju. MODEL_OBRADE više ne postoji (paket 101/T3).
         foreach (['MODEL_OBRADE', 'ANTHROPIC_API_KEY', 'CLAUDE_MODEL', 'CLAUDE_ADRESA', 'CLAUDE_VREME_CEKANJA', 'CLAUDE_RAZMISLJANJE', 'OBRADA_NAJVISE_POZIVA'] as $naziv) {
             $this->postaviOkruzenje($naziv, null);
         }
         $this->refreshApplication();
 
-        $this->assertSame('claude', config('claude.model_obrade'));
+        $this->assertArrayNotHasKey('model_obrade', (array) config('claude'));
         $this->assertNull(config('claude.kljuc'));
         $this->assertSame('claude-haiku-5-5', config('claude.model'));
         $this->assertSame('https://api.anthropic.com', config('claude.adresa'));
@@ -44,40 +44,41 @@ class ClaudePodesavanjaTest extends TestCase
         $this->assertSame(12000, (new Claude)->najviseZnakova());
     }
 
-    // Ogledalo: nov .env se pravi kopiranjem primera; primer ima prazan ključ i obradu na Claude-u, a nijedno Ollamino podešavanje.
+    // Ogledalo: nov .env se pravi kopiranjem primera; primer ima prazan ključ, a nijedno Ollamino podešavanje ni izbor modela obrade (paket 101/T3).
     #[Test]
-    public function env_primer_ima_prazan_kljuc_i_obradu_na_claude_u(): void
+    public function env_primer_ima_prazan_kljuc_bez_izbora_modela(): void
     {
         $primer = file_get_contents(base_path('.env.example'));
 
         $this->assertMatchesRegularExpression('#^ANTHROPIC_API_KEY=$#m', $primer);
-        $this->assertMatchesRegularExpression('#^MODEL_OBRADE=claude$#m', $primer);
+        $this->assertStringNotContainsString('MODEL_OBRADE', (string) $primer);
         $this->assertStringNotContainsStringIgnoringCase('ollama', $primer);
     }
 
     #[Test]
     public function vrednost_iz_okruzenja_pobedjuje_podrazumevanu(): void
     {
-        $this->postaviOkruzenje('MODEL_OBRADE', 'claude');
+        // MODEL_OBRADE iz starog .env (i sa vrednošću koja je bila greška) više ne stiže do podešavanja.
+        $this->postaviOkruzenje('MODEL_OBRADE', 'ollama');
         $this->postaviOkruzenje('CLAUDE_MODEL', 'claude-sonnet-5-5');
         $this->postaviOkruzenje('ANTHROPIC_API_KEY', 'probni-kljuc-nije-pravi');
         $this->postaviOkruzenje('OBRADA_NAJVISE_POZIVA', '7');
         $this->refreshApplication();
 
-        $this->assertSame('claude', config('claude.model_obrade'));
+        $this->assertArrayNotHasKey('model_obrade', (array) config('claude'));
         $this->assertSame('claude-sonnet-5-5', config('claude.model'));
         $this->assertSame('probni-kljuc-nije-pravi', config('claude.kljuc'));
         $this->assertSame(7, config('claude.najvise_poziva_po_prolazu'));
     }
 
-    // Testovi nikad ne vide ključ iz Ivanovog okruženja: phpunit.xml ga prazni, a obradu zadaje na Claude-u.
+    // Testovi nikad ne vide ključ iz Ivanovog okruženja: phpunit.xml ga prazni; izbor modela obrade ne zadaje, jer ga nema (paket 101/T3).
     #[Test]
-    public function phpunit_prazni_kljuc_i_zadaje_obradu_na_claude_u(): void
+    public function phpunit_prazni_kljuc_a_izbor_modela_ne_zadaje(): void
     {
         $xml = (string) file_get_contents(base_path('phpunit.xml'));
 
         $this->assertMatchesRegularExpression('#<env name="ANTHROPIC_API_KEY" value=""/>#', $xml);
-        $this->assertMatchesRegularExpression('#<env name="MODEL_OBRADE" value="claude"/>#', $xml);
+        $this->assertStringNotContainsString('MODEL_OBRADE', $xml);
     }
 
     // Svako podešavanje Claude-a iz okruženja je zadato u phpunit.xml: inače ga testovi čitaju iz .env ove mašine (tu je posle prelaska radne baze na Claude stajalo isključeno razmišljanje).
