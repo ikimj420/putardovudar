@@ -63,7 +63,10 @@ TEXT;
         $recGrupe = Grupa::reciGrupeUTekstu($pitanje);
         $reci = array_values(array_filter($reci, fn (string $rec) => array_diff(explode(' ', PoredjenjeTeksta::normalizuj($rec)), $recGrupe) !== []));
 
-        return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano), $grupe);
+        // Oznaka online se čita iz samog pitanja, kao i grupa, pa ne zavisi od toga da li je model vratio tu reč.
+        $online = array_intersect(explode(' ', $pitanjeNormalizovano), Formular::ONLINE) !== [];
+
+        return new Formular($vrsta, $grad, $kome, $reci, $sveReci, $this->vrstaJePomenuta($vrsta, $pitanjeNormalizovano), $grupe, $online);
     }
 
     // Oblici reči kojima pitanje kaže vrstu, cele reči (ne stabla: „posle" nije „posao", „obuće" nije „obuka"). „Poso" je čest

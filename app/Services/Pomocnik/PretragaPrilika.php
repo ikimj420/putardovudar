@@ -23,7 +23,7 @@ final class PretragaPrilika
         // Vrsta koju je model samo pogodio („radionica" kao „obuka") ne sme da sakrije priliku: bez nje se traži tek kad
         // sa njom nema ničega (a bez ijednog drugog uslova ne traži se ništa). Izrečena vrsta („stipendija u Kragujevcu") je uvek tvrda.
         if ($rezultat->isEmpty() && $formular->vrsta !== null && ! $formular->vrstaJePomenuta) {
-            return $this->trazi(new Formular(null, $formular->grad, $formular->kome, $formular->kljucneReci, grupe: $formular->grupe));
+            return $this->trazi(new Formular(null, $formular->grad, $formular->kome, $formular->kljucneReci, grupe: $formular->grupe, online: $formular->online));
         }
 
         return $rezultat;
@@ -49,6 +49,10 @@ final class PretragaPrilika
             $upit->where('mesto', $formular->grad);
         }
 
+        if ($formular->online) {
+            $upit->where('online', true);
+        }
+
         // Grupa iz pitanja se poredi sa grupama prilike (bar jedna od traženih); prilika bez grupa ne ulazi.
         if ($formular->grupe !== []) {
             $upit->where(function (Builder $grupe) use ($formular) {
@@ -60,12 +64,18 @@ final class PretragaPrilika
 
         // Uz vrstu, izraz koji je samo njena reč („kurs" uz obuku) ne traži se u tekstu, isto kao „obuka". Bez vrste (rezervna
         // pretraga iz paketa 30) ostaje reč, pa „kurs u Novom Sadu" ne vraća svaku priliku iz tog grada (paket 102/T2).
-        $izrazi = array_filter(array_filter([$formular->kome, ...$formular->kljucneReci]), fn (string $izraz) => ! ($formular->vrsta?->jeSamoRecVrste($izraz) ?? false));
+        $izrazi = array_filter(array_filter(array_map(fn (string $izraz) => $this->bezOznakeOnline($izraz, $formular), array_filter([$formular->kome, ...$formular->kljucneReci]))), fn (string $izraz) => ! ($formular->vrsta?->jeSamoRecVrste($izraz) ?? false));
 
         return $upit->limit(self::NAJVISE_KANDIDATA)->get()
             ->filter(fn (Prilika $prilika) => $this->sadrziSveIzraze($prilika, $izrazi))
             ->take(self::NAJVISE_ZAPISA)
             ->values();
+    }
+
+    // „online kurs" je oznaka i „kurs": u tekstu se traži samo ostatak, a izraz koji je bio samo „online" otpada.
+    private function bezOznakeOnline(string $izraz, Formular $formular): string
+    {
+        return $formular->online ? implode(' ', array_diff(explode(' ', PoredjenjeTeksta::normalizuj($izraz)), Formular::ONLINE)) : $izraz;
     }
 
     /** @param  array<int, string>  $izrazi */

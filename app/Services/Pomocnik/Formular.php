@@ -8,6 +8,9 @@ use App\Enums\VrstaPrilike;
 // Vrednosti koje je kod prihvatio iz modelovog formulara; šta ne prođe proveru, ovde nikad ne stiže.
 final readonly class Formular
 {
+    // „online" i „onlajn" u pitanju su oznaka prilike (polje online), a ne reč koju prilika mora da ima u tekstu (paket 102/T3).
+    public const ONLINE = ['online', 'onlajn'];
+
     /** @var list<string> */
     public array $sveKljucneReci;
 
@@ -16,6 +19,7 @@ final readonly class Formular
      * @param  list<string>|null  $sveKljucneReci  sve prihvaćene reči osim onih koje ponavljaju grad; null znači iste kao $kljucneReci
      * @param  bool  $vrstaJePomenuta  pitanje samo kaže vrstu (posao, stipendija...); inače je vrsta nagađanje modela
      * @param  list<Grupa>  $grupe  grupe čije reči stoje u pitanju (ja sam student, za Rome...); porede se sa grupama prilike, ne kao reči
+     * @param  bool  $online  pitanje kaže „online" ili „onlajn": traže se samo prilike označene kao online
      */
     public function __construct(
         public ?VrstaPrilike $vrsta = null,
@@ -25,13 +29,14 @@ final readonly class Formular
         ?array $sveKljucneReci = null,
         public bool $vrstaJePomenuta = true,
         public array $grupe = [],
+        public bool $online = false,
     ) {
         $this->sveKljucneReci = $sveKljucneReci ?? $kljucneReci;
     }
 
     public function jePrazan(): bool
     {
-        return $this->vrsta === null && $this->grad === null && $this->kome === null && $this->kljucneReci === [] && $this->grupe === [];
+        return $this->vrsta === null && $this->grad === null && $this->kome === null && $this->kljucneReci === [] && $this->grupe === [] && ! $this->online;
     }
 
     // Vodiči i organizacije nemaju vrstu ni „kome": kad pitanje traži baš njih („vodič za konkurse"), reči koje su ponavljale

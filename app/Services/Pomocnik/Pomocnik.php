@@ -142,11 +142,12 @@ final class Pomocnik
             : new OdgovorPomocnika($this->sablon($rezultat), $izvori, false, $razlog);
     }
 
-    // Pitanje je samo vrsta (posao, stipendija...) izrečena u pitanju: bez grada, „kome", reči i grupe. „Drugo" nema reč, pa ga nema ni ovde.
+    // Pitanje je samo vrsta (posao, stipendija...) izrečena u pitanju: bez grada, „kome", reči, grupe i oznake online. „Drugo" nema reč,
+    // pa ga nema ni ovde. Bez oznake bi „online obuka" bez online obuka reklo „nema otvorenih obuka", a ima ih (paket 102/T3).
     private function jeSamoVrsta(Formular $formular): bool
     {
         return $formular->vrsta !== null && $formular->vrsta !== VrstaPrilike::Drugo && $formular->vrstaJePomenuta
-            && $formular->grad === null && $formular->kome === null && $formular->kljucneReci === [] && $formular->grupe === [];
+            && $formular->grad === null && $formular->kome === null && $formular->kljucneReci === [] && $formular->grupe === [] && ! $formular->online;
     }
 
     // Vodiči i stavke kalendara su oni čiji tekst pominje tu vrstu (ista reč kojom se vrsta dokazuje na strani); samo ono što piše u bazi.
