@@ -1533,6 +1533,16 @@ section + section > .naslov-izvora {
   flex: 1 0 100%;
 }
 
+/* Veza „Privatnost" u natpisu (paket 100/T4): linkovi nisu podvučeni (paket 66), pa se razlikuje bojom i debljinom slova; inače bi bila isto što i ostatak natpisa. */
+.privatnost a {
+  color: var(--ljubicasta);
+  font-weight: 700;
+}
+
+.privatnost a:hover {
+  color: var(--ljubicasta-svetla);
+}
+
 /* Pomoćnik: polje i dugme kao u prototipu (tamno dugme, belo polje), odgovor i izvori su kartice */
 .uvod {
   max-width: 720px;

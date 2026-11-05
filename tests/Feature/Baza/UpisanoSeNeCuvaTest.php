@@ -26,6 +26,7 @@ use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Tests\BazaTestCase;
+use Tests\Concerns\BojeVrata;
 use Tests\Concerns\StilJavnihStrana;
 use Tests\Concerns\VidljivTekst;
 use Tests\Podrska\LazniClaude;
@@ -37,7 +38,7 @@ use TypeError;
 #[Group('baza')]
 class UpisanoSeNeCuvaTest extends BazaTestCase
 {
-    use RefreshDatabase, StilJavnihStrana, VidljivTekst;
+    use BojeVrata, RefreshDatabase, StilJavnihStrana, VidljivTekst;
 
     private const TRAG = 'TRAG-7f3a';
 
@@ -338,6 +339,29 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
         $pocetna = $this->get(route('pocetna'))->assertOk()->getContent();
         $this->assertMatchesRegularExpression('#<button type="submit">'.preg_quote(PrikazPomocnika::DUGME, '#').'</button>\s*'.preg_quote($natpis, '#').'\s*</form>#', $pocetna);
         $this->assertSame(1, substr_count($pocetna, $natpis));
+    }
+
+    // Linkovi nisu podvučeni (paket 66, Ivan, 11.10.2026.): veza u natpisu se razlikuje bojom i debljinom slova, a boja ima kontrast sa belom podlogom (paket 100/T4).
+    #[Test]
+    public function veza_u_natpisu_se_razlikuje_od_teksta_bojom_i_debljinom(): void
+    {
+        $stil = $this->stilBezKomentara();
+        $kontrast = fn (string $a, string $b): float => (max($this->osvetljenost($a), $this->osvetljenost($b)) + 0.05) / (min($this->osvetljenost($a), $this->osvetljenost($b)) + 0.05);
+
+        $this->assertMatchesRegularExpression('/\n\.privatnost a \{\s*color: var\(--ljubicasta\);\s*font-weight: 700;\s*\}/', $stil);
+        $this->assertMatchesRegularExpression('/\n\.privatnost a:hover \{\s*color: var\(--ljubicasta-svetla\);\s*\}/', $stil);
+        $this->assertDoesNotMatchRegularExpression('/\.privatnost a[^{]*\{[^}]*text-decoration: underline/', $stil);
+
+        preg_match_all('/--(ljubicasta|ljubicasta-svetla|card-bg|zlato): (#[0-9a-f]{6});/', $stil, $nalazi, PREG_SET_ORDER);
+        $boje = array_column($nalazi, 2, 1);
+        $this->assertCount(4, $boje);
+
+        foreach (['ljubicasta', 'ljubicasta-svetla'] as $ime) {
+            $this->assertGreaterThanOrEqual(4.5, $kontrast($boje[$ime], $boje['card-bg']), $ime);
+        }
+
+        // Ogledalo: merilo stvarno razlikuje; svetla boja (zlato) na beloj nema kontrast 4,5.
+        $this->assertLessThan(4.5, $kontrast($boje['zlato'], $boje['card-bg']));
     }
 
     #[Test]
