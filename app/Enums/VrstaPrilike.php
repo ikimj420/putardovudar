@@ -29,7 +29,23 @@ enum VrstaPrilike: string implements HasLabel
     // Vrsta se dokazuje rečju sa strane: njen naziv ili srodna reč (u bilo kom padežu). „Drugo" nema reč, pa se ne može dokazati.
     public function potkrepljenaTekstom(string $tekst): bool
     {
-        $uzorak = match ($this) {
+        $uzorak = $this->uzorak();
+
+        return $uzorak !== null && preg_match($uzorak, PoredjenjeTeksta::normalizuj($tekst)) === 1;
+    }
+
+    // Izraz koji je sav od reči ove vrste („kurs", „radna mesta") kaže vrstu, a ne temu koju prilika mora da ima u tekstu (paket 102/T2).
+    public function jeSamoRecVrste(string $izraz): bool
+    {
+        $uzorak = $this->uzorak();
+        $normalizovano = PoredjenjeTeksta::normalizuj($izraz);
+
+        return $uzorak !== null && $normalizovano !== '' && trim((string) preg_replace($uzorak, ' ', $normalizovano)) === '';
+    }
+
+    private function uzorak(): ?string
+    {
+        return match ($this) {
             self::Posao => '/\b(?:posao|posla|poslu|poslom|poslovi|poslova|poslovima|poslove|zaposl[a-z]*|radn[a-z]* mest[a-z]*)\b/',
             self::Praksa => '/\b(?:praks(?:a|e|i|u|om)|pripravnic[a-z]*|pripravnist[a-z]*)\b/',
             self::Stipendija => '/\bstipend[a-z]*\b/',
@@ -37,7 +53,5 @@ enum VrstaPrilike: string implements HasLabel
             self::Obuka => '/\b(?:obuk[a-z]*|obuci|kurs(?:a|u|om|evi|eve|evima|eva)?|radionic[a-z]*|trening[a-z]*)\b/',
             self::Drugo => null,
         };
-
-        return $uzorak !== null && preg_match($uzorak, PoredjenjeTeksta::normalizuj($tekst)) === 1;
     }
 }

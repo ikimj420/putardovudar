@@ -58,7 +58,9 @@ final class PretragaPrilika
             });
         }
 
-        $izrazi = array_filter([$formular->kome, ...$formular->kljucneReci]);
+        // Uz vrstu, izraz koji je samo njena reč („kurs" uz obuku) ne traži se u tekstu, isto kao „obuka". Bez vrste (rezervna
+        // pretraga iz paketa 30) ostaje reč, pa „kurs u Novom Sadu" ne vraća svaku priliku iz tog grada (paket 102/T2).
+        $izrazi = array_filter(array_filter([$formular->kome, ...$formular->kljucneReci]), fn (string $izraz) => ! ($formular->vrsta?->jeSamoRecVrste($izraz) ?? false));
 
         return $upit->limit(self::NAJVISE_KANDIDATA)->get()
             ->filter(fn (Prilika $prilika) => $this->sadrziSveIzraze($prilika, $izrazi))
