@@ -140,7 +140,7 @@ class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
         $this->assertSame('Ovi podaci ne idu Claude-u; upisujemo ih u tekst na kraju.', PrikazPomocnika::LICNI_PODACI);
     }
 
-    // Paket 101/T2: Ivanov tekst ispod polja slobodnog teksta u „Napiši moj"; kako ga posetilac vidi meri SlobodanTekstUNapisiMojNosiNapomenuTest.
+    // Paket 101/T2: Ivanov tekst ispod polja slobodnog teksta u „Napiši moj" (od 102/T4 ispod svakog dugog polja); kako ga posetilac vidi meri DugoPoljeUNapisiMojNosiNapomenuTest.
     #[Test]
     public function recenica_ispod_slobodnog_teksta_je_doslovno_ivanova(): void
     {

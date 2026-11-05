@@ -43,8 +43,9 @@
             @else
                 <input id="polje-{{ $polje['kljuc'] }}" type="text" name="polje[{{ $polje['kljuc'] }}]" maxlength="255" value="{{ $unosi[$polje['kljuc']] ?? '' }}"@if (filled($polje['objasnjenje'] ?? null)) aria-describedby="objasnjenje-{{ $polje['kljuc'] }}"@endif>
             @endif
-            {{-- Rečenica je u prikazu, ne u podacima šablona: važi i za šablone koji već postoje, bez diranja baze i Ivanovih izmena (paket 101/T2). --}}
-            @if ($polje['kljuc'] === 'tekst')
+            {{-- Rečenica je u prikazu, ne u podacima šablona: važi i za šablone koji već postoje, bez diranja baze i Ivanovih izmena (paket 101/T2).
+                 Svako dugo polje ide Claude-u doslovno kao i „tekst", pa je nosi i ono (paket 102/T4). --}}
+            @if ($polje['kljuc'] === 'tekst' || ($polje['dugo'] ?? false))
                 <p class="privatnost">{{ \App\Support\PrikazPomocnika::SLOBODAN_TEKST }}</p>
             @endif
             @if ($polje['kljuc'] === $poslednjeLicno)
