@@ -5,6 +5,7 @@ namespace Tests\Feature\Baza;
 use App\Models\Sablon;
 use App\Support\PrikazPomocnika;
 use App\Support\PrikazPredloga;
+use App\Support\PrikazPrivatnosti;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
@@ -17,6 +18,7 @@ use Tests\BazaTestCase;
 use Tests\Podrska\LazniClaude;
 
 // Paket 97/T3 (Ivan, 31.10.2026.; nalaz 9 iz PITANJA-92): doslovni tekstovi strane „Predloži priliku" i napomena pomoćnika, upisani ovde slovo po slovo, a ne iz konstanti.
+// Paket 101/T1: i tekstovi o Claude-u (paket 100/T4), posle Ivanovog „da" 05.11.2026.
 // Ostali testovi porede sa konstantama, pa bi izmenjen tekst ostao zelen; ovaj je jedini koji pocrveni kad se odobreni tekst promeni. Zato sve što stoji ovde menja samo Ivan.
 #[Group('baza')]
 class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
@@ -125,5 +127,48 @@ class OdobreniTekstoviPredloziIPomocnikTest extends BazaTestCase
         $slozen = $this->post(route('pomocnik.napisi', $sablon->slug), $unosi)->assertOk()->getContent();
         $this->assertStringContainsString('Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.', $slozen);
         $this->assertStringNotContainsString('Tekst je napisan iz tvojih odgovora.', $slozen);
+    }
+
+    // Paket 101/T1 (Ivan „da", 05.11.2026., PITANJA-100 1): tekstovi o Claude-u iz paketa 100/T4.
+    #[Test]
+    public function tekstovi_o_claude_u_su_doslovno_odobreni(): void
+    {
+        $this->assertSame('Ne čuvamo tvoja pitanja pomoćniku ni ono što upišeš u „Napiši moj". Ne koristimo ih ni za šta drugo. Da bi napisao odgovor, pomoćnik ih šalje Claude-u, firmi Anthropic. Anthropic ih ne koristi za učenje modela. Obično ih briše u roku od 30 dana.', PrikazPrivatnosti::UPISANO);
+        $this->assertSame('Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani ', PrikazPomocnika::NE_CUVAMO_PRE);
+        $this->assertSame('Privatnost', PrikazPomocnika::NE_CUVAMO_VEZA);
+        $this->assertSame('Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani Privatnost.', PrikazPomocnika::NE_CUVAMO);
+        $this->assertSame('Ovi podaci ne idu Claude-u; upisujemo ih u tekst na kraju.', PrikazPomocnika::LICNI_PODACI);
+    }
+
+    // Isti tekstovi kako ih posetilac vidi: pasus na strani „Privatnost", natpis sa vezom ispod polja i beleška jednom, ispod poslednjeg ličnog polja.
+    #[Test]
+    public function posetilac_vidi_doslovno_odobrene_tekstove_o_claude_u(): void
+    {
+        $natpis = '<p class="privatnost">Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani <a href="'.route('privatnost').'">Privatnost</a>.</p>';
+        $beleska = '<p class="privatnost">Ovi podaci ne idu Claude-u; upisujemo ih u tekst na kraju.</p>';
+
+        $this->get(route('privatnost'))->assertOk()
+            ->assertSee('<p>Ne čuvamo tvoja pitanja pomoćniku ni ono što upišeš u „Napiši moj&quot;. Ne koristimo ih ni za šta drugo. Da bi napisao odgovor, pomoćnik ih šalje Claude-u, firmi Anthropic. Anthropic ih ne koristi za učenje modela. Obično ih briše u roku od 30 dana.</p>', false);
+
+        $pomocnik = (string) $this->get(route('pomocnik.index'))->assertOk()->getContent();
+        $this->assertStringContainsString($natpis, $pomocnik);
+        // Ogledalo: na strani bez ličnih polja beleške nema.
+        $this->assertStringNotContainsString('Ovi podaci ne idu Claude-u', $pomocnik);
+
+        $sablon = Sablon::factory()->objavljen()->create([
+            'naslov' => 'Molba', 'objasnjenje' => 'Za dopis u kojem nekoga moliš.',
+            'polja' => [
+                ['kljuc' => 'ime', 'oznaka' => 'Ime i prezime', 'objasnjenje' => 'Tvoje ime i prezime.', 'dugo' => false],
+                ['kljuc' => 'adresa', 'oznaka' => 'Adresa', 'objasnjenje' => 'Ulica i mesto.', 'dugo' => false],
+                ['kljuc' => 'telefon', 'oznaka' => 'Telefon', 'objasnjenje' => 'Broj telefona.', 'dugo' => false],
+                ['kljuc' => 'naslov', 'oznaka' => 'Naslov', 'objasnjenje' => 'Kratko.', 'dugo' => false],
+            ],
+            'tekst' => "{ime}\n{adresa}\n{telefon}\n\n{naslov}",
+        ]);
+        $forma = (string) $this->get(route('pomocnik.napisi.forma', $sablon->slug))->assertOk()->getContent();
+        $this->assertStringContainsString($natpis, $forma);
+        $this->assertSame(1, substr_count($forma, $beleska));
+        // Beleška stoji posle polja za telefon, a pre polja koje nije lično.
+        $this->assertTrue(strpos($forma, 'id="polje-telefon"') < strpos($forma, $beleska) && strpos($forma, $beleska) < strpos($forma, 'id="polje-naslov"'));
     }
 }

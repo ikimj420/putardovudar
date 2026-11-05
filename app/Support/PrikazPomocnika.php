@@ -50,7 +50,7 @@ final class PrikazPomocnika
     public const NAPOMENA_SLOZEN = 'Složen je šablon sa tvojim odgovorima. Linije označene crtama popuni olovkom.';
 
     // Mali natpis uz polja u koja čovek piše (paket 64, Ivan 11.10.2026.): ispod dugmeta „Napiši tekst" i ispod polja za pitanje.
-    // Paket 100/T4: natpis kaže i ko piše odgovor; „Privatnost" je veza na stranu. Tekstovi su predlog iz paketa, Ivan ih odobrava (PITANJA-100.md).
+    // Paket 100/T4: natpis kaže i ko piše odgovor; „Privatnost" je veza na stranu. Ivan odobrio 05.11.2026. (PITANJA-100.md 1).
     public const NE_CUVAMO_PRE = 'Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani ';
 
     public const NE_CUVAMO_VEZA = 'Privatnost';

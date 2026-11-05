@@ -44,7 +44,7 @@ class UpisanoSeNeCuvaTest extends BazaTestCase
 
     private const MODEL = LazniClaude::ADRESA;
 
-    // Paket 100/T4: natpis kaže i ko piše odgovor, sa vezom na stranu „Privatnost"; tekst je predlog iz paketa, Ivan ga odobrava (PITANJA-100.md).
+    // Paket 100/T4: natpis kaže i ko piše odgovor, sa vezom na stranu „Privatnost"; Ivan odobrio 05.11.2026. (PITANJA-100.md 1), doslovno u OdobreniTekstoviPredloziIPomocnikTest.
     private const NATPIS_TEKST = 'Ono što upišeš ne čuvamo. Odgovor piše Claude (Anthropic), detalji su na strani Privatnost.';
 
     // Prazno dok setUp ne stigne do njega: bez servera baze test se preskače pre toga, a tearDown ipak radi.
