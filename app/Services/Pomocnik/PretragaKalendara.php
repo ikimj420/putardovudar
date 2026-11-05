@@ -19,8 +19,8 @@ final class PretragaKalendara
     /** @return Collection<int, KalendarStavka> */
     public function pronadji(Formular $formular): Collection
     {
-        // Iz svake fraze ispadaju reči koje samo kažu grupu ili vrstu (stavka kalendara nema vrstu, a grupe se gledaju posebno); ostale
-        // ne gube ni kad liče na vrstu („ŠTIT" počinje kao „stipendija"), pa „stipendija Dositeja" traži „dositeja".
+        // Iz svake fraze ispadaju reči koje samo kažu grupu, vrstu ili vrstu strane („vodič", „organizacija"): stavka kalendara nema vrstu,
+        // a grupe se gledaju posebno. Ostale se ne gube ni kad liče na vrstu („ŠTIT" počinje kao „stipendija"), pa „stipendija Dositeja" traži „dositeja".
         $izrazi = $this->bezReciVrsteIGrupe($formular->sveKljucneReci);
 
         // Sama reč „kome" (mlade) ne otvara kalendar, ali kad ga otvori druga reč, i ona mora da piše u stavci: bez nje bi
@@ -50,7 +50,7 @@ final class PretragaKalendara
                 $niz = [];
 
                 foreach ([...explode(' ', $deo), null] as $rec) {
-                    if ($rec !== null && ! $this->jeRecVrste($rec)) {
+                    if ($rec !== null && ! $this->jeRecVrste($rec) && ! OpsteReci::jeOpsta($rec)) {
                         $niz[] = $rec;
 
                         continue;

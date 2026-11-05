@@ -4,8 +4,8 @@ namespace App\Services\Pomocnik;
 
 use App\Support\PoredjenjeTeksta;
 
-// Reči „vodič" i „organizacija" (u bilo kom padežu) kažu vrstu strane, a ne temu, pa ne sužavaju ni pretragu vodiča ni pretragu
-// organizacija: „organizacije za dokumenta" traži dokumenta, i u naslovu vodiča (paket 102/T1). Kad su jedine, pitanje je
+// Reči „vodič" i „organizacija" (u bilo kom padežu) kažu vrstu strane, a ne temu, pa ne sužavaju pretragu vodiča, organizacija ni
+// kalendara: „organizacije za dokumenta" traži dokumenta, i u naslovu vodiča (paket 102/T1 i 103/T1). Kad su jedine, pitanje je
 // „šta imate": tada se izlistava sve objavljeno te vrste.
 final readonly class OpsteReci
 {
@@ -25,7 +25,7 @@ final readonly class OpsteReci
         $izrazi = [];
 
         foreach ($this->kljucneReci as $izraz) {
-            $reci = array_filter($this->reci($izraz), fn (string $rec) => ! $this->jeOpsta($rec));
+            $reci = array_filter($this->reci($izraz), fn (string $rec) => ! self::jeOpsta($rec));
 
             if ($reci !== []) {
                 $izrazi[] = implode(' ', $reci);
@@ -53,10 +53,11 @@ final readonly class OpsteReci
     {
         $reci = array_merge([], ...array_map(fn (string $izraz) => $this->reci($izraz), $this->kljucneReci));
 
-        return $reci !== [] && array_filter($reci, fn (string $rec) => ! $this->jeOpsta($rec)) === [];
+        return $reci !== [] && array_filter($reci, fn (string $rec) => ! self::jeOpsta($rec)) === [];
     }
 
-    private function jeOpsta(string $rec): bool
+    // Jedino mesto koje kaže koja reč je „vodič" ili „organizacija"; pita ga i kalendar (paket 103/T1). Reč stiže normalizovana.
+    public static function jeOpsta(string $rec): bool
     {
         return str_starts_with($rec, self::VODIC) || str_starts_with($rec, self::ORGANIZACIJA);
     }
